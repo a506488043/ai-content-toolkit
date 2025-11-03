@@ -43,13 +43,7 @@ if (!defined('ABSPATH')) {
                     <option value="disposed" <?php selected($status_filter, 'disposed'); ?>><?php _e('已处置', 'time-capsule'); ?></option>
                 </select>
 
-                <select name="warranty_status">
-                    <option value=""><?php _e('所有保修状态', 'time-capsule'); ?></option>
-                    <option value="valid" <?php selected(isset($_GET['warranty_status']) && $_GET['warranty_status'] === 'valid'); ?>><?php _e('保修中', 'time-capsule'); ?></option>
-                    <option value="expiring" <?php selected(isset($_GET['warranty_status']) && $_GET['warranty_status'] === 'expiring'); ?>><?php _e('即将过保', 'time-capsule'); ?></option>
-                    <option value="expired" <?php selected(isset($_GET['warranty_status']) && $_GET['warranty_status'] === 'expired'); ?>><?php _e('已过保', 'time-capsule'); ?></option>
-                    <option value="no_warranty" <?php selected(isset($_GET['warranty_status']) && $_GET['warranty_status'] === 'no_warranty'); ?>><?php _e('无保修', 'time-capsule'); ?></option>
-                </select>
+                <!-- 移除了保修状态筛选器 -->
 
                 <?php
                 // 只有管理员才能看到用户筛选器
@@ -127,14 +121,12 @@ if (!defined('ABSPATH')) {
                 <span class="custom-card-stats" style="margin-left: 20px; color: #666; font-size: 14px;">
                     <?php
                     $total_items = isset($stats['total_items']) ? intval($stats['total_items']) : 0;
-                    $expiring_warranty = isset($stats['expiring_warranty']) ? intval($stats['expiring_warranty']) : 0;
                     ?>
                     <?php if (current_user_can('manage_options')): ?>
-                        总物品数：<strong><?php echo number_format($total_items); ?></strong> |
+                        总物品数：<strong><?php echo number_format($total_items); ?></strong>
                     <?php else: ?>
-                        我的物品：<strong><?php echo number_format($total_items); ?></strong> |
+                        我的物品：<strong><?php echo number_format($total_items); ?></strong>
                     <?php endif; ?>
-                    即将过保：<strong style="color: #d63638;"><?php echo number_format($expiring_warranty); ?></strong>
                 </span>
             </div>
 
@@ -150,9 +142,7 @@ if (!defined('ABSPATH')) {
                         if ($status_filter) {
                             $base_url = add_query_arg('status', $status_filter, $base_url);
                         }
-                        if (isset($_GET['warranty_status']) && $_GET['warranty_status']) {
-                            $base_url = add_query_arg('warranty_status', $_GET['warranty_status'], $base_url);
-                        }
+                        // 移除了保修状态参数
                         if (isset($_GET['user']) && $_GET['user']) {
                             $base_url = add_query_arg('user', $_GET['user'], $base_url);
                         }
@@ -181,16 +171,17 @@ if (!defined('ABSPATH')) {
                 <th scope="col" width="20%">物品名称</th>
                 <th scope="col" width="12%">类别</th>
                 <th scope="col" width="12%">购买日期</th>
-                <th scope="col" width="12%">保修状态</th>
-                <th scope="col" width="10%">状态</th>
+                <th scope="col" width="12%">保修期</th>
+                <th scope="col" width="10%">已用时间</th>
+                <th scope="col" width="12%">状态</th>
                 <th scope="col" width="12%">用户</th>
-                <th scope="col" width="22%">操作</th>
+                <th scope="col" width="10%">操作</th>
             </tr>
         </thead>
         <tbody>
             <?php if (empty($items)): ?>
                 <tr>
-                    <td colspan="7" style="text-align: center; padding: 40px;">
+                    <td colspan="8" style="text-align: center; padding: 40px;">
                         <?php if (!empty($search) || !empty($category_filter) || !empty($status_filter)): ?>
                             <div style="font-size: 16px; color: #666; margin-bottom: 20px;">
                                 <span class="dashicons dashicons-search" style="font-size: 48px; color: #ccc; display: block; margin-bottom: 10px;"></span>
@@ -246,14 +237,42 @@ if (!defined('ABSPATH')) {
                         </td>
 
                         <td>
-                            <span class="badge <?php echo tc_get_warranty_status_badge_class($item->warranty_status); ?>">
-                                <?php echo tc_get_warranty_status_text($item->warranty_status); ?>
-                            </span>
+                            <?php if ($item->category === 'pets'): ?>
+                                <?php if (!empty($item->warranty_period)): ?>
+                                    <?php echo esc_html(date_i18n(get_option('date_format'), strtotime($item->warranty_period))); ?>
+                                <?php else: ?>
+                                    <span style="color: #999;">未设置</span>
+                                <?php endif; ?>
+                            <?php else: ?>
+                                <?php if (!empty($item->warranty_period)): ?>
+                                    <span style="font-weight: bold;"><?php echo esc_html($item->warranty_period); ?> 天</span>
+                                <?php else: ?>
+                                    <span style="color: #999;">未设置</span>
+                                <?php endif; ?>
+                            <?php endif; ?>
+                        </td>
+
+                        <td>
+                            <?php if ($item->category === 'pets'): ?>
+                                <?php if (!empty($item->used_time_hours)): ?>
+                                    <span style="font-weight: bold;"><?php echo esc_html($item->used_time_hours); ?> 岁</span>
+                                <?php elseif (!empty($item->warranty_period) && isset($item->age_years)): ?>
+                                    <span style="font-weight: bold;"><?php echo esc_html($item->age_years); ?> 岁</span>
+                                <?php else: ?>
+                                    <span style="color: #999;">未知</span>
+                                <?php endif; ?>
+                            <?php else: ?>
+                                <?php if (!empty($item->used_time_hours)): ?>
+                                    <span style="font-weight: bold;"><?php echo esc_html($item->used_time_hours); ?> 小时</span>
+                                <?php else: ?>
+                                    <span style="color: #999;">未设置</span>
+                                <?php endif; ?>
+                            <?php endif; ?>
                         </td>
 
                         <td>
                             <span class="badge <?php echo tc_get_status_badge_class($item->status); ?>">
-                                <?php echo tc_get_status_text($item->status); ?>
+                                <?php echo tc_get_status_text($item->status, $item->category); ?>
                             </span>
                         </td>
 

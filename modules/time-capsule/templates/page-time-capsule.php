@@ -75,6 +75,7 @@ get_header(); ?>
                             'tools' => array('icon' => '🔧', 'name' => '工具'),
                             'certificate' => array('icon' => '🏆', 'name' => '证书资质'),
                             'vehicle' => array('icon' => '🚗', 'name' => '交通工具'),
+                            'pets' => array('icon' => '🐾', 'name' => '宠物'),
                             'other' => array('icon' => '📦', 'name' => '其他')
                         );
                         ?>
@@ -145,12 +146,23 @@ get_header(); ?>
                                             <?php endif; ?>
                                             <div class="tc-item-status <?php echo esc_attr($item_status); ?>">
                                                 <?php
-                                                $status_texts = array(
-                                                    'active' => '使用中',
-                                                    'inactive' => '闲置',
-                                                    'disposed' => '已处置'
-                                                );
-                                                echo $status_texts[$item_status] ?? $item_status;
+                                                if ($item_category === 'pets') {
+                                                    // 宠物类别使用不同的状态文本
+                                                    $pet_status_texts = array(
+                                                        'active' => '在养',
+                                                        'inactive' => '寄养',
+                                                        'disposed' => '已送养'
+                                                    );
+                                                    echo $pet_status_texts[$item_status] ?? $item_status;
+                                                } else {
+                                                    // 其他类别使用原有状态文本
+                                                    $status_texts = array(
+                                                        'active' => '使用中',
+                                                        'inactive' => '闲置',
+                                                        'disposed' => '已处置'
+                                                    );
+                                                    echo $status_texts[$item_status] ?? $item_status;
+                                                }
                                                 ?>
                                             </div>
                                         </div>
@@ -258,12 +270,30 @@ get_header(); ?>
                                             <?php endif; ?>
                                             <?php if (!empty($item_warranty)): ?>
                                                 <div class="tc-detail-item">
-                                                    <span class="tc-detail-label">保修期</span>
-                                                    <span class="tc-detail-value"><?php echo esc_html($item_warranty); ?>个月</span>
+                                                    <span class="tc-detail-label">
+                                                        <?php if ($item_category === 'pets'): ?>
+                                                            出生日期
+                                                        <?php else: ?>
+                                                            保修期
+                                                        <?php endif; ?>
+                                                    </span>
+                                                    <span class="tc-detail-value">
+                                                        <?php if ($item_category === 'pets'): ?>
+                                                            <?php echo esc_html(date('Y-m-d', strtotime($item_warranty))); ?>
+                                                        <?php else: ?>
+                                                            <?php echo esc_html($item_warranty); ?>个月
+                                                        <?php endif; ?>
+                                                    </span>
                                                 </div>
                                             <?php endif; ?>
                                             <div class="tc-detail-item">
-                                                <span class="tc-detail-label">已用时间</span>
+                                                <span class="tc-detail-label">
+                                                    <?php if ($item_category === 'pets'): ?>
+                                                        年龄
+                                                    <?php else: ?>
+                                                        已用时间
+                                                    <?php endif; ?>
+                                                </span>
                                                 <span class="tc-detail-value">
                                                     <?php
                                                     $purchase_date = new DateTime($item_purchase_date);
@@ -276,23 +306,40 @@ get_header(); ?>
 
                                                     $usage_text = '';
 
-                                                    if ($years > 0) {
-                                                        $usage_text .= $years . '年';
-                                                        if ($months > 0) {
+                                                    if ($item_category === 'pets') {
+                                                        // 宠物类别显示年龄
+                                                        if ($years > 0) {
+                                                            $usage_text .= $years . '岁';
+                                                            if ($months > 0) {
+                                                                $usage_text .= $months . '个月';
+                                                            }
+                                                        } elseif ($months > 0) {
                                                             $usage_text .= $months . '个月';
-                                                        }
-                                                        if ($days > 0) {
+                                                        } elseif ($days > 0) {
                                                             $usage_text .= $days . '天';
+                                                        } else {
+                                                            $usage_text = '不满一天';
                                                         }
-                                                    } elseif ($months > 0) {
-                                                        $usage_text .= $months . '个月';
-                                                        if ($days > 0) {
-                                                            $usage_text .= $days . '天';
-                                                        }
-                                                    } elseif ($days > 0) {
-                                                        $usage_text .= $days . '天';
                                                     } else {
-                                                        $usage_text = '不满一天';
+                                                        // 其他类别显示已用时间
+                                                        if ($years > 0) {
+                                                            $usage_text .= $years . '年';
+                                                            if ($months > 0) {
+                                                                $usage_text .= $months . '个月';
+                                                            }
+                                                            if ($days > 0) {
+                                                                $usage_text .= $days . '天';
+                                                            }
+                                                        } elseif ($months > 0) {
+                                                            $usage_text .= $months . '个月';
+                                                            if ($days > 0) {
+                                                                $usage_text .= $days . '天';
+                                                            }
+                                                        } elseif ($days > 0) {
+                                                            $usage_text .= $days . '天';
+                                                        } else {
+                                                            $usage_text = '不满一天';
+                                                        }
                                                     }
 
                                                     echo $usage_text;

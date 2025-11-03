@@ -68,6 +68,58 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && current_user_can('manage_options'))
             }
         }
     }
+
+    // 处理启用/禁用类别
+    if (isset($_POST['action']) && $_POST['action'] === 'toggle_category') {
+        // 验证nonce
+        $category_name = sanitize_text_field($_POST['category_name']);
+        $new_status = intval($_POST['new_status']);
+        if (!wp_verify_nonce($_POST['tc_toggle_category_nonce'], 'time_capsule_toggle_category_' . $category_name)) {
+            $message = '安全验证失败，请重试。';
+            $message_type = 'error';
+        } else {
+            // 更新类别状态
+            $result = $category_manager->db->update_category($category_name, array('is_active' => $new_status));
+
+            if ($result) {
+                $message = $new_status ? '类别启用成功！' : '类别禁用成功！';
+                $message_type = 'success';
+            } else {
+                $message = '操作失败，请重试。';
+                $message_type = 'error';
+            }
+            // 刷新页面以更新列表
+            echo '<script>window.location.href = window.location.href;</script>';
+            exit;
+        }
+    }
+
+    // 处理强制更新类别
+    if (isset($_POST['action']) && $_POST['action'] === 'force_update_categories') {
+        // 验证nonce
+        if (!wp_verify_nonce($_POST['tc_force_update_nonce'], 'time_capsule_force_update_categories')) {
+            $message = '安全验证失败，请重试。';
+            $message_type = 'error';
+        } else {
+            // 强制更新类别
+            if (method_exists($category_manager, 'force_update_categories')) {
+                $result = $category_manager->force_update_categories();
+                if ($result) {
+                    $message = '类别强制更新成功！';
+                    $message_type = 'success';
+                } else {
+                    $message = '类别更新失败，请重试。';
+                    $message_type = 'error';
+                }
+            } else {
+                $message = '类别更新方法不存在，请检查插件版本。';
+                $message_type = 'error';
+            }
+            // 刷新页面以更新列表
+            echo '<script>window.location.href = window.location.href;</script>';
+            exit;
+        }
+    }
 }
 ?>
 
@@ -97,8 +149,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && current_user_can('manage_options'))
                     <div class="tc-category-status">
                         <?php if ($category->is_active): ?>
                             <span class="tc-status-active"><?php _e('启用', 'time-capsule'); ?></span>
+                            <form method="post" action="" class="tc-toggle-category-form" style="display: inline-block; margin-left: 10px;">
+                                <?php wp_nonce_field('wordpress_toolkit_time_capsule'); ?>
+                                <?php wp_nonce_field('time_capsule_toggle_category_' . $category->name, 'tc_toggle_category_nonce'); ?>
+                                <input type="hidden" name="action" value="toggle_category">
+                                <input type="hidden" name="category_name" value="<?php echo esc_attr($category->name); ?>">
+                                <input type="hidden" name="new_status" value="0">
+                                <button type="submit" class="button-link button-link-secondary" onclick="return confirm('确定要禁用类别 \'<?php echo esc_js($category->display_name); ?>\' 吗？')">
+                                    <?php _e('禁用', 'time-capsule'); ?>
+                                </button>
+                            </form>
                         <?php else: ?>
                             <span class="tc-status-inactive"><?php _e('禁用', 'time-capsule'); ?></span>
+                            <form method="post" action="" class="tc-toggle-category-form" style="display: inline-block; margin-left: 10px;">
+                                <?php wp_nonce_field('wordpress_toolkit_time_capsule'); ?>
+                                <?php wp_nonce_field('time_capsule_toggle_category_' . $category->name, 'tc_toggle_category_nonce'); ?>
+                                <input type="hidden" name="action" value="toggle_category">
+                                <input type="hidden" name="category_name" value="<?php echo esc_attr($category->name); ?>">
+                                <input type="hidden" name="new_status" value="1">
+                                <button type="submit" class="button-link button-link-primary" onclick="return confirm('确定要启用类别 \'<?php echo esc_js($category->display_name); ?>\' 吗？')">
+                                    <?php _e('启用', 'time-capsule'); ?>
+                                </button>
+                            </form>
                         <?php endif; ?>
 
                         <?php
@@ -219,6 +291,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && current_user_can('manage_options'))
                 <div class="tc-form-actions">
                     <button type="submit" class="button button-primary"><?php _e('添加类别', 'time-capsule'); ?></button>
                 </div>
+            </form>
+        </div>
+
+        <!-- 强制更新类别按钮 -->
+        <div class="tc-force-update-section" style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd;">
+            <h4><?php _e('类别更新工具', 'time-capsule'); ?></h4>
+            <p class="tc-note"><?php _e('如果发现类别显示问题（如存在重复的"其他"类别但没有"宠物"类别），请点击下面的按钮强制更新类别。', 'time-capsule'); ?></p>
+
+            <form method="post" action="" class="tc-force-update-form">
+                <?php wp_nonce_field('wordpress_toolkit_time_capsule'); ?>
+                <?php wp_nonce_field('time_capsule_force_update_categories', 'tc_force_update_nonce'); ?>
+                <input type="hidden" name="action" value="force_update_categories">
+                <button type="submit" class="button button-secondary" onclick="return confirm('确定要强制更新类别吗？这会将现有的\"其他\"类别更新为\"宠物\"类别。')">
+                    <?php _e('强制更新类别', 'time-capsule'); ?>
+                </button>
             </form>
         </div>
     </div>

@@ -59,16 +59,31 @@ function tc_calculate_item_age($purchase_date) {
 /**
  * 获取物品状态的显示文本
  */
-function tc_get_status_text($status) {
-    switch ($status) {
-        case 'active':
-            return __('使用中', 'time-capsule');
-        case 'inactive':
-            return __('闲置', 'time-capsule');
-        case 'disposed':
-            return __('已处置', 'time-capsule');
-        default:
-            return __('未知', 'time-capsule');
+function tc_get_status_text($status, $category = '') {
+    // 宠物类别使用不同的状态文本
+    if ($category === 'pets') {
+        switch ($status) {
+            case 'active':
+                return __('在养', 'time-capsule');
+            case 'inactive':
+                return __('寄养', 'time-capsule');
+            case 'disposed':
+                return __('已送养', 'time-capsule');
+            default:
+                return __('未知', 'time-capsule');
+        }
+    } else {
+        // 其他类别使用原有状态文本
+        switch ($status) {
+            case 'active':
+                return __('使用中', 'time-capsule');
+            case 'inactive':
+                return __('闲置', 'time-capsule');
+            case 'disposed':
+                return __('已处置', 'time-capsule');
+            default:
+                return __('未知', 'time-capsule');
+        }
     }
 }
 

@@ -10,7 +10,6 @@ if (!defined('ABSPATH')) {
 // 获取筛选参数
 $category_filter = isset($_GET['category']) ? sanitize_text_field($_GET['category']) : '';
 $status_filter = isset($_GET['status']) ? sanitize_text_field($_GET['status']) : '';
-$warranty_status_filter = isset($_GET['warranty_status']) ? sanitize_text_field($_GET['warranty_status']) : '';
 $search = isset($_GET['search']) ? sanitize_text_field($_GET['search']) : '';
 $page = isset($_GET['paged']) ? max(1, intval($_GET['paged'])) : 1;
 $per_page = 20;
@@ -27,7 +26,6 @@ $user_filter = $is_admin ? (isset($_GET['user']) ? intval($_GET['user']) : get_c
 $args = array(
     'category' => $category_filter,
     'status' => $status_filter,
-    'warranty_status' => $warranty_status_filter,
     'user_id' => $user_filter,
     'search' => $search,
     'limit' => $per_page,
@@ -55,7 +53,6 @@ $component_vars = array(
     'stats' => $stats,
     'category_filter' => $category_filter,
     'status_filter' => $status_filter,
-    'warranty_status_filter' => $warranty_status_filter,
     'search' => $search,
     'page' => $page,
     'total_pages' => $total_pages,

@@ -60,7 +60,10 @@
                 }
             });
 
-     
+            // 类别选择变化
+            $(document).on('change', '#tc_category', this.handleCategoryChange);
+
+
         },
         
         handleFormSubmit: function(e) {
@@ -350,11 +353,41 @@
             TimeCapsuleAdmin.closeModal();
         },
 
+        handleCategoryChange: function() {
+            var selectedCategory = $(this).val();
+
+            // 处理证书资质类别
+            if (selectedCategory === 'certificate') {
+                $('.tc-certificate-only').show();
+                $('.tc-non-certificate-fields').hide();
+            } else {
+                $('.tc-certificate-only').hide();
+                $('.tc-non-certificate-fields').show();
+
+                // 处理保修期/出生日期字段
+                if (selectedCategory === 'pets') {
+                    $('.tc-warranty-field').hide();
+                    $('.tc-birthdate-field').show();
+                } else {
+                    $('.tc-warranty-field').show();
+                    $('.tc-birthdate-field').hide();
+                }
+            }
+        },
+
            
         showNotice: function(type, message) {
             var $notice = $('<div class="notice notice-' + type + ' is-dismissible"><p>' + message + '</p></div>');
-            $('.time-capsule-admin h1').after($notice);
-            
+
+            // 尝试多个可能的选择器来找到合适的位置显示通知
+            var $target = $('.time-capsule-admin h1, .time-capsule-admin h2, .tc-form-header h2');
+            if ($target.length > 0) {
+                $target.first().after($notice);
+            } else {
+                // 如果找不到标题，就放在页面顶部
+                $('.time-capsule-admin').prepend($notice);
+            }
+
             // 自动消失
             setTimeout(function() {
                 $notice.fadeOut(function() {
@@ -442,6 +475,12 @@
     // 初始化
     $(document).ready(function() {
         TimeCapsuleAdmin.init();
+
+        // 初始化类别字段显示
+        var initialCategory = $('#tc_category').val();
+        if (initialCategory) {
+            TimeCapsuleAdmin.handleCategoryChange.call($('#tc_category')[0]);
+        }
     });
 
 })(jQuery);

@@ -148,6 +148,24 @@ jQuery(document).ready(function($) {
 
         // 零食食品字段
         $('.tc-snacks-only').toggle(category === 'snacks');
+
+        // 保修期/出生日期字段
+        if (category === 'pets') {
+            $('.tc-warranty-field').hide();
+            $('.tc-birthdate-field').show();
+        } else {
+            $('.tc-warranty-field').show();
+            $('.tc-birthdate-field').hide();
+        }
+
+        // 已用时间/年龄字段
+        if (category === 'pets') {
+            $('.tc-used-time-field').hide();
+            $('.tc-age-field').show();
+        } else {
+            $('.tc-used-time-field').show();
+            $('.tc-age-field').hide();
+        }
     }
 
     // 处理表单提交

@@ -125,9 +125,13 @@ class TimeCapsule_Item {
      * 增强物品数据
      */
     private function enhance_item_data($item) {
-        // 计算保修状态
-        $item->warranty_status = $this->db->check_warranty_status($item->purchase_date, $item->warranty_period);
-        
+        // 只有宠物类别计算年龄
+        if ($item->category === 'pets' && !empty($item->warranty_period)) {
+            $birth_timestamp = strtotime($item->warranty_period);
+            $now = time();
+            $item->age_years = floor(($now - $birth_timestamp) / (365 * 24 * 60 * 60));
+        }
+
         // 计算使用天数
         $purchase_timestamp = strtotime($item->purchase_date);
         $now = time();
@@ -198,28 +202,31 @@ class TimeCapsule_Item {
      */
     private function validate_data($data) {
         $validated = array();
-        
+
+        // 获取物品类别，用于字段验证
+        $item_category = isset($data['category']) ? $data['category'] : '';
+
         // ID（可选）
         if (isset($data['id'])) {
             $validated['id'] = intval($data['id']);
         }
-        
+
         // 必填字段
         if (empty($data['name'])) {
             throw new Exception(__('物品名称不能为空', 'time-capsule'));
         }
         $validated['name'] = sanitize_text_field($data['name']);
-        
+
         if (empty($data['category'])) {
             throw new Exception(__('请选择物品类别', 'time-capsule'));
         }
         $validated['category'] = sanitize_text_field($data['category']);
-        
+
         if (empty($data['purchase_date'])) {
             throw new Exception(__('购买日期不能为空', 'time-capsule'));
         }
         $validated['purchase_date'] = sanitize_text_field($data['purchase_date']);
-        
+
         // 验证日期格式
         if (!$this->validate_date($validated['purchase_date'])) {
             throw new Exception(__('购买日期格式不正确', 'time-capsule'));
@@ -235,11 +242,22 @@ class TimeCapsule_Item {
         }
         
         if (isset($data['warranty_period'])) {
-            $validated['warranty_period'] = intval($data['warranty_period']);
+            if (!empty($data['warranty_period'])) {
+                // 只有宠物类别使用出生日期，其他类别使用保修期
+                if ($item_category === 'pets') {
+                    if ($this->validate_date($data['warranty_period'])) {
+                        $validated['warranty_period'] = sanitize_text_field($data['warranty_period']);
+                    } else {
+                        throw new Exception(__('出生日期格式不正确', 'time-capsule'));
+                    }
+                } else {
+                    // 其他类别使用保修期（整数天数）
+                    $validated['warranty_period'] = intval($data['warranty_period']);
+                }
+            }
         }
 
         // shelf_life字段只适用于特定类别（如食品）
-        $item_category = isset($data['category']) ? $data['category'] : '';
         if (in_array($item_category, ['appliances', 'food'])) {
             if (isset($data['shelf_life'])) {
                 $validated['shelf_life'] = intval($data['shelf_life']);
@@ -251,7 +269,7 @@ class TimeCapsule_Item {
         }
 
         if (isset($data['used_time_hours'])) {
-            $validated['used_time_hours'] = intval($data['used_time_hours']);
+            $validated['used_time_hours'] = floatval($data['used_time_hours']);
         }
 
         // 证书资质特殊字段
@@ -395,7 +413,7 @@ class TimeCapsule_Item {
         // CSV头部
         $headers = array(
             '物品名称', '类别', '描述', '购买日期', '购买来源',
-            '质保期(月)', '总里程', '已使用时间(小时)', '价格',
+            '出生日期', '总里程', '年龄(岁)', '价格',
             '品牌', '型号', '序列号', '状态', '备注'
         );
         fputcsv($output, $headers);

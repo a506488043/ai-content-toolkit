@@ -68,6 +68,11 @@ class Time_Capsule_Module {
         // 插入默认类别
         $this->category_manager->insert_default_categories();
 
+        // 强制更新类别，确保"other"类别被更新为"pets"
+        if (method_exists($this->category_manager, 'force_update_categories')) {
+            $this->category_manager->force_update_categories();
+        }
+
         // 设置默认选项
         $default_options = array(
             'items_per_page' => 10,
@@ -350,7 +355,7 @@ class Time_Capsule_Module {
                 'description' => wp_kses_post($_POST['description']),
                 'purchase_date' => sanitize_text_field($_POST['purchase_date']),
                 'purchase_source' => sanitize_text_field($_POST['purchase_source']),
-                'warranty_period' => intval($_POST['warranty_period']),
+                'warranty_period' => $_POST['warranty_period'], // 让item类根据类别处理
                 'price' => floatval($_POST['price']),
                 'brand' => sanitize_text_field($_POST['brand']),
                 'model' => sanitize_text_field($_POST['model']),
@@ -358,9 +363,9 @@ class Time_Capsule_Module {
                 'notes' => wp_kses_post($_POST['notes']),
                 'status' => sanitize_text_field($_POST['status']),
                 // 证书资质特有字段
-                'used_time_hours' => intval($_POST['used_time_hours']),
+                'used_time_hours' => floatval($_POST['used_time_hours']),
                 'total_mileage' => floatval($_POST['total_mileage']),
-                'shelf_life' => intval($_POST['shelf_life']),
+                'shelf_life' => isset($_POST['shelf_life']) ? intval($_POST['shelf_life']) : 0,
                 'issue_date' => sanitize_text_field($_POST['issue_date']),
                 'issuing_authority' => sanitize_text_field($_POST['issuing_authority']),
                 'certificate_number' => sanitize_text_field($_POST['certificate_number']),

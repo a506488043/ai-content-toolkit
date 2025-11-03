@@ -199,12 +199,19 @@ $page_title = $is_edit ? __('编辑物品', 'time-capsule') : __('添加物品',
                     <span class="field-unit">元</span>
                 </div>
 
-                <div class="tc-field-group tc-non-certificate-fields">
-                    <label for="tc_warranty_period"><?php _e('质保期', 'time-capsule'); ?></label>
+                <!-- 保修期/出生日期字段 - 动态显示 -->
+                <div class="tc-field-group tc-non-certificate-fields tc-warranty-field" style="display: none;">
+                    <label for="tc_warranty_period"><?php _e('保修期', 'time-capsule'); ?></label>
                     <input type="number" id="tc_warranty_period" name="warranty_period" min="0"
                            value="<?php echo $is_edit ? esc_attr($item_data->warranty_period) : ''; ?>"
                            placeholder="0">
-                    <span class="field-unit">月</span>
+                    <span class="field-unit">天</span>
+                </div>
+
+                <div class="tc-field-group tc-non-certificate-fields tc-birthdate-field" style="display: none;">
+                    <label for="tc_birth_date"><?php _e('出生日期', 'time-capsule'); ?></label>
+                    <input type="date" id="tc_birth_date" name="warranty_period"
+                           value="<?php echo $is_edit ? esc_attr($item_data->warranty_period) : ''; ?>">
                 </div>
 
                 <!-- 证书资质特有字段：持证时长 -->
@@ -288,11 +295,11 @@ $page_title = $is_edit ? __('编辑物品', 'time-capsule') : __('添加物品',
                 <h3 class="tc-usage-info-title"><?php _e('使用信息', 'time-capsule'); ?></h3>
 
                 <div class="tc-field-group tc-non-certificate-fields">
-                    <label for="tc_used_time_hours"><?php _e('已使用时间', 'time-capsule'); ?></label>
-                    <input type="number" id="tc_used_time_hours" name="used_time_hours" min="0"
+                    <label for="tc_used_time_hours"><?php _e('年龄', 'time-capsule'); ?></label>
+                    <input type="number" id="tc_used_time_hours" name="used_time_hours" step="0.1" min="0"
                            value="<?php echo $is_edit ? esc_attr($item_data->used_time_hours) : ''; ?>"
                            placeholder="0">
-                    <span class="field-unit">小时</span>
+                    <span class="field-unit">岁</span>
                 </div>
 
                 <!-- 交通工具特有字段 -->

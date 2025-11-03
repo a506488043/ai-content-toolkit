@@ -42,7 +42,7 @@ class TimeCapsule_Database {
             'training_fee' => "ADD COLUMN training_fee decimal(10,2) DEFAULT 0.00 COMMENT '培训费用'",
             'renewal_fee' => "ADD COLUMN renewal_fee decimal(10,2) DEFAULT 0.00 COMMENT '续证费用'",
             'total_mileage' => "ADD COLUMN total_mileage decimal(10,1) DEFAULT 0.0 COMMENT '总里程(公里)'",
-            'used_time_hours' => "ADD COLUMN used_time_hours int(11) DEFAULT 0 COMMENT '已使用时间(小时)'",
+            'used_time_hours' => "ADD COLUMN used_time_hours decimal(10,1) DEFAULT 0.0 COMMENT '年龄(岁)'",
             // 新增的证书资质字段
             'certificate_number' => "ADD COLUMN certificate_number varchar(255) DEFAULT NULL COMMENT '证书编号'",
             'renewal_unit' => "ADD COLUMN renewal_unit varchar(10) DEFAULT 'months' COMMENT '续证周期单位'",
@@ -95,7 +95,7 @@ class TimeCapsule_Database {
             description text,
             purchase_date date NOT NULL,
             purchase_source varchar(255),
-            warranty_period int(11) DEFAULT 0,
+            warranty_period date DEFAULT NULL COMMENT '出生日期',
             shelf_life int(11) DEFAULT 0,
             price decimal(10,2) DEFAULT 0.00,
             brand varchar(255),
@@ -121,7 +121,7 @@ class TimeCapsule_Database {
             certificate_status varchar(20) DEFAULT 'valid' COMMENT '证书状态',
             -- 其他特有字段
             total_mileage decimal(10,1) DEFAULT 0.0 COMMENT '总里程(公里)',
-            used_time_hours int(11) DEFAULT 0 COMMENT '已使用时间(小时)',
+            used_time_hours decimal(10,1) DEFAULT 0.0 COMMENT '年龄(岁)',
             PRIMARY KEY  (id),
             KEY user_id (user_id),
             KEY category (category),
@@ -202,23 +202,7 @@ class TimeCapsule_Database {
             $where[] = $this->wpdb->prepare("(name LIKE %s OR description LIKE %s OR brand LIKE %s)", $search, $search, $search);
         }
 
-        // 保修状态筛选
-        if (!empty($args['warranty_status'])) {
-            switch ($args['warranty_status']) {
-                case 'valid':
-                    $where[] = "warranty_period > 0 AND DATE_ADD(purchase_date, INTERVAL warranty_period MONTH) > CURDATE() AND DATE_ADD(purchase_date, INTERVAL warranty_period MONTH) > DATE_ADD(CURDATE(), INTERVAL 30 DAY)";
-                    break;
-                case 'expiring':
-                    $where[] = "warranty_period > 0 AND DATE_ADD(purchase_date, INTERVAL warranty_period MONTH) BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY)";
-                    break;
-                case 'expired':
-                    $where[] = "warranty_period > 0 AND DATE_ADD(purchase_date, INTERVAL warranty_period MONTH) < CURDATE()";
-                    break;
-                case 'no_warranty':
-                    $where[] = "(warranty_period IS NULL OR warranty_period <= 0)";
-                    break;
-            }
-        }
+        // 移除了保修状态筛选逻辑
         
         $where_clause = '';
         if (!empty($where)) {
@@ -420,49 +404,26 @@ class TimeCapsule_Database {
             $stats['by_category'][$stat->category] = $stat->count;
         }
         
-        // 即将过保的物品
-        if ($user_id !== null) {
-            $stats['expiring_warranty'] = $this->wpdb->get_var(
-                $this->wpdb->prepare(
-                    "SELECT COUNT(*) FROM {$this->table_items}
-                    WHERE user_id = %d AND status = 'active'
-                    AND warranty_period > 0
-                    AND DATE_ADD(purchase_date, INTERVAL warranty_period MONTH) BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY)",
-                    $user_id
-                )
-            );
-        } else {
-            // 管理员查看所有物品
-            $stats['expiring_warranty'] = $this->wpdb->get_var(
-                "SELECT COUNT(*) FROM {$this->table_items}
-                WHERE status = 'active'
-                AND warranty_period > 0
-                AND DATE_ADD(purchase_date, INTERVAL warranty_period MONTH) BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY)"
-            );
-        }
+        // 移除了即将过保统计
         
         return $stats;
     }
     
     /**
-     * 检查保修状态
+     * 计算年龄
      */
-    public function check_warranty_status($purchase_date, $warranty_period) {
-        if (empty($warranty_period) || $warranty_period <= 0) {
-            return 'no_warranty';
+    public function calculate_age($birth_date) {
+        if (empty($birth_date)) {
+            return null;
         }
-        
-        $purchase_timestamp = strtotime($purchase_date);
-        $warranty_end = strtotime("+{$warranty_period} months", $purchase_timestamp);
+
+        $birth_timestamp = strtotime($birth_date);
         $now = time();
-        
-        if ($now > $warranty_end) {
-            return 'expired';
-        } elseif ($now > strtotime('-30 days', $warranty_end)) {
-            return 'expiring';
-        } else {
-            return 'valid';
-        }
+
+        // 计算年龄（年）
+        $age_years = floor(($now - $birth_timestamp) / (365 * 24 * 60 * 60));
+
+        return $age_years;
     }
     
     /**

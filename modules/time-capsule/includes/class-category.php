@@ -240,67 +240,22 @@ class TimeCapsule_Category {
     public function insert_default_categories() {
         $default_categories = array(
             array(
-                'name' => 'electronics',
-                'display_name' => '电子产品',
-                'description' => '手机、电脑、平板等电子设备',
-                'icon' => 'devices',
+                'name' => 'vehicle',
+                'display_name' => '交通工具',
+                'description' => '汽车、摩托车、自行车等交通工具',
+                'icon' => 'car',
                 'color' => '#007bff',
                 'is_active' => 1,
                 'sort_order' => 1
             ),
             array(
-                'name' => 'appliances',
-                'display_name' => '家用电器',
-                'description' => '冰箱、洗衣机、空调等家用电器',
-                'icon' => 'home',
+                'name' => 'electronics',
+                'display_name' => '电子产品',
+                'description' => '手机、电脑、平板等电子设备',
+                'icon' => 'devices',
                 'color' => '#28a745',
                 'is_active' => 1,
                 'sort_order' => 2
-            ),
-            array(
-                'name' => 'furniture',
-                'display_name' => '家具',
-                'description' => '沙发、床、桌子等家具',
-                'icon' => 'chair',
-                'color' => '#ffc107',
-                'is_active' => 1,
-                'sort_order' => 3
-            ),
-            array(
-                'name' => 'clothing',
-                'display_name' => '服装',
-                'description' => '衣服、鞋子、配饰等',
-                'icon' => 'shirt',
-                'color' => '#dc3545',
-                'is_active' => 1,
-                'sort_order' => 4
-            ),
-            array(
-                'name' => 'books',
-                'display_name' => '图书',
-                'description' => '书籍、杂志、教材等',
-                'icon' => 'book',
-                'color' => '#6f42c1',
-                'is_active' => 1,
-                'sort_order' => 5
-            ),
-            array(
-                'name' => 'sports',
-                'display_name' => '运动器材',
-                'description' => '健身器材、运动装备等',
-                'icon' => 'bicycle',
-                'color' => '#fd7e14',
-                'is_active' => 1,
-                'sort_order' => 6
-            ),
-            array(
-                'name' => 'tools',
-                'display_name' => '工具',
-                'description' => '手工工具、电动工具等',
-                'icon' => 'tools',
-                'color' => '#20c997',
-                'is_active' => 1,
-                'sort_order' => 7
             ),
             array(
                 'name' => 'certificate',
@@ -309,26 +264,149 @@ class TimeCapsule_Category {
                 'icon' => 'certificate',
                 'color' => '#17a2b8',
                 'is_active' => 1,
+                'sort_order' => 3
+            ),
+            array(
+                'name' => 'pets',
+                'display_name' => '宠物',
+                'description' => '宠物、动物等',
+                'icon' => 'paw',
+                'color' => '#6c757d',
+                'is_active' => 1,
+                'sort_order' => 4
+            ),
+            array(
+                'name' => 'appliances',
+                'display_name' => '家用电器',
+                'description' => '冰箱、洗衣机、空调等家用电器',
+                'icon' => 'home',
+                'color' => '#ffc107',
+                'is_active' => 0,
+                'sort_order' => 5
+            ),
+            array(
+                'name' => 'furniture',
+                'display_name' => '家具',
+                'description' => '沙发、床、桌子等家具',
+                'icon' => 'chair',
+                'color' => '#dc3545',
+                'is_active' => 0,
+                'sort_order' => 6
+            ),
+            array(
+                'name' => 'clothing',
+                'display_name' => '服装',
+                'description' => '衣服、鞋子、配饰等',
+                'icon' => 'shirt',
+                'color' => '#6f42c1',
+                'is_active' => 0,
+                'sort_order' => 7
+            ),
+            array(
+                'name' => 'books',
+                'display_name' => '图书',
+                'description' => '书籍、杂志、教材等',
+                'icon' => 'book',
+                'color' => '#fd7e14',
+                'is_active' => 0,
                 'sort_order' => 8
+            ),
+            array(
+                'name' => 'sports',
+                'display_name' => '运动器材',
+                'description' => '健身器材、运动装备等',
+                'icon' => 'bicycle',
+                'color' => '#20c997',
+                'is_active' => 0,
+                'sort_order' => 9
+            ),
+            array(
+                'name' => 'tools',
+                'display_name' => '工具',
+                'description' => '手工工具、电动工具等',
+                'icon' => 'tools',
+                'color' => '#6c757d',
+                'is_active' => 0,
+                'sort_order' => 10
             ),
             array(
                 'name' => 'other',
                 'display_name' => '其他',
-                'description' => '其他类型的物品',
+                'description' => '其他未分类物品',
                 'icon' => 'tag',
                 'color' => '#6c757d',
-                'is_active' => 1,
-                'sort_order' => 9
+                'is_active' => 0,
+                'sort_order' => 11
             )
         );
-        
+
         foreach ($default_categories as $category) {
             // 检查类别是否已存在
             if (!$this->category_exists($category['name'])) {
                 $this->db->insert_category($category);
+            } else {
+                // 如果类别已存在，更新激活状态
+                $this->db->update_category($category['name'], array('is_active' => $category['is_active']));
             }
         }
-        
+
+        return true;
+    }
+
+    /**
+     * 将'other'类别更新为'pets'类别
+     */
+    public function update_other_to_pets() {
+        global $wpdb;
+
+        // 检查是否存在'other'类别
+        $other_category = $this->get_category('other');
+        if ($other_category) {
+            // 检查是否已经存在'pets'类别
+            $pets_category = $this->get_category('pets');
+            if ($pets_category) {
+                // 如果已经存在'pets'类别，则删除'other'类别
+                $this->db->delete_category('other');
+
+                // 将使用'other'类别的物品更新为'pets'类别
+                $table_items = $wpdb->prefix . 'time_capsule_items';
+                $wpdb->update(
+                    $table_items,
+                    array('category' => 'pets'),
+                    array('category' => 'other')
+                );
+            } else {
+                // 如果不存在'pets'类别，则更新'other'类别为'pets'
+                $update_data = array(
+                    'name' => 'pets',
+                    'display_name' => '宠物',
+                    'description' => '宠物、动物等',
+                    'icon' => 'paw',
+                    'color' => '#6c757d'
+                );
+
+                $this->db->update_category('other', $update_data);
+
+                // 同时更新物品表中使用'other'类别的物品
+                $table_items = $wpdb->prefix . 'time_capsule_items';
+                $wpdb->update(
+                    $table_items,
+                    array('category' => 'pets'),
+                    array('category' => 'other')
+                );
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * 强制更新类别（公开方法）
+     */
+    public function force_update_categories() {
+        // 重新插入默认类别
+        $this->insert_default_categories();
+
         return true;
     }
 }

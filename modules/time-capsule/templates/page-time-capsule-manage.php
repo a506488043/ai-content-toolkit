@@ -105,6 +105,7 @@ get_header(); ?>
                                                 'tools' => '🔧',
                                                 'certificate' => '🏆',
                                                 'vehicle' => '🚗',
+                                                'pets' => '🐾',
                                                 'other' => '📦'
                                             );
                                             echo $icons[$item->category] ?? '📦';
@@ -114,12 +115,23 @@ get_header(); ?>
                                             <div class="tc-item-name"><?php echo esc_html($item->name); ?></div>
                                             <div class="tc-item-status <?php echo esc_attr($item->status); ?>">
                                                 <?php
-                                                $status_texts = array(
-                                                    'active' => '使用中',
-                                                    'inactive' => '闲置',
-                                                    'disposed' => '已处置'
-                                                );
-                                                echo $status_texts[$item->status] ?? $item->status;
+                                                if ($item->category === 'pets') {
+                                                    // 宠物类别使用不同的状态文本
+                                                    $pet_status_texts = array(
+                                                        'active' => '在养',
+                                                        'inactive' => '寄养',
+                                                        'disposed' => '已送养'
+                                                    );
+                                                    echo $pet_status_texts[$item->status] ?? $item->status;
+                                                } else {
+                                                    // 其他类别使用原有状态文本
+                                                    $status_texts = array(
+                                                        'active' => '使用中',
+                                                        'inactive' => '闲置',
+                                                        'disposed' => '已处置'
+                                                    );
+                                                    echo $status_texts[$item->status] ?? $item->status;
+                                                }
                                                 ?>
                                             </div>
                                         </div>
@@ -149,11 +161,51 @@ get_header(); ?>
                                                 </div>
                                             </div>
 
-                                            <!-- 第二行：类别 -->
+                                            <!-- 第二行：保修期/出生日期 -->
                                             <div class="tc-meta-row">
                                                 <div class="tc-meta-item">
-                                                    <span class="tc-meta-label">类别：</span>
-                                                    <span class="tc-meta-value"><?php echo esc_html($item->category_display_name ?? $item->category); ?></span>
+                                                    <span class="tc-meta-label">
+                                                        <?php if ($item->category === 'pets'): ?>
+                                                            出生日期
+                                                        <?php else: ?>
+                                                            保修期
+                                                        <?php endif; ?>
+                                                    </span>
+                                                    <span class="tc-meta-value">
+                                                        <?php if (!empty($item->warranty_period)): ?>
+                                                            <?php if ($item->category === 'pets'): ?>
+                                                                <?php echo esc_html(date('Y-m-d', strtotime($item->warranty_period))); ?>
+                                                            <?php else: ?>
+                                                                <?php echo esc_html($item->warranty_period); ?> 天
+                                                            <?php endif; ?>
+                                                        <?php else: ?>
+                                                            -
+                                                        <?php endif; ?>
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            <!-- 第三行：已用时间/年龄 -->
+                                            <div class="tc-meta-row">
+                                                <div class="tc-meta-item">
+                                                    <span class="tc-meta-label">
+                                                        <?php if ($item->category === 'pets'): ?>
+                                                            年龄
+                                                        <?php else: ?>
+                                                            已用时间
+                                                        <?php endif; ?>
+                                                    </span>
+                                                    <span class="tc-meta-value">
+                                                        <?php if (!empty($item->used_time_hours)): ?>
+                                                            <?php if ($item->category === 'pets'): ?>
+                                                                <?php echo esc_html($item->used_time_hours); ?> 岁
+                                                            <?php else: ?>
+                                                                <?php echo esc_html($item->used_time_hours); ?> 小时
+                                                            <?php endif; ?>
+                                                        <?php else: ?>
+                                                            -
+                                                        <?php endif; ?>
+                                                    </span>
                                                 </div>
                                             </div>
                                         </div>
@@ -267,10 +319,16 @@ get_header(); ?>
                             <span class="field-unit">元</span>
                         </div>
 
-                        <div class="tc-field-group">
-                            <label for="tc_warranty_period">质保期</label>
+                        <!-- 保修期/出生日期字段 - 动态显示 -->
+                        <div class="tc-field-group tc-warranty-field" style="display: none;">
+                            <label for="tc_warranty_period">保修期</label>
                             <input type="number" id="tc_warranty_period" name="warranty_period" min="0" placeholder="0">
-                            <span class="field-unit">月</span>
+                            <span class="field-unit">天</span>
+                        </div>
+
+                        <div class="tc-field-group tc-birthdate-field" style="display: none;">
+                            <label for="tc_birth_date">出生日期</label>
+                            <input type="date" id="tc_birth_date" name="warranty_period">
                         </div>
 
                         <!-- 零食食品特有字段 -->
@@ -305,10 +363,17 @@ get_header(); ?>
                     <div class="tc-form-section">
                         <h3>使用信息</h3>
 
-                        <div class="tc-field-group">
-                            <label for="tc_used_time_hours">已使用时间</label>
+                        <!-- 已用时间/年龄字段 - 动态显示 -->
+                        <div class="tc-field-group tc-used-time-field" style="display: none;">
+                            <label for="tc_used_time_hours">已用时间</label>
                             <input type="number" id="tc_used_time_hours" name="used_time_hours" min="0" placeholder="0">
                             <span class="field-unit">小时</span>
+                        </div>
+
+                        <div class="tc-field-group tc-age-field" style="display: none;">
+                            <label for="tc_age">年龄</label>
+                            <input type="number" id="tc_age" name="used_time_hours" step="0.1" min="0" placeholder="0.0">
+                            <span class="field-unit">岁</span>
                         </div>
 
                         <!-- 交通工具特有字段 -->
