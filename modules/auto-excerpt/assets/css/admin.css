@@ -1,0 +1,458 @@
+/**
+ * Auto Excerpt Admin Styles
+ * 自动摘要管理后台样式
+ */
+
+/* 主容器 */
+.auto-excerpt-container {
+    background: #fff;
+    border: 1px solid #e5e5e5;
+    border-radius: 8px;
+    padding: 20px;
+    margin: 10px 0;
+}
+
+/* 头部样式 */
+.auto-excerpt-header {
+    border-bottom: 1px solid #e5e5e5;
+    padding-bottom: 15px;
+    margin-bottom: 20px;
+}
+
+.auto-excerpt-header h3 {
+    margin: 0 0 10px 0;
+    color: #23282d;
+    font-size: 18px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.ai-badge {
+    background: linear-gradient(135deg, #0073aa, #005a87);
+    color: #fff;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: 0 2px 4px rgba(0,115,170,0.2);
+}
+
+.auto-excerpt-header .description {
+    margin: 0;
+    color: #666;
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+/* 控制按钮区域 */
+.auto-excerpt-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 20px;
+    padding: 15px;
+    background: #f9f9f9;
+    border-radius: 6px;
+}
+
+.auto-excerpt-controls .button {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    height: auto;
+    padding: 8px 16px;
+    transition: all 0.2s ease;
+}
+
+.auto-excerpt-controls .button-primary {
+    background: #0073aa;
+    border-color: #0073aa;
+    color: #fff;
+}
+
+.auto-excerpt-controls .button-primary:hover {
+    background: #005a87;
+    border-color: #005a87;
+}
+
+.auto-excerpt-controls .button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.auto-excerpt-controls .dashicons {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+}
+
+/* 选项区域 */
+.auto-excerpt-options {
+    display: flex;
+    align-items: center;
+    margin-left: auto;
+}
+
+.auto-excerpt-options label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: #666;
+    cursor: pointer;
+}
+
+.auto-excerpt-options input[type="checkbox"] {
+    margin: 0;
+}
+
+/* 状态显示 */
+.auto-excerpt-status {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 15px;
+    background: #e7f3ff;
+    border: 1px solid #b3d9ff;
+    border-radius: 6px;
+    margin-bottom: 20px;
+}
+
+.auto-excerpt-status .spinner {
+    float: none;
+    margin: 0;
+}
+
+.auto-excerpt-status .spinner.is-active {
+    display: inline-block;
+}
+
+.auto-excerpt-status .status-text {
+    font-size: 14px;
+    color: #0073aa;
+    font-weight: 500;
+}
+
+/* 预览区域 */
+.auto-excerpt-preview {
+    background: #f8f9fa;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.auto-excerpt-preview h4 {
+    margin: 0 0 15px 0;
+    color: #23282d;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.excerpt-preview-content {
+    background: #fff;
+    border: 1px solid #e5e5e5;
+    border-radius: 4px;
+    padding: 15px;
+    min-height: 100px;
+    max-height: 200px;
+    overflow-y: auto;
+    font-size: 14px;
+    line-height: 1.6;
+    color: #333;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+.excerpt-actions {
+    margin-top: 15px;
+    display: flex;
+    gap: 10px;
+}
+
+.excerpt-actions .button {
+    font-size: 13px;
+    padding: 6px 14px;
+    height: auto;
+}
+
+/* 信息区域 */
+.auto-excerpt-info {
+    background: #f0f6fc;
+    border-left: 4px solid #2271b1;
+    padding: 15px;
+    margin-bottom: 20px;
+    border-radius: 0 4px 4px 0;
+}
+
+.auto-excerpt-info p {
+    margin: 8px 0;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.auto-excerpt-info strong {
+    color: #23282d;
+    font-weight: 600;
+}
+
+.status-exists {
+    color: #00a32a;
+    font-weight: 500;
+}
+
+.status-empty {
+    color: #d63638;
+    font-weight: 500;
+}
+
+/* 设置区域 */
+.auto-excerpt-settings {
+    background: #fff;
+    border: 1px solid #e5e5e5;
+    border-radius: 6px;
+    padding: 15px;
+}
+
+.auto-excerpt-settings h4 {
+    margin: 0 0 15px 0;
+    color: #23282d;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.auto-excerpt-settings .form-table {
+    margin: 0;
+    border: none;
+}
+
+.auto-excerpt-settings .form-table th {
+    width: 200px;
+    padding: 12px 10px 12px 0;
+    font-weight: 600;
+    font-size: 13px;
+}
+
+.auto-excerpt-settings .form-table td {
+    padding: 12px 10px;
+    font-size: 13px;
+}
+
+.auto-excerpt-settings input[type="number"] {
+    width: 80px;
+}
+
+.auto-excerpt-settings .description {
+    margin-left: 8px;
+    color: #666;
+    font-style: italic;
+}
+
+/* 消息提示 */
+.auto-excerpt-message {
+    margin: 0 0 20px 0 !important;
+    padding: 12px 15px !important;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.auto-excerpt-message.notice-success {
+    background: #f0f6fc;
+    border-left-color: #00a32a;
+    color: #00a32a;
+}
+
+.auto-excerpt-message.notice-success.ai-notice {
+    background: #f0f8ff;
+    border-left-color: #0073aa;
+    color: #0073aa;
+    position: relative;
+}
+
+.auto-excerpt-message.notice-success.ai-notice::before {
+    content: "🤖";
+    margin-right: 8px;
+    font-size: 14px;
+}
+
+.auto-excerpt-message.notice-error {
+    background: #fcf0f1;
+    border-left-color: #d63638;
+    color: #d63638;
+}
+
+/* 响应式设计 */
+@media screen and (max-width: 782px) {
+    .auto-excerpt-controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .auto-excerpt-controls .button {
+        justify-content: center;
+    }
+
+    .auto-excerpt-options {
+        margin-left: 0;
+        justify-content: center;
+        margin-top: 10px;
+    }
+
+    .excerpt-actions {
+        flex-direction: column;
+    }
+
+    .excerpt-actions .button {
+        width: 100%;
+        text-align: center;
+    }
+
+    .auto-excerpt-settings .form-table th,
+    .auto-excerpt-settings .form-table td {
+        display: block;
+        width: 100%;
+        padding: 8px 0;
+    }
+
+    .auto-excerpt-settings .form-table th {
+        font-weight: 600;
+        margin-bottom: 5px;
+    }
+}
+
+/* 动画效果 */
+.auto-excerpt-container {
+    transition: all 0.3s ease;
+}
+
+.auto-excerpt-preview {
+    animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.auto-excerpt-status {
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+/* 加载动画 */
+.spinner {
+    background: url(../../../wp-admin/images/spinner.gif) no-repeat center;
+    background-size: 20px 20px;
+    display: inline-block;
+    visibility: hidden;
+    width: 20px;
+    height: 20px;
+    margin: 0;
+    vertical-align: middle;
+}
+
+.spinner.is-active {
+    visibility: visible;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* 高对比度模式支持 */
+@media (prefers-contrast: high) {
+    .auto-excerpt-container {
+        border-color: #000;
+    }
+
+    .auto-excerpt-controls {
+        background: #f0f0f0;
+        border: 1px solid #000;
+    }
+
+    .auto-excerpt-preview {
+        border-color: #000;
+    }
+
+    .excerpt-preview-content {
+        border-color: #000;
+    }
+}
+
+/* 暗色主题支持 */
+@media (prefers-color-scheme: dark) {
+    .auto-excerpt-container {
+        background: #1e1e1e;
+        border-color: #444;
+        color: #fff;
+    }
+
+    .auto-excerpt-header h3 {
+        color: #fff;
+    }
+
+    .auto-excerpt-controls {
+        background: #2d2d2d;
+        border-color: #444;
+    }
+
+    .auto-excerpt-status {
+        background: #1a3a52;
+        border-color: #2271b1;
+    }
+
+    .auto-excerpt-preview {
+        background: #2d2d2d;
+        border-color: #444;
+    }
+
+    .auto-excerpt-preview h4 {
+        color: #fff;
+    }
+
+    .excerpt-preview-content {
+        background: #1e1e1e;
+        border-color: #444;
+        color: #fff;
+    }
+
+    .auto-excerpt-info {
+        background: #1a3a52;
+        border-left-color: #2271b1;
+    }
+
+    .auto-excerpt-settings {
+        background: #1e1e1e;
+        border-color: #444;
+    }
+
+    .auto-excerpt-settings h4 {
+        color: #fff;
+    }
+}

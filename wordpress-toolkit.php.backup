@@ -720,109 +720,95 @@ class WordPress_Toolkit {
         if ($this->auto_excerpt) {
             ?>
             <div class="wrap">
+                <h1><?php _e('自动摘要管理', 'wordpress-toolkit'); ?></h1>
+
                 <?php
                 error_log("WordPress Toolkit: Loading auto excerpt admin page");
                 $stats = $this->auto_excerpt->get_excerpt_stats();
                 error_log("WordPress Toolkit: Stats loaded - " . print_r($stats, true));
                 ?>
 
-                <div class="postbox" style="margin-top: 15px; margin-bottom: 10px;">
-                    <div class="inside" style="padding: 12px 15px;">
-                        <div style="display: flex; align-items: center; gap: 30px; padding: 0; flex-wrap: wrap; justify-content: space-between;">
-                            <div>
-                                <strong><?php _e('文章总数', 'wordpress-toolkit'); ?></strong>
-                                <div style="margin-top: 5px;">
+                <div class="postbox" style="margin-top: 20px;">
+                    <div class="inside">
+                        <table class="form-table">
+                            <tr>
+                                <td width="20%">
+                                    <strong><?php _e('文章总数', 'wordpress-toolkit'); ?></strong>
+                                </td>
+                                <td width="20%">
                                     <span class="dashicons dashicons-post" style="color: #0073aa;"></span>
                                     <?php echo number_format($stats['total_posts']); ?>
-                                </div>
-                            </div>
-                            <div>
-                                <strong><?php _e('有摘要文章', 'wordpress-toolkit'); ?></strong>
-                                <div style="margin-top: 5px;">
+                                </td>
+                                <td width="20%">
+                                    <strong><?php _e('有摘要文章', 'wordpress-toolkit'); ?></strong>
+                                </td>
+                                <td width="20%">
                                     <span class="dashicons dashicons-yes-alt" style="color: #00a32a;"></span>
                                     <?php echo number_format($stats['with_excerpt']); ?>
-                                </div>
-                            </div>
-                            <div>
-                                <strong><?php _e('无摘要文章数量', 'wordpress-toolkit'); ?></strong>
-                                <div style="margin-top: 5px;">
+                                </td>
+                                <td width="20%">
+                                    <strong><?php _e('无摘要文章', 'wordpress-toolkit'); ?></strong>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <strong><?php _e('无摘要文章数量', 'wordpress-toolkit'); ?></strong>
+                                </td>
+                                <td>
                                     <span class="dashicons dashicons-no-alt" style="color: #d63638;"></span>
                                     <?php echo number_format($stats['without_excerpt']); ?>
-                                </div>
-                            </div>
-                            <div>
-                                <strong><?php _e('摘要覆盖率', 'wordpress-toolkit'); ?></strong>
-                                <div style="margin-top: 5px; display: flex; align-items: center; gap: 10px;">
+                                </td>
+                                <td>
+                                    <strong><?php _e('摘要覆盖率', 'wordpress-toolkit'); ?></strong>
+                                </td>
+                                <td colspan="2">
                                     <span class="dashicons dashicons-chart-bar" style="color: #0073aa;"></span>
-                                    <span><?php echo $stats['coverage_rate']; ?>%</span>
+                                    <?php echo $stats['coverage_rate']; ?>%
                                     <?php if ($stats['ai_generated'] > 0): ?>
-                                        <span class="badge-ai" style="background: #f0f6fc; color: #0073aa; padding: 2px 6px; border-radius: 3px; font-size: 12px; border: 1px solid #c3d9ea;">🤖 <?php echo sprintf(__('AI生成：%d篇', 'wordpress-toolkit'), $stats['ai_generated']); ?></span>
+                                        <br><span class="badge-ai" style="margin-top: 5px; display: inline-block;">🤖 <?php echo sprintf(__('AI生成：%d篇', 'wordpress-toolkit'), $stats['ai_generated']); ?></span>
                                     <?php endif; ?>
-                                </div>
-                            </div>
-                        </div>
+                                </td>
+                            </tr>
+                        </table>
+
+                        <?php if ($stats['ai_generated'] > 0): ?>
+                        <p style="margin-top: 15px;">
+                            <span class="badge-ai">🤖 <?php echo sprintf(__('AI生成摘要：%d篇', 'wordpress-toolkit'), $stats['ai_generated']); ?></span>
+                        </p>
+                        <?php endif; ?>
                     </div>
                 </div>
 
-                <div class="postbox" style="margin-top: 10px;">
-                    <div class="inside" style="padding: 15px;">
-                        <?php
-                        // 获取分页数据（在这里提前获取，以便在筛选器行显示分页）
-                        $current_page = isset($_GET['paged']) ? intval($_GET['paged']) : 1;
-                        $status = isset($_GET['status']) ? sanitize_text_field($_GET['status']) : 'all';
+                <div class="postbox" style="margin-top: 20px;">
+                    <div class="inside">
+                        <!-- 筛选器 -->
+                        <p>
+                            <form method="get" action="" style="display: inline;">
+                                <input type="hidden" name="page" value="wordpress-toolkit-auto-excerpt">
+                                <select name="status" id="excerpt-status-filter">
+                                    <option value="all" <?php selected(isset($_GET['status']) ? $_GET['status'] : 'all', 'all'); ?>><?php _e('全部文章', 'wordpress-toolkit'); ?></option>
+                                    <option value="with_excerpt" <?php selected(isset($_GET['status']) ? $_GET['status'] : 'all', 'with_excerpt'); ?>><?php _e('有摘要文章', 'wordpress-toolkit'); ?></option>
+                                    <option value="without_excerpt" <?php selected(isset($_GET['status']) ? $_GET['status'] : 'all', 'without_excerpt'); ?>><?php _e('无摘要文章', 'wordpress-toolkit'); ?></option>
+                                </select>
+                                <button type="submit" class="button"><?php _e('筛选', 'wordpress-toolkit'); ?></button>
+                            </form>
+                        </p>
 
-                        error_log("WordPress Toolkit: Loading excerpt list - page: $current_page, status: $status");
-                        $excerpt_list = $this->auto_excerpt->get_excerpt_list($current_page, 15, $status);
-                        error_log("WordPress Toolkit: Excerpt list loaded - " . print_r($excerpt_list, true));
-                        ?>
-
-                        <!-- 筛选器、批量操作和分页放在同一行 -->
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 15px;">
-                            <!-- 左侧：筛选器和批量操作 -->
-                            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-                                <form method="get" action="" style="display: flex; align-items: center; gap: 10px; margin: 0;">
-                                    <input type="hidden" name="page" value="wordpress-toolkit-auto-excerpt">
-                                    <select name="status" id="excerpt-status-filter">
-                                        <option value="all" <?php selected(isset($_GET['status']) ? $_GET['status'] : 'all', 'all'); ?>><?php _e('全部文章', 'wordpress-toolkit'); ?></option>
-                                        <option value="with_excerpt" <?php selected(isset($_GET['status']) ? $_GET['status'] : 'all', 'with_excerpt'); ?>><?php _e('有摘要文章', 'wordpress-toolkit'); ?></option>
-                                        <option value="without_excerpt" <?php selected(isset($_GET['status']) ? $_GET['status'] : 'all', 'without_excerpt'); ?>><?php _e('无摘要文章', 'wordpress-toolkit'); ?></option>
-                                    </select>
-                                    <button type="submit" class="button"><?php _e('筛选', 'wordpress-toolkit'); ?></button>
-
-                                    <span style="margin: 0 5px; color: #666;">|</span>
-
-                                    <button type="button" id="batch-generate-excerpts" class="button button-primary">
-                                        <?php _e('为无摘要文章生成摘要', 'wordpress-toolkit'); ?>
-                                    </button>
-                                    <span class="spinner" id="batch-generate-spinner" style="display: none; margin-left: 5px;"></span>
-                                </form>
+                        <!-- 批量操作 -->
+                        <div class="tablenav top">
+                            <div class="alignleft actions bulkactions">
+                                <button type="button" id="batch-generate-excerpts" class="button button-primary">
+                                    <span class="dashicons dashicons-magic"></span>
+                                    <?php _e('为无摘要文章生成摘要', 'wordpress-toolkit'); ?>
+                                </button>
+                                <span class="spinner" id="batch-generate-spinner" style="display: none;"></span>
                             </div>
-
-                            <!-- 右侧：分页 -->
-                            <?php if (!empty($excerpt_list) && isset($excerpt_list['pages']) && $excerpt_list['pages'] > 1): ?>
-                            <div class="tablenav-pages" style="margin: 0;">
-                                <?php
-                                $current_url = admin_url('admin.php?page=wordpress-toolkit-auto-excerpt');
-                                if (isset($_GET['status'])) {
-                                    $current_url .= '&status=' . urlencode($_GET['status']);
-                                }
-                                ?>
-                                <span class="displaying-num">
-                                    <?php printf(__('共 %d 个项目', 'wordpress-toolkit'), $excerpt_list['total']); ?>
+                            <div class="alignright">
+                                <span class="description" id="batch-generate-status">
+                                    <?php _e('点击按钮为所有无摘要的文章自动生成摘要', 'wordpress-toolkit'); ?>
                                 </span>
-                                <?php
-                                // 使用WordPress标准的paginate_links函数，与网站卡片保持一致
-                                echo paginate_links(array(
-                                    'base' => $current_url . '&paged=%#%',
-                                    'format' => '',
-                                    'prev_text' => __('&laquo; 上一页'),
-                                    'next_text' => __('下一页 &raquo;'),
-                                    'total' => $excerpt_list['pages'],
-                                    'current' => $current_page
-                                ));
-                                ?>
                             </div>
-                            <?php endif; ?>
+                            <br class="clear">
                         </div>
 
                         <!-- 批量操作结果 -->
@@ -830,63 +816,32 @@ class WordPress_Toolkit {
 
                         <!-- 文章列表 -->
                         <?php
+                        $current_page = isset($_GET['paged']) ? intval($_GET['paged']) : 1;
+                        $status = isset($_GET['status']) ? sanitize_text_field($_GET['status']) : 'all';
+
+                        error_log("WordPress Toolkit: Loading excerpt list - page: $current_page, status: $status");
+                        $excerpt_list = $this->auto_excerpt->get_excerpt_list($current_page, 15, $status);
+                        error_log("WordPress Toolkit: Excerpt list loaded - " . print_r($excerpt_list, true));
+
                         // 添加调试信息和错误处理
                         if (empty($excerpt_list) || !isset($excerpt_list['posts'])) {
                             echo '<div class="notice notice-warning"><p>摘要列表数据加载失败，请检查错误日志。</p></div>';
                             error_log("WordPress Toolkit: Excerpt list data is invalid");
                         } elseif (empty($excerpt_list['posts'])) {
-                            // 显示空状态，参考网站卡片样式
-                            ?>
-                            <table class="wp-list-table widefat fixed striped">
-                                <thead>
-                                    <tr>
-                                        <th scope="col" width="35%"><?php _e('标题', 'wordpress-toolkit'); ?></th>
-                                        <th scope="col" width="10%"><?php _e('摘要状态', 'wordpress-toolkit'); ?></th>
-                                        <th scope="col" width="10%"><?php _e('摘要长度', 'wordpress-toolkit'); ?></th>
-                                        <th scope="col" width="10%"><?php _e('内容长度', 'wordpress-toolkit'); ?></th>
-                                        <th scope="col" width="15%"><?php _e('发布日期', 'wordpress-toolkit'); ?></th>
-                                        <th scope="col" width="20%"><?php _e('操作', 'wordpress-toolkit'); ?></th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr>
-                                        <td colspan="6" style="text-align: center; padding: 40px;">
-                                            <?php
-                                            $current_status = isset($_GET['status']) ? sanitize_text_field($_GET['status']) : 'all';
-                                            if ($current_status !== 'all'):
-                                            ?>
-                                            <div style="font-size: 16px; color: #666; margin-bottom: 20px;">
-                                                <span class="dashicons dashicons-search" style="font-size: 48px; color: #ccc; display: block; margin-bottom: 10px;"></span>
-                                                没有找到匹配的<?php echo $current_status === 'with_excerpt' ? '有摘要' : '无摘要'; ?>文章
-                                            </div>
-                                            <a href="<?php echo admin_url('admin.php?page=wordpress-toolkit-auto-excerpt'); ?>" class="button button-primary">
-                                                清除筛选条件
-                                            </a>
-                                            <?php else: ?>
-                                            <div style="font-size: 16px; color: #666; margin-bottom: 20px;">
-                                                <span class="dashicons dashicons-edit-page" style="font-size: 48px; color: #ccc; display: block; margin-bottom: 10px;"></span>
-                                                暂无文章数据
-                                            </div>
-                                            <?php endif; ?>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                            <?php
+                            echo '<div class="notice notice-info"><p>没有找到符合条件的文章。</p></div>';
                             error_log("WordPress Toolkit: No posts found matching criteria");
                         } else {
                             error_log("WordPress Toolkit: Displaying " . count($excerpt_list['posts']) . " posts");
                         ?>
-            
                         <table class="wp-list-table widefat fixed striped">
                             <thead>
                                 <tr>
-                                    <th scope="col" width="35%"><?php _e('标题', 'wordpress-toolkit'); ?></th>
-                                    <th scope="col" width="10%"><?php _e('摘要状态', 'wordpress-toolkit'); ?></th>
-                                    <th scope="col" width="10%"><?php _e('摘要长度', 'wordpress-toolkit'); ?></th>
-                                    <th scope="col" width="10%"><?php _e('内容长度', 'wordpress-toolkit'); ?></th>
-                                    <th scope="col" width="15%"><?php _e('发布日期', 'wordpress-toolkit'); ?></th>
-                                    <th scope="col" width="20%"><?php _e('操作', 'wordpress-toolkit'); ?></th>
+                                    <th><?php _e('标题', 'wordpress-toolkit'); ?></th>
+                                    <th><?php _e('摘要状态', 'wordpress-toolkit'); ?></th>
+                                    <th><?php _e('摘要长度', 'wordpress-toolkit'); ?></th>
+                                    <th><?php _e('内容长度', 'wordpress-toolkit'); ?></th>
+                                    <th><?php _e('发布日期', 'wordpress-toolkit'); ?></th>
+                                    <th><?php _e('操作', 'wordpress-toolkit'); ?></th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -901,9 +856,6 @@ class WordPress_Toolkit {
                                     <td>
                                         <?php if ($post['has_excerpt']): ?>
                                             <span class="status-active"><?php _e('有摘要', 'wordpress-toolkit'); ?></span>
-                                            <?php if (isset($post['is_ai_generated']) && $post['is_ai_generated']): ?>
-                                            <span class="ai-badge" style="margin-left: 5px; background: #e6f3ff; color: #0073aa; padding: 2px 6px; border-radius: 3px; font-size: 11px; border: 1px solid #b3d9ff; font-weight: 500;">🤖 AI</span>
-                                            <?php endif; ?>
                                         <?php else: ?>
                                             <span class="status-inactive"><?php _e('无摘要', 'wordpress-toolkit'); ?></span>
                                         <?php endif; ?>
@@ -915,8 +867,8 @@ class WordPress_Toolkit {
                                         <a href="<?php echo esc_url($post['edit_url']); ?>" class="button button-small" target="_blank"><?php _e('编辑', 'wordpress-toolkit'); ?></a>
                                         <a href="<?php echo esc_url($post['view_url']); ?>" class="button button-small" target="_blank"><?php _e('查看', 'wordpress-toolkit'); ?></a>
                                         <?php if (!$post['has_excerpt']): ?>
-                                        <button type="button" class="button button-small button-primary generate-excerpt-single" data-post-id="<?php echo $post['ID']; ?>" title="为这篇生成智能摘要">
-                                            生成摘要
+                                        <button type="button" class="button button-small button-primary generate-excerpt-single" data-post-id="<?php echo $post['ID']; ?>">
+                                            <span class="dashicons dashicons-magic"></span>生成摘要
                                         </button>
                                         <?php endif; ?>
                                     </td>
@@ -924,6 +876,55 @@ class WordPress_Toolkit {
                                 <?php endforeach; ?>
                             </tbody>
                         </table>
+
+                        <!-- 分页 -->
+                        <?php if ($excerpt_list['pages'] > 1): ?>
+                        <div class="tablenav bottom">
+                            <div class="tablenav-pages">
+                                <?php
+                                $current_url = admin_url('admin.php?page=wordpress-toolkit-auto-excerpt');
+                                if (isset($_GET['status'])) {
+                                    $current_url .= '&status=' . urlencode($_GET['status']);
+                                }
+                                ?>
+                                <span class="displaying-num">
+                                    <?php echo sprintf(__('显示 %d-%d 共 %d 项', 'wordpress-toolkit'),
+                                        (($current_page - 1) * 15) + 1,
+                                        min($current_page * 15, $excerpt_list['total']),
+                                        $excerpt_list['total']
+                                    ); ?>
+                                </span>
+                                <?php
+                                // 使用WordPress标准的paginate_links函数
+                                $pagination_args = array(
+                                    'base' => $current_url . '&paged=%#%',
+                                    'format' => '',
+                                    'total' => $excerpt_list['pages'],
+                                    'current' => $current_page,
+                                    'show_all' => false,
+                                    'prev_next' => true,
+                                    'prev_text' => __('« 上一页'),
+                                    'next_text' => __('下一页 »'),
+                                    'end_size' => 1,
+                                    'mid_size' => 2,
+                                    'type' => 'array',
+                                    'add_args' => false,
+                                    'add_fragment' => ''
+                                );
+
+                                $page_links = paginate_links($pagination_args);
+
+                                if (!empty($page_links)):
+                                    echo '<span class="pagination-links">';
+                                    foreach ($page_links as $link):
+                                        echo $link;
+                                    endforeach;
+                                    echo '</span>';
+                                endif;
+                                ?>
+                            </div>
+                        </div>
+                        <?php endif; // End if ($excerpt_list['pages'] > 1) ?>
                             <?php } // End of else from posts check ?>
                     </div>
                 </div>
@@ -977,93 +978,42 @@ class WordPress_Toolkit {
                 vertical-align: middle !important;
             }
             .generate-excerpt-single {
-                min-width: 95px !important;
-                max-width: 105px !important;
+                min-width: 90px !important;
+                max-width: 100px !important;
                 white-space: nowrap !important;
                 text-align: center !important;
-                padding: 0 10px !important;
+                padding: 0 8px !important;
                 font-size: 13px !important;
                 height: 30px !important;
-                line-height: 28px !important;
+                line-height: 30px !important;
                 overflow: hidden !important;
                 text-overflow: ellipsis !important;
                 display: inline-flex !important;
                 vertical-align: middle !important;
                 align-items: center !important;
                 justify-content: center !important;
-                gap: 4px !important;
-                border-radius: 3px !important;
-                box-shadow: 0 1px 2px rgba(0,0,0,0.1) !important;
-                transition: all 0.2s ease !important;
             }
             .generate-excerpt-single.button-primary {
                 background: #0073aa !important;
                 border-color: #0073aa !important;
                 color: #fff !important;
             }
-            .generate-excerpt-single.button-primary:hover {
-                background: #005a87 !important;
-                border-color: #005a87 !important;
-                transform: translateY(-1px) !important;
-                box-shadow: 0 2px 4px rgba(0,0,0,0.15) !important;
-            }
             .generate-excerpt-single.button-secondary {
                 background: #f6f7f7 !important;
                 border-color: #ddd !important;
                 color: #50575e !important;
-            }
-            .generate-excerpt-single.button-secondary:hover {
-                background: #e9e9e9 !important;
-                border-color: #bbb !important;
-                transform: translateY(-1px) !important;
-                box-shadow: 0 2px 4px rgba(0,0,0,0.15) !important;
             }
             .generate-excerpt-single .dashicons {
                 font-size: 14px !important;
                 height: 14px !important;
                 width: 14px !important;
                 vertical-align: middle !important;
-                margin: 0 !important;
+                margin-right: 0px !important;
+                margin-left: 0px !important;
                 display: inline-block !important;
-                flex-shrink: 0 !important;
             }
-
-            /* 分页样式优化 - 与网站卡片保持一致 */
-            .tablenav-pages {
-                margin-top: 0;
-                background: #f8f9f9;
-                padding: 8px 12px;
-                border-radius: 4px;
-                border: 1px solid #e5e5e5;
-                font-size: 13px;
-            }
-
-            .tablenav-pages .displaying-num {
-                margin-right: 10px;
-                color: #50575e;
-            }
-
-            .tablenav-pages .page-numbers {
-                display: inline-block;
-                padding: 4px 8px;
-                margin: 0 2px;
-                border: 1px solid #ccc;
-                text-decoration: none;
-                border-radius: 3px;
-            }
-
-            .tablenav-pages .page-numbers.current {
-                background: #0073aa;
-                color: white;
-                border-color: #0073aa;
-            }
-
-            .tablenav-pages .page-numbers:hover {
-                background: #f1f1f1;
-            }
-
-            .tablenav-pages .page-numbers.current:hover {
-                background: #0073aa;
+            .generate-excerpt-single .dashicons + * {
+                margin-left: 2px !important;
             }
             </style>
 
@@ -1137,7 +1087,7 @@ class WordPress_Toolkit {
                     var originalText = $button.html();
 
                     // 显示加载状态
-                    $button.prop('disabled', true).html('<span class="dashicons dashicons-spinner"></span><span>生成中...</span>');
+                    $button.prop('disabled', true).html('<span class="dashicons dashicons-spinner"></span> 生成中...');
 
                     // 发送AJAX请求
                     $.ajax({
@@ -1162,16 +1112,12 @@ class WordPress_Toolkit {
 
                                 // 更新按钮状态
                                 $button.removeClass('button-primary').addClass('button-secondary')
-                                       .html('<span class="dashicons dashicons-yes"></span><span>已生成</span>')
+                                       .html('<span class="dashicons dashicons-yes"></span> 已生成')
                                        .prop('disabled', true);
 
                                 // 更新表格中的状态显示
                                 var $row = $button.closest('tr');
-                                var statusHtml = '<span class="status-active">有摘要</span>';
-                                if (data.ai_generated) {
-                                    statusHtml += '<span class="ai-badge" style="margin-left: 5px; background: #e6f3ff; color: #0073aa; padding: 2px 6px; border-radius: 3px; font-size: 11px; border: 1px solid #b3d9ff; font-weight: 500;">🤖 AI</span>';
-                                }
-                                $row.find('td:nth-child(2)').html(statusHtml);
+                                $row.find('td:nth-child(2)').html('<span class="status-active">有摘要</span>');
                                 $row.find('td:nth-child(3)').text(data.excerpt_length + ' 字符');
 
                             } else {

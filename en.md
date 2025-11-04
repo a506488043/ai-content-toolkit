@@ -7,7 +7,7 @@ A powerful, secure, and reliable WordPress comprehensive toolkit that integrates
 ## 📋 Basic Information
 
 - **Plugin Name**: WordPress Toolkit
-- **Version**: 1.0.4
+- **Version**: 1.0.6
 - **Author**: www.saiita.com.cn
 - **License**: GPL v2 or later
 - **Minimum Requirements**: WordPress 5.0+, PHP 7.4+
@@ -151,6 +151,39 @@ Complete friend link management system with user submission and moderation capab
   - User submission form (if enabled)
   - Pagination support
 
+### 🤖 Auto Excerpt Generator
+**Version**: 1.0.0
+
+Intelligent article excerpt generation system supporting both AI and traditional algorithms.
+
+**Core Features**:
+- ✅ **AI-Powered Generation**: Smart excerpt generation based on DeepSeek AI
+- ✅ **Traditional Algorithms**: Efficient local excerpt extraction algorithms
+- ✅ **Batch Processing**: Support for batch excerpt generation
+- ✅ **Status Filtering**: Filter articles by excerpt status
+- ✅ **Smart Detection**: Automatic identification and marking of AI-generated excerpts
+- ✅ **Statistics Dashboard**: Detailed excerpt coverage statistics
+- ✅ **Paginated Display**: Efficient paginated browsing experience
+
+**Technical Features**:
+- 🧠 **DeepSeek AI Integration**: Advanced AI models for high-quality excerpt generation
+- 📊 **Statistical Analysis**: Real-time statistics of article excerpt coverage and AI generation count
+- 🏷️ **AI Marking System**: Automatic identification and marking of AI-generated excerpts
+- 🔄 **Fallback Mechanism**: Automatic fallback to traditional algorithms when AI fails
+- 📝 **Multiple Modes**: Support for intelligent extraction and simple truncation modes
+
+**User Interface**:
+- Unified management interface design
+- Real-time status display and progress feedback
+- Filtering and pagination functionality
+- AI-generated excerpt marking display
+
+**Configuration Options**:
+- AI feature toggle and API configuration
+- Excerpt length and format settings
+- Auto-generation rules configuration
+- Caching and performance optimization
+
 ## 🏗️ Technical Architecture
 
 ### Modular Design
@@ -162,7 +195,8 @@ wordpress-toolkit/
 │   ├── age-calculator/           # Age calculator module
 │   ├── time-capsule/             # Item management module
 │   ├── simple-friendlink/        # Friend links template module
-│   └── cookieguard/              # Cookie consent module
+│   ├── cookieguard/              # Cookie consent module
+│   └── auto-excerpt/             # Auto excerpt module
 ├── assets/                       # Asset files
 │   ├── css/                      # Style files
 │   └── js/                       # JavaScript files
@@ -321,11 +355,15 @@ wordpress-toolkit/
 - **Age Calculator**: Calculator settings, display configuration, user preferences
 - **Item Management**: Item list, category management, statistical analysis
 - **Cookie Consent**: Style configuration, text settings, behavior configuration
+- **Friend Links**: Link moderation, category management, user submissions
+- **Auto Excerpt**: Excerpt management, AI configuration, batch processing
 
 ### Settings Pages
 - **Website Card Settings**: Cache configuration, fetch settings, display options
 - **Age Calculator Settings**: Default format, user permissions, display configuration
 - **Cookie Consent Settings**: Style selection, text configuration, regional settings
+- **Friend Links Settings**: Moderation rules, submission permissions, display configuration
+- **Auto Excerpt Settings**: AI configuration, excerpt rules, batch settings
 
 ## 📈 Use Cases
 
@@ -370,6 +408,33 @@ wordpress-toolkit/
 - **Plugin Compatibility**: Compatible with mainstream WordPress plugins
 
 ## 🔄 Version History
+
+### v1.0.6 (2025-11-04)
+**AI Auto Excerpt Module**:
+- 🤖 **Auto Excerpt System**: All-new intelligent article excerpt generation feature
+- 🧠 **DeepSeek AI Integration**: High-quality excerpt generation based on advanced AI models
+- 📊 **Statistics Dashboard**: Real-time display of article excerpt coverage and AI generation statistics
+- 🏷️ **AI Marking System**: Automatic identification and marking of AI-generated excerpts (🤖 AI badge)
+- ⚡ **Batch Processing**: Support for batch generation of excerpts for all articles without summaries
+- 🔍 **Smart Filtering**: Filter articles by excerpt status (All/With Excerpt/Without Excerpt)
+- 📱 **Unified Interface**: Modern management interface consistent with other modules
+- 🔄 **Fallback Mechanism**: Automatic fallback to traditional algorithms when AI fails
+- 📝 **Multiple Modes**: Support for intelligent extraction and simple truncation modes
+- ⚙️ **Flexible Configuration**: AI feature toggle, API configuration, excerpt length settings
+
+**Interface Improvements**:
+- 🎨 **Interface Unification**: Removed redundant titles, unified list styles
+- 📊 **Compact Layout**: Optimized statistics information and action button layout
+- 🔍 **Filter Integration**: Filter and batch operations on the same row
+- 📱 **Pagination Optimization**: Pagination moved to top-right corner, consistent with website cards style
+- 🏷️ **Status Display**: Clear excerpt status and AI generation marking display
+
+**Technical Features**:
+- 🔒 **Security Mechanisms**: Complete permission verification and CSRF protection
+- 📈 **Performance Optimization**: Efficient paginated queries and data caching
+- 🎯 **Smart Detection**: Heuristic AI excerpt detection algorithm
+- 🔄 **Real-time Updates**: AJAX dynamic generation and status updates
+- 📊 **Data Analysis**: Detailed excerpt statistics and coverage calculation
 
 ### v1.0.4 (2025-10-27)
 **Major Updates**:
@@ -419,12 +484,14 @@ wordpress-toolkit/
 ## ❓ Frequently Asked Questions
 
 ### Q: What tools does this plugin include?
-A: WordPress Toolkit includes four core tools:
+A: WordPress Toolkit includes seven core tools:
 1. **Website Cards** - Automatically fetch website metadata
 2. **Age Calculator** - Precisely calculate age
 3. **Item Management** - Item management and warranty tracking
 4. **Cookie Consent** - GDPR compliant Cookie notifications
 5. **Friend Links Management** - Complete friend link management and display system
+6. **REST Proxy Fix** - Intelligent WordPress REST proxy connection issue fix
+7. **Auto Excerpt** - AI-powered intelligent article excerpt generation system
 
 ### Q: Can I use individual tools separately?
 A: Yes, each tool is an independent module. You can enable or disable corresponding modules as needed without affecting other functions.
