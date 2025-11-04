@@ -77,8 +77,8 @@ class Auto_Excerpt_Module {
         add_action('admin_enqueue_scripts', array($this, 'admin_enqueue_scripts'));
 
         // 移除文章编辑页面的功能以避免空白页面问题
-        // 保存文章时自动生成摘要功能已禁用
-        // add_action('save_post', array($this, 'auto_generate_excerpt_on_save'), 10, 2);
+        // 保存文章时自动摘要功能已禁用
+        // add_action('save_post', array($this, 'auto_generate_on_save'), 10, 2);
 
         // 移除文章编辑页面的元框
         // add_action('add_meta_boxes', array($this, 'add_meta_box'));
@@ -95,7 +95,14 @@ class Auto_Excerpt_Module {
 
         // 前端脚本
         add_action('wp_enqueue_scripts', array($this, 'enqueue_scripts'));
-    }
+
+        // 添加定时任务功能
+        add_action('wp', array($this, 'schedule_daily_excerpt_generation'));
+
+        // 定时任务执行钩子
+        add_action('auto_excerpt_daily_generation', array($this, 'execute_daily_excerpt_generation'));
+
+      }
 
     /**
      * 激活模块
@@ -112,9 +119,15 @@ class Auto_Excerpt_Module {
                 error_log('Auto Excerpt: Settings already exist, skipping creation');
             }
 
+            // 重置失败计数
+            update_option('auto_excerpt_consecutive_failures', 0);
+
+            // 注册定时任务
+            $this->schedule_daily_excerpt_generation();
+
             // 为现有文章生成摘要（已禁用，避免超时问题）
             // 如需批量生成，请手动调用 batch_generate_existing_excerpts() 方法
-            error_log('Auto Excerpt: Module activated successfully, batch processing disabled to prevent timeouts');
+            error_log('Auto Excerpt: Module activated successfully, daily task scheduled');
 
         } catch (Exception $e) {
             error_log('Auto Excerpt: Activation error: ' . $e->getMessage());
@@ -127,6 +140,14 @@ class Auto_Excerpt_Module {
     public function deactivate() {
         // 清理缓存
         wp_cache_flush();
+
+        // 取消定时任务
+        $this->unschedule_daily_excerpt_generation();
+
+        // 清理失败计数
+        delete_option('auto_excerpt_consecutive_failures');
+
+        error_log('Auto Excerpt: Module deactivated, daily task unscheduled');
     }
 
     /**
@@ -1044,42 +1065,6 @@ class Auto_Excerpt_Module {
             </form>
 
             <div class="card">
-                <h2><?php _e('使用说明', 'wordpress-toolkit'); ?></h2>
-                <p><strong><?php _e('AI生成模式：', 'wordpress-toolkit'); ?></strong></p>
-                <ul>
-                    <li><?php _e('需要配置DeepSeek API密钥', 'wordpress-toolkit'); ?></li>
-                    <li><?php _e('AI会根据文章内容生成更准确、更智能的摘要', 'wordpress-toolkit'); ?></li>
-                    <li><?php _e('支持中英文混合内容的智能理解', 'wordpress-toolkit'); ?></li>
-                    <li><?php _e('可以调节创造性参数控制摘要风格', 'wordpress-toolkit'); ?></li>
-                    <li><?php _e('支持deepseek-chat和deepseek-reasoner两种模型', 'wordpress-toolkit'); ?></li>
-                </ul>
-
-                <p><strong><?php _e('官方文档：', 'wordpress-toolkit'); ?></strong></p>
-                <p><?php _e('详细API说明请参考：', 'wordpress-toolkit'); ?> <a href="https://api-docs.deepseek.com/zh-cn/" target="_blank"><?php _e('DeepSeek API文档', 'wordpress-toolkit'); ?></a></p>
-
-                <p><strong><?php _e('当前功能状态：', 'wordpress-toolkit'); ?></strong></p>
-                <ul>
-                    <li><?php _e('✅ AI配置和API测试功能完全正常', 'wordpress-toolkit'); ?></li>
-                    <li><?php _e('✅ DeepSeek API集成正常工作', 'wordpress-toolkit'); ?></li>
-                    <li><?php _e('✅ 摘要生成算法可供其他功能调用', 'wordpress-toolkit'); ?></li>
-                    <li><?php _e('⚠️ 文章编辑页面功能已暂时禁用', 'wordpress-toolkit'); ?></li>
-                </ul>
-
-                <p><strong><?php _e('技术说明：', 'wordpress-toolkit'); ?></strong></p>
-                <p><?php _e('为了避免WordPress编辑页面出现空白问题，已暂时移除编辑页面的集成功能。核心的AI摘要生成功能完全保留，可以通过代码调用或在未来版本中通过其他方式使用。', 'wordpress-toolkit'); ?></p>
-
-                <p><strong><?php _e('注意事项：', 'wordpress-toolkit'); ?></strong></p>
-                <ul>
-                    <li><?php _e('API调用会产生费用，请参考DeepSeek的定价说明', 'wordpress-toolkit'); ?></li>
-                    <li><?php _e('启用降级机制可确保AI服务不可用时仍能生成摘要', 'wordpress-toolkit'); ?></li>
-                    <li><?php _e('首次使用建议先测试API连接是否正常', 'wordpress-toolkit'); ?></li>
-                    <li><?php _e('deepseek-reasoner模型不支持自定义长度和创造性参数', 'wordpress-toolkit'); ?></li>
-                    <li><?php _e('建议在调试模式下启用WP_DEBUG以查看详细API日志', 'wordpress-toolkit'); ?></li>
-                    <li><?php _e('API密钥请妥善保管，避免在代码中硬编码', 'wordpress-toolkit'); ?></li>
-                </ul>
-            </div>
-
-            <div class="card">
                 <h2><?php _e('API测试', 'wordpress-toolkit'); ?></h2>
                 <p><?php _e('测试API连接是否正常工作', 'wordpress-toolkit'); ?></p>
                 <button type="button" id="test-api-btn" class="button"><?php _e('测试API连接', 'wordpress-toolkit'); ?></button>
@@ -1620,4 +1605,161 @@ class Auto_Excerpt_Module {
             wp_send_json_error(array('message' => __('生成失败：', 'wordpress-toolkit') . $e->getMessage()));
         }
     }
+
+    /**
+     * 注册定时任务 - 在凌晨3点自动生成摘要
+     */
+    public function schedule_daily_excerpt_generation() {
+        // 检查是否已经存在定时任务
+        if (!wp_next_scheduled('auto_excerpt_daily_generation')) {
+            // 设置每天凌晨3点执行
+            $time_string = '03:00:00';
+            $timezone = new DateTimeZone(wp_timezone_string());
+            $today = new DateTime('now', $timezone);
+            $scheduled_time = new DateTime($today->format('Y-m-d') . ' ' . $time_string, $timezone);
+
+            // 如果当前时间已经过了今天的3点，则设置为明天3点
+            if ($today > $scheduled_time) {
+                $scheduled_time->modify('+1 day');
+            }
+
+            // 调度定时任务
+            wp_schedule_event($scheduled_time->getTimestamp(), 'daily', 'auto_excerpt_daily_generation');
+            error_log('Auto Excerpt: Scheduled daily generation at ' . $scheduled_time->format('Y-m-d H:i:s'));
+        }
+    }
+
+    /**
+     * 取消定时任务
+     */
+    public function unschedule_daily_excerpt_generation() {
+        $timestamp = wp_next_scheduled('auto_excerpt_daily_generation');
+        if ($timestamp) {
+            wp_unschedule_event($timestamp, 'auto_excerpt_daily_generation');
+            error_log('Auto Excerpt: Unscheduled daily generation');
+        }
+    }
+
+    /**
+     * 执行定时摘要生成任务
+     */
+    public function execute_daily_excerpt_generation() {
+        error_log('Auto Excerpt: Starting daily scheduled excerpt generation');
+
+        // 检查是否启用自动生成
+        if (!$this->settings['auto_generate']) {
+            error_log('Auto Excerpt: Auto generation is disabled, skipping');
+            return;
+        }
+
+        // 检查连续失败次数
+        $failure_count = get_option('auto_excerpt_consecutive_failures', 0);
+        if ($failure_count >= 3) {
+            error_log("Auto Excerpt: Stopping automatic generation due to {$failure_count} consecutive failures");
+            return;
+        }
+
+        try {
+            $start_time = time();
+            $max_execution_time = ini_get('max_execution_time');
+            $processed_count = 0;
+            $success_count = 0;
+
+            // 获取所有无摘要的已发布文章
+            $posts_query = new WP_Query(array(
+                'post_type' => 'post',
+                'post_status' => 'publish',
+                'posts_per_page' => -1,
+                'orderby' => 'date',
+                'order' => 'ASC', // 从旧到新处理
+                'meta_query' => array(
+                    'relation' => 'OR',
+                    array(
+                        'key' => 'post_excerpt',
+                        'compare' => '=',
+                        'value' => ''
+                    ),
+                    array(
+                        'key' => 'post_excerpt',
+                        'compare' => 'NOT EXISTS'
+                    )
+                )
+            ));
+
+            if ($posts_query->have_posts()) {
+                while ($posts_query->have_posts() && (time() - $start_time) < ($max_execution_time - 10)) {
+                    $posts_query->the_post();
+                    global $post;
+
+                    $processed_count++;
+
+                    // 检查是否已有摘要
+                    if (!empty($post->post_excerpt)) {
+                        continue;
+                    }
+
+                    try {
+                        // 生成摘要
+                        $content = $post->post_content;
+                        $excerpt = $this->generate_excerpt($content);
+
+                        if ($excerpt && !empty($excerpt)) {
+                            // 更新文章摘要
+                            wp_update_post(array(
+                                'ID' => $post->ID,
+                                'post_excerpt' => $excerpt
+                            ));
+
+                            // 标记为AI生成（如果使用了AI）
+                            if ($this->settings['use_ai_generation'] && !empty($this->settings['deepseek_api_key'])) {
+                                update_post_meta($post->ID, '_ai_generated_excerpt', true);
+                                update_post_meta($post->ID, '_auto_excerpt_ai_generated', true);
+                            }
+
+                            $success_count++;
+                            error_log("Auto Excerpt: Generated excerpt for post ID: {$post->ID}");
+                        }
+                    } catch (Exception $e) {
+                        error_log("Auto Excerpt: Error processing post ID {$post->ID}: " . $e->getMessage());
+                    }
+                }
+            }
+
+            wp_reset_postdata();
+
+            // 检查是否成功生成了摘要
+            if ($success_count > 0) {
+                // 重置失败计数
+                update_option('auto_excerpt_consecutive_failures', 0);
+                error_log("Auto Excerpt: Daily generation completed - Processed: {$processed_count}, Success: {$success_count}");
+            } else {
+                // 增加失败计数
+                $failure_count++;
+                update_option('auto_excerpt_consecutive_failures', $failure_count);
+                error_log("Auto Excerpt: No excerpts generated today. Failure count: {$failure_count}");
+
+                // 如果连续3天失败，取消定时任务
+                if ($failure_count >= 3) {
+                    $this->unschedule_daily_excerpt_generation();
+                    error_log('Auto Excerpt: Unscheduled daily generation due to 3 consecutive failures');
+                }
+            }
+
+        } catch (Exception $e) {
+            // 增加失败计数
+            $failure_count = get_option('auto_excerpt_consecutive_failures', 0) + 1;
+            update_option('auto_excerpt_consecutive_failures', $failure_count);
+            error_log("Auto Excerpt: Daily generation failed: " . $e->getMessage() . " (Failure count: {$failure_count})");
+
+            // 如果连续3天失败，取消定时任务
+            if ($failure_count >= 3) {
+                $this->unschedule_daily_excerpt_generation();
+                error_log('Auto Excerpt: Unscheduled daily generation due to 3 consecutive failures');
+            }
+        }
+    }
 }
+
+// 注册插件激活和停用钩子
+register_activation_hook(__FILE__, array('Auto_Excerpt_Module', 'activate'));
+register_deactivation_hook(__FILE__, array('Auto_Excerpt_Module', 'deactivate'));

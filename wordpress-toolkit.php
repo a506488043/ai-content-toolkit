@@ -1339,36 +1339,6 @@ class WordPress_Toolkit {
             <h1>WordPress Toolkit - 功能说明</h1>
             <div class="wordpress-toolkit-about">
 
-                <div class="quick-links">
-                    <h3>快速导航</h3>
-                    <div class="quick-links-grid">
-                        <a href="<?php echo esc_url(admin_url('admin.php?page=wordpress-toolkit-cards-list')); ?>" class="quick-link">
-                            <span class="dashicons dashicons-admin-links"></span>
-                            <span>网站卡片</span>
-                        </a>
-                        <a href="<?php echo esc_url(admin_url('admin.php?page=wordpress-toolkit-time-capsule')); ?>" class="quick-link">
-                            <span class="dashicons dashicons-archive"></span>
-                            <span>物品管理</span>
-                        </a>
-                        <a href="<?php echo esc_url(admin_url('admin.php?page=wordpress-toolkit-friendlinks')); ?>" class="quick-link">
-                            <span class="dashicons dashicons-networking"></span>
-                            <span>友情链接管理</span>
-                        </a>
-                        <a href="<?php echo esc_url(admin_url('options-general.php?page=wordpress-toolkit-custom-card-settings')); ?>" class="quick-link">
-                            <span class="dashicons dashicons-admin-settings"></span>
-                            <span>网站卡片设置</span>
-                        </a>
-                        <a href="<?php echo esc_url(admin_url('options-general.php?page=wordpress-toolkit-age-calculator-settings')); ?>" class="quick-link">
-                            <span class="dashicons dashicons-calendar"></span>
-                            <span>年龄计算器设置</span>
-                        </a>
-                        <a href="<?php echo esc_url(admin_url('options-general.php?page=wordpress-toolkit-cookieguard-settings')); ?>" class="quick-link">
-                            <span class="dashicons dashicons-shield"></span>
-                            <span>Cookie同意设置</span>
-                        </a>
-                    </div>
-                </div>
-
                 <div class="about-section">
                     <h2>网站卡片模块</h2>
                     <div class="feature-card">
@@ -1481,7 +1451,8 @@ class WordPress_Toolkit {
                             <li>📝 <strong>中英文混合处理</strong> - 完美支持多语言内容</li>
                             <li>⚙️ <strong>灵活参数配置</strong> - 可调节创造性、长度等参数</li>
                             <li>🎯 <strong>精准摘要控制</strong> - 保持语义完整，突出重点</li>
-                            <li>⚙️ <strong>后台设置管理</strong> - 统一的配置和测试界面</li>
+                            <li>🕐 <strong>定时自动生成</strong> - 凌晨3点自动为无摘要文章生成摘要</li>
+                            <li>📊 <strong>统计和筛选</strong> - 实时统计摘要覆盖率和AI生成情况</li>
                             <li>🔧 <strong>API连接测试</strong> - 确保AI服务正常工作</li>
                             <li>📝 <strong>程序化调用</strong> - 可供其他功能代码调用</li>
                             <li>🛡️ <strong>编辑页面兼容</strong> - 避免空白页面问题</li>
@@ -1490,21 +1461,59 @@ class WordPress_Toolkit {
                         <h3>AI生成优势</h3>
                         <p>使用DeepSeek AI技术，能够深度理解文章内容，生成更准确、更符合语义的摘要。相比传统算法，AI生成的摘要具有更好的连贯性和概括性。</p>
 
+                        <h3>AI生成模式详解</h3>
+                        <p><strong>技术特点：</strong></p>
+                        <ul>
+                            <li>需要配置DeepSeek API密钥（格式：sk-xxxxxx）</li>
+                            <li>AI会根据文章内容生成更准确、更智能的摘要</li>
+                            <li>支持中英文混合内容的智能理解</li>
+                            <li>可以调节创造性参数控制摘要风格（0.0-1.0）</li>
+                            <li>支持deepseek-chat和deepseek-reasoner两种模型</li>
+                        </ul>
+
+                        <p><strong>官方文档：</strong></p>
+                        <p>详细API说明请参考： <a href="https://api-docs.deepseek.com/zh-cn/" target="_blank">DeepSeek API文档</a></p>
+
+                        <p><strong>当前功能状态：</strong></p>
+                        <ul>
+                            <li>✅ AI配置和API测试功能完全正常</li>
+                            <li>✅ DeepSeek API集成正常工作</li>
+                            <li>✅ 摘要生成算法可供其他功能调用</li>
+                            <li>✅ 定时任务功能正常工作</li>
+                            <li>⚠️ 文章编辑页面功能已暂时禁用</li>
+                        </ul>
+
+                        <p><strong>技术说明：</strong></p>
+                        <p>为了避免WordPress编辑页面出现空白问题，已暂时移除编辑页面的集成功能。核心的AI摘要生成功能完全保留，可以通过代码调用或在未来版本中通过其他方式使用。</p>
+
+                        <p><strong>定时任务功能：</strong></p>
+                        <ul>
+                            <li>每天凌晨3点自动为没有摘要的文章生成摘要</li>
+                            <li>连续3天没有生成摘要则自动停止任务</li>
+                            <li>支持AI生成和传统算法的智能降级</li>
+                            <li>具有完善的错误处理和日志记录</li>
+                        </ul>
+
                         <h3>使用方法</h3>
                         <p><strong>功能管理：</strong>在"工具箱" → "自动摘要"中查看功能状态和概览</p>
                         <p><strong>AI配置：</strong>在"设置" → "自动摘要"中配置DeepSeek API密钥和相关参数</p>
                         <p><strong>API测试：</strong>在设置页面测试API连接是否正常工作</p>
+                        <p><strong>批量生成：</strong>在功能管理页面可批量生成所有无摘要文章的摘要</p>
                         <p><strong>程序调用：</strong>摘要生成功能可供其他插件或主题代码调用</p>
 
                         <h3>后台管理</h3>
-                        <p><strong>工具箱 → 自动摘要：</strong>查看功能概览和当前状态</p>
+                        <p><strong>工具箱 → 自动摘要：</strong>查看功能概览、统计数据和批量操作</p>
                         <p><strong>设置 → 自动摘要：</strong>完整配置和参数调整</p>
-                        <p>支持DeepSeek AI配置、连接测试和参数调整</p>
+                        <p>支持DeepSeek AI配置、连接测试、定时任务设置和参数调整</p>
 
                         <h3>注意事项</h3>
                         <p>• 需要配置DeepSeek API密钥才能使用AI生成功能</p>
                         <p>• API调用会产生费用，请参考DeepSeek的定价说明</p>
                         <p>• 启用降级机制可确保服务高可用性</p>
+                        <p>• 首次使用建议先测试API连接是否正常</p>
+                        <p>• deepseek-reasoner模型不支持自定义长度和创造性参数</p>
+                        <p>• 建议在调试模式下启用WP_DEBUG以查看详细API日志</p>
+                        <p>• API密钥请妥善保管，避免在代码中硬编码</p>
                     </div>
                 </div>
 
