@@ -2,7 +2,7 @@
 /**
  * Plugin Name: WordPress Toolkit
  * Plugin URI: https://www.saiita.com.cn
- * Description: 一个集成了网站卡片、年龄计算器、物品管理、友情链接、自动摘要生成、Cookie同意通知和REST代理修复的综合工具包。
+ * Description: 一个集成了网站卡片、年龄计算器、物品管理、友情链接、文章优化、Cookie同意通知和REST代理修复的综合工具包。
  * Version: 1.0.5
  * Author: www.saiita.com.cn
  * Author URI: https://www.saiita.com.cn
@@ -35,6 +35,22 @@ require_once WORDPRESS_TOOLKIT_PLUGIN_PATH . 'includes/class-logger.php';
 // 加载管理页面模板系统
 require_once WORDPRESS_TOOLKIT_PLUGIN_PATH . 'includes/class-admin-page-template.php';
 
+// 加载通用工具类
+require_once WORDPRESS_TOOLKIT_PLUGIN_PATH . 'includes/class-utility-functions.php';
+
+// 加载安全工具类
+require_once WORDPRESS_TOOLKIT_PLUGIN_PATH . 'includes/security/class-security-utils.php';
+
+// 加载数据库优化器
+require_once WORDPRESS_TOOLKIT_PLUGIN_PATH . 'includes/database/class-database-optimizer.php';
+
+// 加载基础抽象类
+require_once WORDPRESS_TOOLKIT_PLUGIN_PATH . 'includes/abstracts/abstract-module-base.php';
+require_once WORDPRESS_TOOLKIT_PLUGIN_PATH . 'includes/abstracts/abstract-ajax-handler.php';
+
+// 加载资源管理器
+require_once WORDPRESS_TOOLKIT_PLUGIN_PATH . 'includes/class-asset-manager.php';
+
 // 加载REST代理修复模块
 require_once WORDPRESS_TOOLKIT_PLUGIN_PATH . 'modules/rest-proxy-fix.php';
 
@@ -58,6 +74,11 @@ class WordPress_Toolkit {
     private $simple_friendlink = null;
     private $simple_friendlink_admin = null;
     private $auto_excerpt = null;
+
+    /**
+     * 工具类实例
+     */
+    private $asset_manager = null;
     
     /**
      * 获取单例实例
@@ -73,10 +94,20 @@ class WordPress_Toolkit {
      * 构造函数
      */
     private function __construct() {
+        $this->init_asset_manager();
         $this->init_hooks();
         $this->load_modules();
     }
-    
+
+    /**
+     * 初始化资源管理器
+     */
+    private function init_asset_manager() {
+        if (class_exists('WordPress_Toolkit_Asset_Manager')) {
+            $this->asset_manager = new WordPress_Toolkit_Asset_Manager();
+        }
+    }
+
     /**
      * 初始化钩子
      */
@@ -236,12 +267,12 @@ class WordPress_Toolkit {
             );
         }
 
-        // 自动摘要（仅管理员可见）
+        // 文章优化（仅管理员可见）
         if (current_user_can('manage_options')) {
             add_submenu_page(
                 'wordpress-toolkit',
-                __('自动摘要', 'wordpress-toolkit'),
-                __('自动摘要', 'wordpress-toolkit'),
+                __('文章优化', 'wordpress-toolkit'),
+                __('文章优化', 'wordpress-toolkit'),
                 'manage_options',
                 'wordpress-toolkit-auto-excerpt',
                 array($this, 'auto_excerpt_admin_page')
@@ -289,10 +320,10 @@ class WordPress_Toolkit {
             array($this, 'simple_friendlink_settings_page')
         );
 
-        // 自动摘要设置
+        // 文章优化设置
         add_options_page(
-            __('自动摘要设置', 'wordpress-toolkit'),
-            __('自动摘要', 'wordpress-toolkit'),
+            __('文章优化设置', 'wordpress-toolkit'),
+            __('文章优化', 'wordpress-toolkit'),
             'manage_options',
             'wordpress-toolkit-auto-excerpt-settings',
             array($this, 'auto_excerpt_settings_page')
@@ -703,7 +734,7 @@ class WordPress_Toolkit {
     }
 
     /**
-     * 自动摘要管理页面 - 工具箱菜单中
+     * 文章优化管理页面 - 工具箱菜单中
      */
     public function auto_excerpt_admin_page() {
         // 验证用户权限
@@ -720,6 +751,7 @@ class WordPress_Toolkit {
         if ($this->auto_excerpt) {
             ?>
             <div class="wrap">
+                <h1><?php _e('文章优化', 'wordpress-toolkit'); ?></h1>
                 <?php
                 error_log("WordPress Toolkit: Loading auto excerpt admin page");
                 $stats = $this->auto_excerpt->get_excerpt_stats();
@@ -794,7 +826,11 @@ class WordPress_Toolkit {
                                     <button type="button" id="batch-generate-excerpts" class="button button-primary">
                                         <?php _e('为无摘要文章生成摘要', 'wordpress-toolkit'); ?>
                                     </button>
+                                    <button type="button" id="batch-generate-tags" class="button" style="margin-left: 10px; background: #9333ea; border-color: #7c3aed; color: white;">
+                                        <?php _e('批量生成标签', 'wordpress-toolkit'); ?>
+                                    </button>
                                     <span class="spinner" id="batch-generate-spinner" style="display: none; margin-left: 5px;"></span>
+                                    <span class="spinner" id="batch-generate-tags-spinner" style="display: none; margin-left: 5px;"></span>
                                 </form>
                             </div>
 
@@ -823,6 +859,25 @@ class WordPress_Toolkit {
                                 ?>
                             </div>
                             <?php endif; ?>
+                        </div>
+
+                        <!-- 批量操作进度 -->
+                        <div id="batch-generate-progress" style="display: none; margin: 15px 0;">
+                            <div class="progress-container">
+                                <h4 id="progress-title">处理中...</h4>
+                                <div class="progress-bar-container">
+                                    <div class="progress-bar">
+                                        <div class="progress-fill" id="progress-fill"></div>
+                                    </div>
+                                    <span class="progress-text" id="progress-text">0%</span>
+                                </div>
+                                <div class="progress-details" id="progress-details">
+                                    <span>当前处理：<span id="current-post">准备中...</span></span>
+                                    <span>已处理：<span id="processed-count">0</span> / <span id="total-count">0</span></span>
+                                    <span>成功：<span id="success-count">0</span></span>
+                                    <span>失败：<span id="error-count">0</span></span>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- 批量操作结果 -->
@@ -919,6 +974,9 @@ class WordPress_Toolkit {
                                             生成摘要
                                         </button>
                                         <?php endif; ?>
+                                        <button type="button" class="button button-small generate-tags-single" data-post-id="<?php echo $post['ID']; ?>" data-title="<?php echo esc_attr($post['title']); ?>" title="AI生成文章标签">
+                                            生成标签
+                                        </button>
                                     </td>
                                 </tr>
                                 <?php endforeach; ?>
@@ -1065,65 +1123,597 @@ class WordPress_Toolkit {
             .tablenav-pages .page-numbers.current:hover {
                 background: #0073aa;
             }
+
+            /* 标签生成按钮样式 */
+            .generate-tags-single {
+                min-width: 105px !important;
+                max-width: 115px !important;
+                background: #9333ea !important;
+                border-color: #7c3aed !important;
+                color: #fff !important;
+                font-weight: 500 !important;
+            }
+            .generate-tags-single:hover {
+                background: #7c3aed !important;
+                border-color: #6d28d9 !important;
+                transform: translateY(-1px) !important;
+                box-shadow: 0 2px 4px rgba(147, 51, 234, 0.3) !important;
+            }
+
+            /* 标签对话框样式 */
+            #tag-dialog {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.5);
+                z-index: 100000;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            .tag-dialog-content {
+                background: #fff;
+                border-radius: 12px;
+                padding: 25px;
+                max-width: 600px;
+                width: 90%;
+                max-height: 80vh;
+                overflow-y: auto;
+                box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            }
+
+            .tag-dialog-content h3 {
+                margin-top: 0;
+                margin-bottom: 20px;
+                color: #1a1a1a;
+                font-size: 20px;
+                text-align: center;
+                border-bottom: 2px solid #e5e5e5;
+                padding-bottom: 10px;
+            }
+
+            .tag-section {
+                margin-bottom: 20px;
+            }
+
+            .tag-section h4 {
+                margin: 0 0 10px 0;
+                color: #333;
+                font-size: 16px;
+                font-weight: 600;
+            }
+
+            .tag-container {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 8px;
+                min-height: 40px;
+                padding: 10px;
+                background: #f9f9f9;
+                border: 1px solid #ddd;
+                border-radius: 6px;
+                align-items: center;
+            }
+
+            .tag {
+                padding: 6px 12px;
+                border-radius: 20px;
+                font-size: 14px;
+                font-weight: 500;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                border: 2px solid transparent;
+                user-select: none;
+            }
+
+            .existing-tag {
+                background: #e3f2fd;
+                color: #1976d2;
+                border-color: #90caf9;
+                cursor: default;
+            }
+
+            .ai-tag {
+                background: #f3e5f5;
+                color: #7b1fa2;
+                border-color: #ce93d8;
+            }
+
+            .ai-tag:hover {
+                background: #e1bee7;
+                border-color: #ba68c8;
+                transform: translateY(-1px);
+            }
+
+            .ai-tag.selected {
+                background: #4caf50;
+                color: white;
+                border-color: #45a049;
+                box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
+            }
+
+            .ai-tag.selected:hover {
+                background: #45a049;
+            }
+
+            .no-tags {
+                color: #999;
+                font-style: italic;
+                margin: 0;
+            }
+
+            .tag-actions {
+                margin: 20px 0;
+                padding: 15px;
+                background: #f8f9fa;
+                border-radius: 6px;
+                border-left: 4px solid #0073aa;
+            }
+
+            .tag-actions h4 {
+                margin: 0 0 10px 0;
+                color: #333;
+                font-size: 16px;
+                font-weight: 600;
+            }
+
+            .tag-actions label {
+                display: block;
+                margin: 8px 0;
+                cursor: pointer;
+                font-weight: 500;
+            }
+
+            .tag-actions input[type="radio"] {
+                margin-right: 8px;
+            }
+
+            .tag-dialog-buttons {
+                text-align: right;
+                margin-top: 25px;
+                padding-top: 20px;
+                border-top: 1px solid #e5e5e5;
+            }
+
+            .tag-dialog-buttons .button {
+                margin-left: 10px;
+                font-weight: 500;
+            }
+
+            .tag-dialog-buttons .button-primary {
+                background: #0073aa;
+                border-color: #0073aa;
+            }
+
+            .tag-dialog-buttons .button-primary:hover {
+                background: #005a87;
+                border-color: #005a87;
+            }
+
+            /* 旋转动画 */
+            .rotating {
+                animation: spin 1s linear infinite;
+            }
+
+            @keyframes spin {
+                from { transform: rotate(0deg); }
+                to { transform: rotate(360deg); }
+            }
+
+            /* 批量操作进度条样式 */
+            .progress-container {
+                background: #fff;
+                border: 1px solid #ddd;
+                border-radius: 8px;
+                padding: 20px;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            }
+
+            .progress-container h4 {
+                margin: 0 0 15px 0;
+                color: #333;
+                font-size: 16px;
+                font-weight: 600;
+                text-align: center;
+            }
+
+            .progress-bar-container {
+                display: flex;
+                align-items: center;
+                gap: 15px;
+                margin-bottom: 15px;
+            }
+
+            .progress-bar {
+                flex: 1;
+                height: 24px;
+                background: #f1f1f1;
+                border-radius: 12px;
+                overflow: hidden;
+                position: relative;
+            }
+
+            .progress-fill {
+                height: 100%;
+                background: linear-gradient(90deg, #0073aa 0%, #005a87 100%);
+                border-radius: 12px;
+                width: 0%;
+                transition: width 0.3s ease;
+                position: relative;
+                overflow: hidden;
+            }
+
+            .progress-fill::after {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: linear-gradient(
+                    90deg,
+                    transparent,
+                    rgba(255, 255, 255, 0.3),
+                    transparent
+                );
+                animation: shimmer 2s infinite;
+            }
+
+            @keyframes shimmer {
+                0% { transform: translateX(-100%); }
+                100% { transform: translateX(100%); }
+            }
+
+            .progress-text {
+                font-weight: 600;
+                color: #0073aa;
+                font-size: 14px;
+                min-width: 50px;
+                text-align: center;
+            }
+
+            .progress-details {
+                display: flex;
+                justify-content: space-around;
+                flex-wrap: wrap;
+                gap: 10px;
+                font-size: 13px;
+                color: #555;
+                background: #f8f9fa;
+                padding: 12px;
+                border-radius: 6px;
+                border-left: 4px solid #0073aa;
+            }
+
+            .progress-details span {
+                display: inline-block;
+                min-width: 100px;
+            }
+
+            .progress-details span span {
+                font-weight: 600;
+                color: #0073aa;
+            }
             </style>
 
             <script>
             jQuery(document).ready(function($) {
+                // 统计信息
+                var stats = {
+                    total_posts: <?php echo $stats['total_posts']; ?>,
+                    without_excerpt: <?php echo $stats['without_excerpt']; ?>
+                };
+                // 进度更新函数
+                function updateProgress(title, percentage, processed, success, errors, currentPost, totalCount) {
+                    // 更新标题和进度条
+                    if (percentage === 100) {
+                        $('#progress-title').text(title + ' - ' + currentPost);
+                    } else {
+                        $('#progress-title').text(title + ' - 处理中...');
+                    }
+
+                    // 确保数据有效性
+                    processed = Math.max(0, processed || 0);
+                    success = Math.max(0, success || 0);
+                    errors = Math.max(0, errors || 0);
+
+                    $('#progress-fill').css('width', percentage + '%');
+                    $('#progress-text').text(percentage + '%');
+                    $('#current-post').text(currentPost);
+                    $('#processed-count').text(processed);
+                    $('#success-count').text(success);
+                    $('#error-count').text(errors);
+
+                    // 更新总数显示
+                    if (totalCount !== undefined && totalCount !== null) {
+                        $('#total-count').text(totalCount);
+                    } else {
+                        // 智能更新总数显示（兼容旧代码）
+                        var $totalCount = $('#total-count');
+                        if (percentage === 100 && processed > 0) {
+                            // 完成时，总数等于已处理数
+                            $totalCount.text(processed);
+                        } else if (processed > 0 && percentage < 100) {
+                            // 处理中时，估算总数
+                            if ($totalCount.text() === '0' || $totalCount.text() === '?') {
+                                // 首次估算：假设当前进度是准确的，反推总数
+                                var estimated = Math.round(processed * 100 / percentage);
+                                $totalCount.text(estimated);
+                            }
+                        }
+                    }
+
+                    // 完成时自动隐藏进度条
+                    if (percentage === 100) {
+                        setTimeout(function() {
+                            $('#batch-generate-progress').fadeOut(500);
+                        }, 3000);
+                    }
+                }
+
+                // 显示加载状态的函数
+                function showProcessingStatus(title, totalPosts, operationType) {
+                    var messageCount = 0;
+                    var cycleCount = 0;
+
+                    // 根据操作类型选择不同的状态消息
+                    var statusMessages, processingMessages;
+
+                    if (operationType === 'tags') {
+                        // 标签生成的状态消息
+                        statusMessages = [
+                            '正在准备标签生成环境...',
+                            '正在加载AI标签模型...',
+                            '正在分析文章标题和内容...',
+                            '正在获取文章列表...',
+                            '正在初始化标签处理器...'
+                        ];
+
+                        processingMessages = [
+                            '正在分析文章内容...',
+                            '正在生成AI标签...',
+                            '正在匹配现有标签...',
+                            '正在保存标签结果...',
+                            '正在验证标签准确性...'
+                        ];
+                    } else {
+                        // 摘要生成的状态消息（默认）
+                        statusMessages = [
+                            '正在准备处理环境...',
+                            '正在加载AI模型...',
+                            '正在分析文章数据...',
+                            '正在获取文章列表...',
+                            '正在初始化处理器...'
+                        ];
+
+                        processingMessages = [
+                            '正在分析文章内容...',
+                            '正在生成智能摘要...',
+                            '正在优化摘要长度...',
+                            '正在保存处理结果...',
+                            '正在验证摘要质量...'
+                        ];
+                    }
+
+                    var interval = setInterval(function() {
+                        if (messageCount < statusMessages.length) {
+                            // 在准备阶段，显示渐进的准备进度
+                            var progress = Math.round((messageCount + 1) * 8); // 8%, 16%, 24%, 32%, 40%
+                            var simulatedProcessed = Math.round((progress / 100) * Math.min(totalPosts, 10)); // 最多模拟处理10篇
+                            var simulatedSuccess = Math.round(simulatedProcessed * 0.9);
+
+                            updateProgress(title, progress, simulatedProcessed, simulatedSuccess,
+                                         simulatedProcessed - simulatedSuccess, statusMessages[messageCount], totalPosts);
+                            messageCount++;
+                        } else {
+                            // 循环显示处理状态，模拟真实的处理进度
+                            cycleCount++;
+
+                            // 对于大量文章，使用更慢的进度增长
+                            var maxProgress = 95;
+                            var progressIncrement = totalPosts > 1000 ? 0.5 : (totalPosts > 500 ? 1 : 2);
+                            var baseProgress = 45;
+                            var additionalProgress = Math.min(cycleCount * progressIncrement, maxProgress - baseProgress);
+                            var progress = Math.min(baseProgress + additionalProgress, maxProgress);
+
+                            var simulatedProcessed = Math.round((progress / 100) * totalPosts);
+                            var simulatedSuccess = Math.round(simulatedProcessed * 0.85 + Math.random() * 10);
+                            var simulatedErrors = simulatedProcessed - simulatedSuccess;
+
+                            // 确保不超过总数
+                            simulatedProcessed = Math.min(simulatedProcessed, totalPosts);
+                            simulatedSuccess = Math.min(simulatedSuccess, simulatedProcessed);
+                            simulatedErrors = Math.min(simulatedErrors, simulatedProcessed - simulatedSuccess);
+
+                            var messageIndex = (cycleCount - 1) % processingMessages.length;
+                            var currentMessage = processingMessages[messageIndex] + ' (' + simulatedProcessed + '/' + totalPosts + ')';
+
+                            // 对于大量文章，添加时间提示和进度检查点
+                            if (totalPosts > 1000) {
+                                if (cycleCount % 8 === 0) {
+                                    var remainingMinutes = Math.round((100 - progress) / 10 * 1.5); // 估算剩余时间
+                                    currentMessage += ' - 预计还需' + remainingMinutes + '分钟';
+                                }
+
+                                // 在特定进度点显示里程碑
+                                if (progress >= 25 && progress < 27 && cycleCount % 50 === 0) {
+                                    currentMessage += ' ✅ 已完成25%';
+                                } else if (progress >= 50 && progress < 52 && cycleCount % 50 === 0) {
+                                    currentMessage += ' 🎯 已完成50%';
+                                } else if (progress >= 75 && progress < 77 && cycleCount % 50 === 0) {
+                                    currentMessage += ' 🔥 已完成75%';
+                                }
+                            }
+
+                            updateProgress(title, progress, simulatedProcessed, simulatedSuccess,
+                                         simulatedErrors, currentMessage, totalPosts);
+                        }
+                    }, totalPosts > 1000 ? 3000 : 1500); // 大量文章时每3秒更新一次，减少频率
+
+                    return interval;
+                }
+
                 // 批量生成摘要
                 $('#batch-generate-excerpts').on('click', function(e) {
                     e.preventDefault();
 
                     var $button = $(this);
                     var $spinner = $('#batch-generate-spinner');
-                    var $status = $('#batch-generate-status');
+                    var $progress = $('#batch-generate-progress');
                     var $result = $('#batch-generate-result');
 
-                    // 显示加载状态
-                    $button.prop('disabled', true);
-                    $spinner.show();
-                    $status.text('正在为无摘要的文章生成摘要，请稍候...');
-                    $result.hide();
+                    var estimatedTime = '30秒-2分钟';
+                    var showBatchOption = false;
 
-                    // 发送AJAX请求
+                    if (stats.without_excerpt > 2000) {
+                        estimatedTime = '15-30分钟';
+                        showBatchOption = true;
+                    } else if (stats.without_excerpt > 1000) {
+                        estimatedTime = '8-15分钟';
+                        showBatchOption = true;
+                    } else if (stats.without_excerpt > 500) {
+                        estimatedTime = '5-10分钟';
+                    } else if (stats.without_excerpt > 100) {
+                        estimatedTime = '2-5分钟';
+                    }
+
+                    var confirmMessage = '确定要为所有无摘要文章批量生成摘要吗？\n\n' +
+                        '• 需要处理的文章数量：' + stats.without_excerpt + ' 篇\n' +
+                        '• 预计处理时间：' + estimatedTime + '\n' +
+                        '• 处理过程中请不要关闭页面\n' +
+                        '• 大量文章处理可能需要较长时间，请耐心等待';
+
+                    if (showBatchOption) {
+                        confirmMessage += '\n\n💡 **建议：对于' + stats.without_excerpt + '篇文章**\n' +
+                            '考虑分批处理以获得更好的稳定性：\n' +
+                            '• 分3-5批处理，每批300-500篇\n' +
+                            '• 每批处理间隔2-3分钟\n' +
+                            '• 可以降低服务器压力和超时风险\n\n' +
+                            '点击"确定"继续处理全部文章，\n点击"取消"可以考虑分批处理。';
+                    } else {
+                        confirmMessage += '\n\n点击"确定"开始处理，或"取消"退出。';
+                    }
+
+                    if (!confirm(confirmMessage)) {
+                        return;
+                    }
+
+                    // 显示进度条
+                    $progress.show();
+                    $result.hide();
+                    $button.prop('disabled', true);
+
+                    // 初始化进度显示
+                    var initMessage = '准备开始处理 ' + stats.without_excerpt + ' 篇无摘要文章...';
+                    if (stats.without_excerpt > 1000) {
+                        initMessage += '\n⚠️ 大量文章处理，请耐心等待，避免关闭页面';
+                    }
+                    updateProgress('生成摘要', 0, 0, 0, 0, initMessage, stats.without_excerpt);
+
+                    // 显示处理状态
+                    var statusInterval = showProcessingStatus('生成摘要', stats.without_excerpt, 'excerpts');
+
+                    // 发送实际的批量生成请求
                     $.ajax({
                         url: ajaxurl,
                         type: 'POST',
+                        timeout: 600000, // 10分钟超时时间（600秒）
                         data: {
                             action: 'batch_generate_excerpts',
                             nonce: '<?php echo wp_create_nonce('batch_generate_excerpts_nonce'); ?>'
                         },
+                        beforeSend: function() {
+                            updateProgress('生成摘要', 10, 0, 0, 0, '正在发送请求到服务器...', stats.without_excerpt);
+                        },
                         success: function(response) {
+                            // 立即停止状态消息显示
+                            clearInterval(statusInterval);
+
                             if (response.success) {
                                 var data = response.data;
+                                // 确保显示真实的处理结果
+                                var actualProcessed = data.success_count + data.error_count;
+                                updateProgress('生成摘要', 100, actualProcessed, data.success_count, data.error_count, '处理完成', stats.without_excerpt);
+
                                 var message = '<div class="notice notice-success is-dismissible"><p>' +
-                                    '批量生成摘要完成！<br>' +
-                                    '成功：' + data.success_count + ' 篇<br>' +
-                                    '失败：' + data.error_count + ' 篇';
+                                    '<strong>批量生成摘要完成！</strong><br>' +
+                                    '✅ 成功处理：' + data.success_count + ' 篇文章<br>' +
+                                    (data.error_count > 0 ? '❌ 处理失败：' + data.error_count + ' 篇文章<br>' : '') +
+                                    '📊 总计处理：' + (data.success_count + data.error_count) + ' 篇文章';
 
                                 if (data.error_count > 0) {
-                                    message += '<br>详细信息请查看日志';
+                                    message += '<br><small>详细信息请查看错误日志</small>';
                                 }
 
                                 message += '</p></div>';
                                 $result.html(message).show();
-                                $status.text('批量生成摘要完成！');
 
-                                // 3秒后刷新页面以显示更新后的数据
+                                // 5秒后隐藏进度条
                                 setTimeout(function() {
-                                    window.location.reload();
-                                }, 3000);
+                                    $progress.hide();
+                                }, 5000);
+
                             } else {
-                                $result.html('<div class="notice notice-error"><p>批量生成失败：' + response.data.message + '</p></div>').show();
-                                $status.text('批量生成失败，请重试');
+                                updateProgress('生成摘要', 100, 0, 0, 0, '处理失败：' + response.data.message, stats.without_excerpt);
+                                $result.html('<div class="notice notice-error"><p><strong>摘要生成失败：</strong><br>' + response.data.message + '</p></div>').show();
+                                setTimeout(function() {
+                                    $progress.hide();
+                                }, 5000);
                             }
-                        },
-                        error: function() {
-                            $result.html('<div class="notice notice-error"><p>网络错误，请重试</p></div>').show();
-                            $status.text('网络错误，请重试');
-                        },
-                        complete: function() {
+
                             $button.prop('disabled', false);
-                            $spinner.hide();
+                        },
+                        error: function(xhr, status, error) {
+                            // 停止状态消息显示
+                            clearInterval(statusInterval);
+
+                            var errorMessage = '';
+                            if (status === 'timeout') {
+                                var partialMessage = '\n\n⚠️ **处理可能仍在继续**\n\n' +
+                                    '对于大量文章（' + stats.without_excerpt + ' 篇）的处理：\n' +
+                                    '• 服务器可能仍在后台继续处理\n' +
+                                    '• 建议等待5-10分钟后刷新页面查看结果\n' +
+                                    '• 如果仍有大量文章未处理，可以再次运行\n' +
+                                    '• 考虑分批次处理（每次处理200-300篇）';
+
+                                errorMessage = '请求超时：处理时间过长，服务器响应超时。' + partialMessage;
+                                updateProgress('生成摘要', 100, 0, 0, 0, '请求超时，但处理可能仍在继续', stats.without_excerpt);
+                            } else if (status === 'abort') {
+                                errorMessage = '请求被取消';
+                                updateProgress('生成摘要', 100, 0, 0, 0, '请求被取消', stats.without_excerpt);
+                            } else if (xhr.status === 0) {
+                                errorMessage = '网络连接失败：无法连接到服务器，请检查网络连接';
+                                updateProgress('生成摘要', 100, 0, 0, 0, '网络连接失败', stats.without_excerpt);
+                            } else if (xhr.status === 500) {
+                                errorMessage = '服务器内部错误：服务器处理请求时发生错误 (HTTP 500)';
+                                updateProgress('生成摘要', 100, 0, 0, 0, '服务器错误', stats.without_excerpt);
+                            } else if (xhr.status === 503) {
+                                errorMessage = '服务不可用：服务器暂时无法处理请求 (HTTP 503)';
+                                updateProgress('生成摘要', 100, 0, 0, 0, '服务不可用', stats.without_excerpt);
+                            } else if (xhr.status === 504) {
+                                errorMessage = '网关超时：服务器处理时间过长 (HTTP 504)';
+                                updateProgress('生成摘要', 100, 0, 0, 0, '网关超时', stats.without_excerpt);
+                            } else {
+                                errorMessage = '网络错误：' + (error || '未知错误') + ' (HTTP ' + xhr.status + ')';
+                                updateProgress('生成摘要', 100, 0, 0, 0, '网络错误', stats.without_excerpt);
+                            }
+
+                            $result.html('<div class="notice notice-error"><p><strong>处理失败：</strong><br>' + errorMessage + '</p>' +
+                                '<p><strong>建议：</strong></p>' +
+                                '<ul>' +
+                                '<li>检查网络连接是否正常</li>' +
+                                '<li>刷新页面后重试</li>' +
+                                '<li>如果是大量文章处理，建议分批进行</li>' +
+                                '<li>如果问题持续，请联系服务器管理员</li>' +
+                                '</ul></div>').show();
+
+                            setTimeout(function() {
+                                $progress.hide();
+                            }, 8000); // 延长显示时间到8秒
+                            $button.prop('disabled', false);
                         }
                     });
                 });
@@ -1186,16 +1776,343 @@ class WordPress_Toolkit {
                         }
                     });
                 });
+
+                // AI生成标签功能
+                $('.generate-tags-single').on('click', function(e) {
+                    e.preventDefault();
+                    var $button = $(this);
+                    var postId = $button.data('post-id');
+                    var postTitle = $button.data('title');
+
+                    console.log('Generate tags clicked - Post ID:', postId, 'Title:', postTitle);
+
+                    if (!postId) {
+                        alert('文章ID无效');
+                        return;
+                    }
+
+                    // 显示加载状态
+                    var originalText = $button.html();
+                    $button.html('<span class="dashicons dashicons-update rotating"></span> 生成中...').prop('disabled', true);
+
+                    // 生成标签
+                    $.ajax({
+                        url: ajaxurl,
+                        type: 'POST',
+                        data: {
+                            action: 'generate_ai_tags',
+                            post_id: postId,
+                            nonce: '<?php echo wp_create_nonce('generate_tags_nonce'); ?>'
+                        },
+                        beforeSend: function(xhr) {
+                            console.log('Sending AJAX request for tags...');
+                        },
+                        success: function(response) {
+                            console.log('AJAX response:', response);
+                            $button.html(originalText).prop('disabled', false);
+
+                            if (response.success) {
+                                showTagDialog(postId, postTitle, response.data);
+                            } else {
+                                alert('标签生成失败：' + response.data.message);
+                            }
+                        },
+                        error: function(xhr, status, error) {
+                            console.log('AJAX error:', status, error);
+                            console.log('XHR response:', xhr.responseText);
+                            $button.html(originalText).prop('disabled', false);
+                            alert('网络错误，请重试');
+                        }
+                    });
+                });
+
+                // 显示标签选择对话框
+                function showTagDialog(postId, postTitle, tagData) {
+                    var existingTags = tagData.existing_tags || [];
+                    var aiTags = tagData.ai_tags || [];
+                    var suggestedAction = tagData.suggested_action || 'replace';
+
+                    // 创建对话框内容
+                    var dialogHtml = '<div id="tag-dialog" style="display: none;">' +
+                        '<div class="tag-dialog-content">' +
+                        '<h3>🏷️ AI标签生成 - ' + postTitle + '</h3>' +
+
+                        '<div class="tag-section">' +
+                        '<h4>📌 原有标签：</h4>' +
+                        '<div class="tag-container" id="existing-tags">';
+
+                    if (existingTags.length > 0) {
+                        existingTags.forEach(function(tag) {
+                            dialogHtml += '<span class="tag existing-tag">' + tag + '</span>';
+                        });
+                    } else {
+                        dialogHtml += '<span class="no-tags">暂无标签</span>';
+                    }
+
+                    dialogHtml += '</div></div>' +
+
+                        '<div class="tag-section">' +
+                        '<h4>🤖 AI生成标签：</h4>' +
+                        '<div class="tag-container" id="ai-tags">';
+
+                    if (aiTags.length > 0) {
+                        aiTags.forEach(function(tag) {
+                            dialogHtml += '<span class="tag ai-tag" data-tag="' + tag + '">' + tag + '</span>';
+                        });
+                    } else {
+                        dialogHtml += '<span class="no-tags">AI未生成标签</span>';
+                    }
+
+                    dialogHtml += '</div></div>' +
+
+                        '<div class="tag-actions">' +
+                        '<h4>选择操作：</h4>' +
+                        '<label><input type="radio" name="tag_action" value="replace" ' + (suggestedAction === 'replace' ? 'checked' : '') + '> 替换所有标签</label><br>' +
+                        '<label><input type="radio" name="tag_action" value="add" ' + (suggestedAction === 'add' ? 'checked' : '') + '> 添加到现有标签</label><br>' +
+                        '<label><input type="radio" name="tag_action" value="merge"> 合并去重</label>' +
+                        '</div>' +
+
+                        '<div class="tag-dialog-buttons">' +
+                        '<button type="button" class="button button-secondary" onclick="closeTagDialog()">取消</button>' +
+                        '<button type="button" class="button button-primary" onclick="applyTags(' + postId + ')">应用标签</button>' +
+                        '</div>' +
+                        '</div></div>';
+
+                    // 添加到页面
+                    $('body').append(dialogHtml);
+
+                    // 显示对话框
+                    $('#tag-dialog').fadeIn(200);
+
+                    // AI标签点击选择/取消
+                    $('.ai-tag').on('click', function() {
+                        $(this).toggleClass('selected');
+                    });
+                }
+
+                // 关闭对话框
+                window.closeTagDialog = function() {
+                    $('#tag-dialog').fadeOut(200, function() {
+                        $(this).remove();
+                    });
+                };
+
+                // 应用标签
+                window.applyTags = function(postId) {
+                    var selectedTags = $('.ai-tag.selected').map(function() {
+                        return $(this).data('tag');
+                    }).get();
+
+                    if (selectedTags.length === 0) {
+                        alert('请选择要应用的标签');
+                        return;
+                    }
+
+                    var actionType = $('input[name="tag_action"]:checked').val();
+
+                    // 显示加载状态
+                    $('.tag-dialog-buttons .button-primary').html('<span class="dashicons dashicons-update rotating"></span> 应用中...').prop('disabled', true);
+
+                    $.ajax({
+                        url: ajaxurl,
+                        type: 'POST',
+                        data: {
+                            action: 'apply_ai_tags',
+                            post_id: postId,
+                            new_tags: selectedTags,
+                            action_type: actionType,
+                            nonce: '<?php echo wp_create_nonce('apply_tags_nonce'); ?>'
+                        },
+                        success: function(response) {
+                            if (response.success) {
+                                alert('标签应用成功！');
+                                closeTagDialog();
+                                // 刷新页面以显示更新的标签信息
+                                location.reload();
+                            } else {
+                                alert('标签应用失败：' + response.data.message);
+                                $('.tag-dialog-buttons .button-primary').html('应用标签').prop('disabled', false);
+                            }
+                        },
+                        error: function() {
+                            alert('网络错误，请重试');
+                            $('.tag-dialog-buttons .button-primary').html('应用标签').prop('disabled', false);
+                        }
+                    });
+                };
+
+                // 批量生成标签
+                $('#batch-generate-tags').on('click', function(e) {
+                    e.preventDefault();
+
+                    var $button = $(this);
+                    var $spinner = $('#batch-generate-tags-spinner');
+                    var $progress = $('#batch-generate-progress');
+                    var $result = $('#batch-generate-result');
+
+                    var estimatedTime = '1-3分钟';
+                    var showBatchOption = false;
+
+                    if (stats.total_posts > 2000) {
+                        estimatedTime = '20-40分钟';
+                        showBatchOption = true;
+                    } else if (stats.total_posts > 1000) {
+                        estimatedTime = '10-20分钟';
+                        showBatchOption = true;
+                    } else if (stats.total_posts > 500) {
+                        estimatedTime = '6-12分钟';
+                    } else if (stats.total_posts > 100) {
+                        estimatedTime = '3-8分钟';
+                    }
+
+                    var confirmMessage = '确定要为所有文章批量生成标签吗？\n\n' +
+                        '• 需要处理的文章数量：' + stats.total_posts + ' 篇\n' +
+                        '• 预计处理时间：' + estimatedTime + '\n' +
+                        '• 将为每篇文章生成AI标签并与现有标签合并\n' +
+                        '• 处理过程中请不要关闭页面\n' +
+                        '• 大量文章处理可能需要较长时间，请耐心等待';
+
+                    if (showBatchOption) {
+                        confirmMessage += '\n\n💡 **建议：对于' + stats.total_posts + '篇文章**\n' +
+                            '标签生成更耗时，强烈建议分批处理：\n' +
+                            '• 分4-6批处理，每批200-400篇\n' +
+                            '• 每批处理间隔3-5分钟\n' +
+                            '• 可以确保AI标签质量和处理稳定性\n\n' +
+                            '点击"确定"继续处理全部文章，\n点击"取消"可以考虑分批处理。';
+                    } else {
+                        confirmMessage += '\n\n点击"确定"开始处理，或"取消"退出。';
+                    }
+
+                    if (!confirm(confirmMessage)) {
+                        return;
+                    }
+
+                    // 显示进度条
+                    $progress.show();
+                    $result.hide();
+                    $button.prop('disabled', true);
+
+                    // 初始化进度显示
+                    var initMessage = '准备开始处理 ' + stats.total_posts + ' 篇文章...';
+                    if (stats.total_posts > 1000) {
+                        initMessage += '\n⚠️ 大量文章标签生成，处理时间较长，请耐心等待';
+                    }
+                    updateProgress('生成标签', 0, 0, 0, 0, initMessage, stats.total_posts);
+
+                    // 显示处理状态
+                    var statusInterval = showProcessingStatus('生成标签', stats.total_posts, 'tags');
+
+                    // 发送实际的批量生成请求
+                    $.ajax({
+                        url: ajaxurl,
+                        type: 'POST',
+                        timeout: 600000, // 10分钟超时时间（600秒）
+                        data: {
+                            action: 'batch_generate_tags',
+                            nonce: '<?php echo wp_create_nonce('batch_generate_tags_nonce'); ?>'
+                        },
+                        beforeSend: function() {
+                            updateProgress('生成标签', 10, 0, 0, 0, '正在发送请求到服务器...', stats.total_posts);
+                        },
+                        success: function(response) {
+                            // 立即停止状态消息显示
+                            clearInterval(statusInterval);
+
+                            if (response.success) {
+                                var data = response.data;
+                                // 确保显示真实的处理结果
+                                updateProgress('生成标签', 100, data.processed_count, data.success_count, data.error_count, '处理完成', stats.total_posts);
+
+                                var message = '<div class="notice notice-success is-dismissible"><p>' +
+                                    '<strong>批量生成标签完成！</strong><br>' +
+                                    '✅ 成功处理：' + data.success_count + ' 篇文章<br>' +
+                                    (data.error_count > 0 ? '❌ 处理失败：' + data.error_count + ' 篇文章<br>' : '') +
+                                    '📊 总计处理：' + data.processed_count + ' 篇文章<br>' +
+                                    '🏷️ 应用标签：' + data.total_applied_tags + ' 个';
+
+                                if (data.error_count > 0) {
+                                    message += '<br><small>详细信息请查看错误日志</small>';
+                                }
+
+                                message += '</p></div>';
+                                $result.html(message).show();
+
+                                // 5秒后隐藏进度条
+                                setTimeout(function() {
+                                    $progress.hide();
+                                }, 5000);
+
+                            } else {
+                                updateProgress('生成标签', 100, 0, 0, 0, '处理失败：' + response.data.message, stats.total_posts);
+                                $result.html('<div class="notice notice-error"><p><strong>批量生成标签失败：</strong><br>' + response.data.message + '</p></div>').show();
+                                setTimeout(function() {
+                                    $progress.hide();
+                                }, 5000);
+                            }
+
+                            $button.prop('disabled', false);
+                        },
+                        error: function(xhr, status, error) {
+                            // 停止状态消息显示
+                            clearInterval(statusInterval);
+
+                            var errorMessage = '';
+                            if (status === 'timeout') {
+                                var partialMessage = '\n\n⚠️ **处理可能仍在继续**\n\n' +
+                                    '对于大量文章（' + stats.total_posts + ' 篇）的标签生成：\n' +
+                                    '• 服务器可能仍在后台继续处理\n' +
+                                    '• 建议等待10-15分钟后刷新页面查看结果\n' +
+                                    '• 如果仍有大量文章未处理，可以再次运行\n' +
+                                    '• 考虑分批次处理（每次处理200-300篇）';
+
+                                errorMessage = '请求超时：处理时间过长，服务器响应超时。' + partialMessage;
+                                updateProgress('生成标签', 100, 0, 0, 0, '请求超时，但处理可能仍在继续', stats.total_posts);
+                            } else if (status === 'abort') {
+                                errorMessage = '请求被取消';
+                                updateProgress('生成标签', 100, 0, 0, 0, '请求被取消', stats.total_posts);
+                            } else if (xhr.status === 0) {
+                                errorMessage = '网络连接失败：无法连接到服务器，请检查网络连接';
+                                updateProgress('生成标签', 100, 0, 0, 0, '网络连接失败', stats.total_posts);
+                            } else if (xhr.status === 500) {
+                                errorMessage = '服务器内部错误：服务器处理请求时发生错误 (HTTP 500)';
+                                updateProgress('生成标签', 100, 0, 0, 0, '服务器错误', stats.total_posts);
+                            } else if (xhr.status === 503) {
+                                errorMessage = '服务不可用：服务器暂时无法处理请求 (HTTP 503)';
+                                updateProgress('生成标签', 100, 0, 0, 0, '服务不可用', stats.total_posts);
+                            } else if (xhr.status === 504) {
+                                errorMessage = '网关超时：服务器处理时间过长 (HTTP 504)';
+                                updateProgress('生成标签', 100, 0, 0, 0, '网关超时', stats.total_posts);
+                            } else {
+                                errorMessage = '网络错误：' + (error || '未知错误') + ' (HTTP ' + xhr.status + ')';
+                                updateProgress('生成标签', 100, 0, 0, 0, '网络错误', stats.total_posts);
+                            }
+
+                            $result.html('<div class="notice notice-error"><p><strong>标签生成失败：</strong><br>' + errorMessage + '</p>' +
+                                '<p><strong>建议：</strong></p>' +
+                                '<ul>' +
+                                '<li>检查网络连接是否正常</li>' +
+                                '<li>刷新页面后重试</li>' +
+                                '<li>如果是大量文章处理，建议分批进行</li>' +
+                                '<li>如果问题持续，请联系服务器管理员</li>' +
+                                '</ul></div>').show();
+
+                            setTimeout(function() {
+                                $progress.hide();
+                            }, 8000); // 延长显示时间到8秒
+                            $button.prop('disabled', false);
+                        }
+                    });
+                });
             });
             </script>
             <?php
         } else {
-            echo '<div class="wrap"><div class="error"><p>' . __('自动摘要模块未正确加载', 'wordpress-toolkit') . '</p></div></div>';
+            echo '<div class="wrap"><div class="error"><p>' . __('文章优化模块未正确加载', 'wordpress-toolkit') . '</p></div></div>';
         }
     }
 
     /**
-     * 自动摘要设置页面 - 设置菜单中
+     * 文章优化设置页面 - 设置菜单中
      */
     public function auto_excerpt_settings_page() {
         // 验证用户权限
@@ -1209,10 +2126,10 @@ class WordPress_Toolkit {
         }
 
         if ($this->auto_excerpt) {
-            // 调用自动摘要模块的设置页面
+            // 调用文章优化模块的设置页面
             $this->auto_excerpt->settings_page();
         } else {
-            echo '<div class="wrap"><h1>' . __('自动摘要设置', 'wordpress-toolkit') . '</h1><div class="error"><p>' . __('Auto Excerpt 模块未正确加载，请检查插件设置。', 'wordpress-toolkit') . '</p></div></div>';
+            echo '<div class="wrap"><h1>' . __('文章优化设置', 'wordpress-toolkit') . '</h1><div class="error"><p>' . __('文章优化模块未正确加载，请检查插件设置。', 'wordpress-toolkit') . '</p></div></div>';
         }
     }
 
@@ -1442,7 +2359,7 @@ class WordPress_Toolkit {
                 </div>
 
                 <div class="about-section">
-                    <h2>自动摘要模块</h2>
+                    <h2>文章优化模块</h2>
                     <div class="feature-card">
                         <h3>主要功能</h3>
                         <ul>
@@ -1452,6 +2369,7 @@ class WordPress_Toolkit {
                             <li>⚙️ <strong>灵活参数配置</strong> - 可调节创造性、长度等参数</li>
                             <li>🎯 <strong>精准摘要控制</strong> - 保持语义完整，突出重点</li>
                             <li>🕐 <strong>定时自动生成</strong> - 凌晨3点自动为无摘要文章生成摘要</li>
+                            <li>🏷️ <strong>AI智能标签生成</strong> - 根据文章内容自动生成相关标签</li>
                             <li>📊 <strong>统计和筛选</strong> - 实时统计摘要覆盖率和AI生成情况</li>
                             <li>🔧 <strong>API连接测试</strong> - 确保AI服务正常工作</li>
                             <li>📝 <strong>程序化调用</strong> - 可供其他功能代码调用</li>
@@ -1494,16 +2412,28 @@ class WordPress_Toolkit {
                             <li>具有完善的错误处理和日志记录</li>
                         </ul>
 
+                        <p><strong>AI智能标签功能：</strong></p>
+                        <ul>
+                            <li>根据文章标题、内容、摘要智能生成相关标签</li>
+                            <li>智能识别文章主题，生成精准的关键词标签</li>
+                            <li>支持标签对比：显示原有标签和AI生成标签</li>
+                            <li>灵活的应用模式：替换、添加、合并去重</li>
+                            <li>可视化选择界面，用户可自主选择要应用的标签</li>
+                            <li>批量生成标签：一键为所有文章生成AI标签并合并去重</li>
+                            <li>自动创建新标签，支持中英文标签</li>
+                        </ul>
+
                         <h3>使用方法</h3>
-                        <p><strong>功能管理：</strong>在"工具箱" → "自动摘要"中查看功能状态和概览</p>
-                        <p><strong>AI配置：</strong>在"设置" → "自动摘要"中配置DeepSeek API密钥和相关参数</p>
+                        <p><strong>功能管理：</strong>在"工具箱" → "文章优化"中查看功能状态和概览</p>
+                        <p><strong>AI配置：</strong>在"设置" → "文章优化"中配置DeepSeek API密钥和相关参数</p>
                         <p><strong>API测试：</strong>在设置页面测试API连接是否正常工作</p>
                         <p><strong>批量生成：</strong>在功能管理页面可批量生成所有无摘要文章的摘要</p>
-                        <p><strong>程序调用：</strong>摘要生成功能可供其他插件或主题代码调用</p>
+                        <p><strong>AI标签生成：</strong>在文章列表中点击"🏷️ 生成标签"按钮，选择要应用的AI标签</p>
+                        <p><strong>程序调用：</strong>摘要生成和标签生成功能可供其他插件或主题代码调用</p>
 
                         <h3>后台管理</h3>
-                        <p><strong>工具箱 → 自动摘要：</strong>查看功能概览、统计数据和批量操作</p>
-                        <p><strong>设置 → 自动摘要：</strong>完整配置和参数调整</p>
+                        <p><strong>工具箱 → 文章优化：</strong>查看功能概览、统计数据和批量操作</p>
+                        <p><strong>设置 → 文章优化：</strong>完整配置和参数调整</p>
                         <p>支持DeepSeek AI配置、连接测试、定时任务设置和参数调整</p>
 
                         <h3>注意事项</h3>

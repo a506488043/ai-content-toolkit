@@ -575,7 +575,13 @@ class ChfmCard_Cache_Manager {
             );
         }
         
-        return (int) $wpdb->get_var("SELECT COUNT(*) FROM $table $where");
+        // 安全的COUNT查询 - 使用预处理语句和表名转义
+        $table_name = $wpdb->prepare("%i", $table);
+        if (empty($where)) {
+            return (int) $wpdb->get_var("SELECT COUNT(*) FROM $table_name");
+        } else {
+            return (int) $wpdb->get_var("SELECT COUNT(*) FROM $table_name $where");
+        }
     }
     
     /**

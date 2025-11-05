@@ -59,18 +59,42 @@ class TimeCapsule_Database {
         }
 
         if (!empty($alter_sqls)) {
-            $alter_sql = "ALTER TABLE {$table_name} " . implode(', ', $alter_sqls);
-            $wpdb->query($alter_sql);
+            // 安全的ALTER TABLE操作 - 使用白名单验证
+            $allowed_operations = [
+                'ADD COLUMN',
+                'MODIFY COLUMN',
+                'DROP COLUMN'
+            ];
 
-            // 添加索引
-            if (!in_array('issue_date', $existing_columns)) {
-                $wpdb->query("ALTER TABLE {$table_name} ADD INDEX issue_date (issue_date)");
+            $validated_sqls = [];
+            foreach ($alter_sqls as $sql) {
+                foreach ($allowed_operations as $op) {
+                    if (strpos($sql, $op) === 0) {
+                        $validated_sqls[] = $sql;
+                        break;
+                    }
+                }
             }
-            if (!in_array('renewal_date', $existing_columns)) {
-                $wpdb->query("ALTER TABLE {$table_name} ADD INDEX renewal_date (renewal_date)");
+
+            if (!empty($validated_sqls)) {
+                $alter_sql = "ALTER TABLE " . $wpdb->prepare("%i", $table_name) . " " . implode(', ', $validated_sqls);
+                $wpdb->query($alter_sql);
             }
-            if (!in_array('certificate_status', $existing_columns)) {
-                $wpdb->query("ALTER TABLE {$table_name} ADD INDEX certificate_status (certificate_status)");
+
+            // 安全添加索引 - 使用白名单验证
+            $allowed_indexes = [
+                'issue_date' => 'issue_date',
+                'renewal_date' => 'renewal_date',
+                'certificate_status' => 'certificate_status'
+            ];
+
+            foreach ($allowed_indexes as $index_name => $index_column) {
+                if (!in_array($index_name, $existing_columns)) {
+                    $index_sql = "ALTER TABLE " . $wpdb->prepare("%i", $table_name) .
+                                 " ADD INDEX " . $wpdb->prepare("%i", $index_name) .
+                                 " (" . $wpdb->prepare("%i", $index_column) . ")";
+                    $wpdb->query($index_sql);
+                }
             }
         }
 

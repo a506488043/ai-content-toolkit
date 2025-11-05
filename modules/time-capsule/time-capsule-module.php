@@ -235,7 +235,16 @@ class Time_Capsule_Module {
         $categories = $this->category_manager->get_categories();
         
         ob_start();
-        include WORDPRESS_TOOLKIT_PLUGIN_URL . 'modules/time-capsule/templates/add-item-form.php';
+        // 安全的文件包含 - 使用plugin_path而非plugin_url
+        $template_path = WORDPRESS_TOOLKIT_PLUGIN_PATH . 'modules/time-capsule/templates/add-item-form.php';
+
+        // 验证文件路径安全性
+        if (!file_exists($template_path) || !is_readable($template_path)) {
+            error_log('Time Capsule: Template file not found or not readable: ' . $template_path);
+            return '<p class="error">模板文件加载失败</p>';
+        }
+
+        include $template_path;
         return ob_get_clean();
     }
     

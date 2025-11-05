@@ -187,12 +187,23 @@ $click_stats = array();
 
                     <!-- 统计信息 -->
                     <?php
-                    $total_clicks = $clicks_table_exists ? $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}chf_card_clicks") : 0;
+                    // 安全的COUNT查询 - 使用表名转义
+                    if ($clicks_table_exists) {
+                        $clicks_table = $wpdb->prepare("%i", $wpdb->prefix . 'chf_card_clicks');
+                        $total_clicks = $wpdb->get_var("SELECT COUNT(*) FROM $clicks_table");
+                    } else {
+                        $total_clicks = 0;
+                    }
                     $total_clicks = $total_clicks ? intval($total_clicks) : 0;
-                    $today_clicks = $clicks_table_exists ? $wpdb->get_var($wpdb->prepare(
-                        "SELECT COUNT(*) FROM {$wpdb->prefix}chf_card_clicks WHERE DATE(clicked_at) = %s",
-                        current_time('Y-m-d')
-                    )) : 0;
+                    // 安全的今日点击统计查询
+                    if ($clicks_table_exists) {
+                        $today_clicks = $wpdb->get_var($wpdb->prepare(
+                            "SELECT COUNT(*) FROM " . $wpdb->prepare("%i", $wpdb->prefix . 'chf_card_clicks') . " WHERE DATE(clicked_at) = %s",
+                            current_time('Y-m-d')
+                        ));
+                    } else {
+                        $today_clicks = 0;
+                    }
                     $today_clicks = $today_clicks ? intval($today_clicks) : 0;
                     ?>
                     <span class="custom-card-stats" style="margin-left: 20px; color: #666; font-size: 14px;">

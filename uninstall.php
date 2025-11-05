@@ -30,30 +30,48 @@ delete_option('wordpress_toolkit_custom_card_activated_time');
 delete_option('wordpress_toolkit_time_capsule_activated_time');
 delete_option('wordpress_toolkit_cookieguard_activated_time');
 
-// 删除Custom Card数据库表
-$wpdb->query("DROP TABLE IF EXISTS {$wpdb->prefix}chf_card_cache");
+// 安全删除数据库表 - 使用白名单验证
+$allowed_tables = ['chf_card_cache', 'time_capsule_items', 'time_capsule_categories'];
+foreach ($allowed_tables as $table) {
+    $table_name = $wpdb->prefix . $table;
+    // 使用转义确保表名安全
+    $wpdb->query("DROP TABLE IF EXISTS " . $wpdb->prepare("%i", $table_name));
+}
 
-// 删除Time Capsule数据库表
-$wpdb->query("DROP TABLE IF EXISTS {$wpdb->prefix}time_capsule_items");
-$wpdb->query("DROP TABLE IF EXISTS {$wpdb->prefix}time_capsule_categories");
+// 安全删除用户元数据 - 使用转义和占位符
+$wpdb->query(
+    $wpdb->prepare(
+        "DELETE FROM {$wpdb->usermeta} WHERE meta_key LIKE %s",
+        'wordpress_toolkit_%'
+    )
+);
 
-// 删除用户元数据中的相关数据
-$wpdb->query("DELETE FROM {$wpdb->usermeta} WHERE meta_key LIKE 'wordpress_toolkit_%'");
+// 安全删除transients缓存 - 使用占位符
+$transient_patterns = [
+    '_transient_wordpress_toolkit_%',
+    '_transient_timeout_wordpress_toolkit_%',
+    '_transient_wordpress_toolkit_cookieguard_geo_%',
+    '_transient_timeout_wordpress_toolkit_cookieguard_geo_%',
+    '_transient_chf_card_%',
+    '_transient_timeout_chf_card_%'
+];
 
-// 删除所有相关的transients缓存
-$wpdb->query("DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_wordpress_toolkit_%'");
-$wpdb->query("DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_timeout_wordpress_toolkit_%'");
+foreach ($transient_patterns as $pattern) {
+    $wpdb->query(
+        $wpdb->prepare(
+            "DELETE FROM {$wpdb->options} WHERE option_name LIKE %s",
+            $pattern
+        )
+    );
+}
 
-// 删除所有相关的地理位置缓存
-$wpdb->query("DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_wordpress_toolkit_cookieguard_geo_%'");
-$wpdb->query("DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_timeout_wordpress_toolkit_cookieguard_geo_%'");
-
-// 删除所有相关的卡片缓存
-$wpdb->query("DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_chf_card_%'");
-$wpdb->query("DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_timeout_chf_card_%'");
-
-// 清理post meta中的相关数据
-$wpdb->query("DELETE FROM {$wpdb->postmeta} WHERE meta_key LIKE 'wordpress_toolkit_%'");
+// 安全清理post meta数据
+$wpdb->query(
+    $wpdb->prepare(
+        "DELETE FROM {$wpdb->postmeta} WHERE meta_key LIKE %s",
+        'wordpress_toolkit_%'
+    )
+);
 
 // 记录卸载日志
 if (defined('WP_DEBUG') && WP_DEBUG) {

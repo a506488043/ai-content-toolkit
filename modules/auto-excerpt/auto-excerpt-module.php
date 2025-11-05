@@ -1,8 +1,8 @@
 <?php
 /**
- * Auto Excerpt Module - 自动文章摘要生成模块
+ * Article Optimization Module - 文章优化模块
  *
- * 根据文章内容自动生成摘要
+ * 根据文章内容自动生成摘要和标签
  *
  * @version 1.0.0
  * @author WordPress Toolkit
@@ -14,7 +14,7 @@ if (!defined('ABSPATH')) {
 }
 
 /**
- * Auto Excerpt Module 主类
+ * Article Optimization Module 主类
  */
 class Auto_Excerpt_Module {
 
@@ -92,6 +92,11 @@ class Auto_Excerpt_Module {
         // 添加批量生成和单个生成摘要的AJAX处理
         add_action('wp_ajax_batch_generate_excerpts', array($this, 'ajax_batch_generate_excerpts'));
         add_action('wp_ajax_generate_single_excerpt', array($this, 'ajax_generate_single_excerpt'));
+
+        // 添加AI生成标签的AJAX处理
+        add_action('wp_ajax_generate_ai_tags', array($this, 'ajax_generate_tags'));
+        add_action('wp_ajax_apply_ai_tags', array($this, 'ajax_apply_tags'));
+        add_action('wp_ajax_batch_generate_tags', array($this, 'ajax_batch_generate_tags'));
 
         // 前端脚本
         add_action('wp_enqueue_scripts', array($this, 'enqueue_scripts'));
@@ -1464,8 +1469,27 @@ class Auto_Excerpt_Module {
 
             $success_count = 0;
             $error_count = 0;
+            $processed_count = 0;
             $max_execution_time = ini_get('max_execution_time');
+            // 增加执行时间限制到600秒（10分钟），如果允许的话
+            if ($max_execution_time < 600) {
+                @set_time_limit(600);
+                $max_execution_time = 600;
+            }
             $start_time = time();
+
+            // 初始化进度信息
+            $progress_id = 'batch_excerpt_' . time();
+            update_option('batch_progress_' . $progress_id, array(
+                'task_type' => 'excerpts',
+                'total' => 0,
+                'processed' => 0,
+                'success' => 0,
+                'errors' => 0,
+                'current_post' => '初始化...',
+                'status' => 'processing',
+                'start_time' => time()
+            ));
 
             // 获取所有无摘要的已发布文章
             $posts_query = new WP_Query(array(
@@ -1756,6 +1780,332 @@ class Auto_Excerpt_Module {
                 $this->unschedule_daily_excerpt_generation();
                 error_log('Auto Excerpt: Unscheduled daily generation due to 3 consecutive failures');
             }
+        }
+      }
+
+    /**
+     * AI生成文章标签
+     */
+    public function generate_tags_by_ai($post_id = null) {
+        if (!$post_id) {
+            return array('error' => __('文章ID无效', 'wordpress-toolkit'));
+        }
+
+        // 检查AI设置
+        if (!$this->settings['use_ai_generation'] || empty($this->settings['deepseek_api_key'])) {
+            return array('error' => __('AI生成功能未启用或未配置API密钥', 'wordpress-toolkit'));
+        }
+
+        $post = get_post($post_id);
+        if (!$post) {
+            return array('error' => __('文章不存在', 'wordpress-toolkit'));
+        }
+
+        try {
+            // 构建提示词
+            $title = get_the_title($post);
+            $content = wp_strip_all_tags($post->post_content);
+            $excerpt = !empty($post->post_excerpt) ? $post->post_excerpt : '';
+
+            // 限制内容长度以避免API限制
+            if (mb_strlen($content) > 3000) {
+                $content = mb_substr($content, 0, 3000) . '...';
+            }
+
+            $prompt = "请根据以下文章信息生成3-8个相关的标签：
+
+标题：{$title}
+
+摘要：{$excerpt}
+
+内容：{$content}
+
+要求：
+1. 标签要准确反映文章主题和内容
+2. 使用简洁的关键词，最好是2-4个字
+3. 标签要具有代表性，便于搜索和分类
+4. 每行一个标签，不要编号
+5. 直接输出标签，不要解释
+
+标签：";
+
+            // 调用DeepSeek API
+            $response = $this->call_deepseek_api(
+                $this->settings['deepseek_api_key'],
+                $this->settings['deepseek_api_base'],
+                $this->settings['deepseek_model'],
+                $prompt,
+                150,
+                0.3 // 较低的创造性确保标签准确
+            );
+
+            if ($response && isset($response['choices'][0]['message']['content'])) {
+                $ai_tags_text = trim($response['choices'][0]['message']['content']);
+
+                // 处理AI生成的标签
+                $ai_tags = array();
+                $lines = explode("\n", $ai_tags_text);
+
+                foreach ($lines as $line) {
+                    $tag = trim($line);
+                    $tag = preg_replace('/[^\p{L}\p{N}\s\-_]/u', '', $tag); // 清理特殊字符
+                    $tag = trim($tag);
+
+                    if (!empty($tag) && mb_strlen($tag) >= 2 && mb_strlen($tag) <= 10) {
+                        $ai_tags[] = $tag;
+                    }
+                }
+
+                // 去重并限制数量
+                $ai_tags = array_unique($ai_tags);
+                $ai_tags = array_slice($ai_tags, 0, 8);
+
+                // 获取原有标签
+                $existing_tags = wp_get_post_tags($post_id, array('fields' => 'names'));
+
+                return array(
+                    'success' => true,
+                    'ai_tags' => $ai_tags,
+                    'existing_tags' => $existing_tags,
+                    'suggested_action' => empty($existing_tags) ? 'add' : 'replace'
+                );
+
+            } else {
+                return array('error' => __('AI服务响应异常', 'wordpress-toolkit'));
+            }
+
+        } catch (Exception $e) {
+            error_log("Auto Excerpt: AI tag generation error: " . $e->getMessage());
+            return array('error' => __('标签生成失败：', 'wordpress-toolkit') . $e->getMessage());
+        }
+    }
+
+    /**
+     * 应用AI生成的标签到文章
+     */
+    public function apply_ai_tags($post_id, $new_tags, $action = 'replace') {
+        if (!$post_id || empty($new_tags)) {
+            return array('success' => false, 'message' => __('参数无效', 'wordpress-toolkit'));
+        }
+
+        $post = get_post($post_id);
+        if (!$post) {
+            return array('success' => false, 'message' => __('文章不存在', 'wordpress-toolkit'));
+        }
+
+        try {
+            // 获取原有标签名称
+            $existing_tag_names = wp_get_post_tags($post_id, array('fields' => 'names'));
+
+            // 根据操作类型处理标签
+            switch ($action) {
+                case 'add':
+                    // 添加到现有标签
+                    $final_tag_names = array_merge($existing_tag_names, $new_tags);
+                    break;
+
+                case 'merge':
+                    // 合并标签（去除重复）
+                    $final_tag_names = array_unique(array_merge($existing_tag_names, $new_tags));
+                    break;
+
+                case 'replace':
+                default:
+                    // 替换所有标签
+                    $final_tag_names = $new_tags;
+                    break;
+            }
+
+            // 去重并设置标签
+            $final_tag_names = array_unique($final_tag_names);
+            $result = wp_set_post_tags($post_id, $final_tag_names, false);
+
+            return array(
+                'success' => true,
+                'message' => __('标签更新成功', 'wordpress-toolkit'),
+                'applied_tags' => count($final_tag_names),
+                'tag_names' => $final_tag_names
+            );
+
+        } catch (Exception $e) {
+            error_log("Auto Excerpt: Apply AI tags error: " . $e->getMessage());
+            return array('success' => false, 'message' => __('标签更新失败：', 'wordpress-toolkit') . $e->getMessage());
+        }
+    }
+
+    /**
+     * AJAX处理生成标签
+     */
+    public function ajax_generate_tags() {
+        // 验证nonce
+        if (!wp_verify_nonce($_POST['nonce'], 'generate_tags_nonce')) {
+            wp_send_json_error(array('message' => __('安全验证失败', 'wordpress-toolkit')));
+        }
+
+        // 验证用户权限
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array('message' => __('权限不足', 'wordpress-toolkit')));
+        }
+
+        $post_id = intval($_POST['post_id']);
+        $result = $this->generate_tags_by_ai($post_id);
+
+        if (isset($result['error'])) {
+            wp_send_json_error(array('message' => $result['error']));
+        } else {
+            wp_send_json_success($result);
+        }
+    }
+
+    /**
+     * AJAX处理应用标签
+     */
+    public function ajax_apply_tags() {
+        // 验证nonce
+        if (!wp_verify_nonce($_POST['nonce'], 'apply_tags_nonce')) {
+            wp_send_json_error(array('message' => __('安全验证失败', 'wordpress-toolkit')));
+        }
+
+        // 验证用户权限
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array('message' => __('权限不足', 'wordpress-toolkit')));
+        }
+
+        $post_id = intval($_POST['post_id']);
+        $new_tags = array_map('sanitize_text_field', $_POST['new_tags']);
+        $action = sanitize_text_field($_POST['action_type']);
+
+        $result = $this->apply_ai_tags($post_id, $new_tags, $action);
+
+        if ($result['success']) {
+            wp_send_json_success($result);
+        } else {
+            wp_send_json_error(array('message' => $result['message']));
+        }
+      }
+
+    /**
+     * 批量生成文章标签
+     */
+    public function batch_generate_tags() {
+        error_log('Auto Excerpt: Starting batch tag generation');
+
+        // 检查是否启用AI生成
+        if (!$this->settings['use_ai_generation'] || empty($this->settings['deepseek_api_key'])) {
+            return array(
+                'success' => false,
+                'message' => __('AI生成功能未启用或未配置API密钥', 'wordpress-toolkit')
+            );
+        }
+
+        try {
+            $max_execution_time = ini_get('max_execution_time');
+            // 增加执行时间限制到600秒（10分钟），如果允许的话
+            if ($max_execution_time < 600) {
+                @set_time_limit(600);
+                $max_execution_time = 600;
+            }
+            $start_time = time();
+            $processed_count = 0;
+            $success_count = 0;
+            $error_count = 0;
+            $total_applied_tags = 0;
+
+            // 获取所有已发布的文章
+            $posts_query = new WP_Query(array(
+                'post_type' => 'post',
+                'post_status' => 'publish',
+                'posts_per_page' => -1,
+                'orderby' => 'date',
+                'order' => 'ASC' // 从旧到新处理
+            ));
+
+            if ($posts_query->have_posts()) {
+                while ($posts_query->have_posts() && (time() - $start_time) < ($max_execution_time - 10)) {
+                    $posts_query->the_post();
+                    global $post;
+
+                    $processed_count++;
+
+                    try {
+                        // 生成标签
+                        $result = $this->generate_tags_by_ai($post->ID);
+
+                        if ($result && isset($result['ai_tags']) && !empty($result['ai_tags'])) {
+                            // 合并去重模式应用标签
+                            $apply_result = $this->apply_ai_tags($post->ID, $result['ai_tags'], 'merge');
+
+                            if ($apply_result && $apply_result['success']) {
+                                $success_count++;
+                                $total_applied_tags += isset($apply_result['applied_tags']) ? $apply_result['applied_tags'] : 0;
+                                error_log("Auto Excerpt: Generated tags for post ID: {$post->ID}");
+                            } else {
+                                $error_count++;
+                                error_log("Auto Excerpt: Failed to apply tags for post ID: {$post->ID}");
+                            }
+                        } else {
+                            error_log("Auto Excerpt: No AI tags generated for post ID: {$post->ID}");
+                        }
+                    } catch (Exception $e) {
+                        $error_count++;
+                        error_log("Auto Excerpt: Error processing post ID {$post->ID}: " . $e->getMessage());
+                    }
+                }
+            }
+
+            wp_reset_postdata();
+
+            return array(
+                'success' => true,
+                'processed_count' => $processed_count,
+                'success_count' => $success_count,
+                'error_count' => $error_count,
+                'total_applied_tags' => $total_applied_tags,
+                'message' => sprintf(
+                    __('批量生成标签完成！处理：%d篇，成功：%d篇，失败：%d篇，应用标签：%d个', 'wordpress-toolkit'),
+                    $processed_count,
+                    $success_count,
+                    $error_count,
+                    $total_applied_tags
+                )
+            );
+
+        } catch (Exception $e) {
+            error_log('Auto Excerpt: Batch tag generation error: ' . $e->getMessage());
+            return array(
+                'success' => false,
+                'message' => __('批量生成标签失败：', 'wordpress-toolkit') . $e->getMessage()
+            );
+        }
+    }
+
+    /**
+     * AJAX处理批量生成标签
+     */
+    public function ajax_batch_generate_tags() {
+        // 验证nonce
+        if (!wp_verify_nonce($_POST['nonce'], 'batch_generate_tags_nonce')) {
+            wp_send_json_error(array('message' => __('安全验证失败', 'wordpress-toolkit')));
+        }
+
+        // 验证用户权限
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array('message' => __('权限不足', 'wordpress-toolkit')));
+        }
+
+        try {
+            error_log('Auto Excerpt: Starting batch tag generation AJAX request');
+            $result = $this->batch_generate_tags();
+
+            if ($result['success']) {
+                wp_send_json_success($result);
+            } else {
+                wp_send_json_error(array('message' => $result['message']));
+            }
+
+        } catch (Exception $e) {
+            error_log('Auto Excerpt: Batch tag generation AJAX error: ' . $e->getMessage());
+            wp_send_json_error(array('message' => __('批量生成标签失败：', 'wordpress-toolkit') . $e->getMessage()));
         }
     }
 }

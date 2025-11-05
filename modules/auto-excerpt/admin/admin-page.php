@@ -1,7 +1,7 @@
 <?php
 /**
- * Auto Excerpt Admin Page
- * 自动摘要管理页面
+ * Article Optimization Admin Page
+ * 文章优化管理页面
  *
  * @version 1.0.0
  * @author WordPress Toolkit
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
 }
 
 /**
- * Auto Excerpt Admin Page 类
+ * Article Optimization Admin Page 类
  */
 class Auto_Excerpt_Admin_Page {
 
