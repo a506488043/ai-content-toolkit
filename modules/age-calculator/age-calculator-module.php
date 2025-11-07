@@ -82,27 +82,8 @@ class Age_Calculator_Module {
      * 加载管理后台脚本和样式
      */
     public function admin_enqueue_scripts($hook) {
-        // 只在Age Calculator设置页面加载
-        if (strpos($hook, 'wordpress-toolkit-age-calculator') === false) {
-            return;
-        }
-        
-        // 加载原Age Calculator的管理样式
-        wp_enqueue_style(
-            'wordpress-toolkit-age-calculator-admin',
-            WORDPRESS_TOOLKIT_PLUGIN_URL . 'modules/age-calculator/assets/admin-style.css',
-            array(),
-            self::MODULE_VERSION
-        );
-        
-        // 加载原Age Calculator的管理脚本
-        wp_enqueue_script(
-            'wordpress-toolkit-age-calculator-admin',
-            WORDPRESS_TOOLKIT_PLUGIN_URL . 'modules/age-calculator/assets/admin-script.js',
-            array('jquery'),
-            self::MODULE_VERSION,
-            true
-        );
+        // 使用统一样式，不需要加载额外的CSS和JS
+        return;
     }
     
     /**

@@ -171,28 +171,8 @@ class CookieGuard_Module {
      * 加载管理后台脚本和样式
      */
     public function admin_enqueue_scripts($hook) {
-        // 只在CookieGuard设置页面加载
-        if (strpos($hook, 'wordpress-toolkit-cookieguard') === false) {
-            return;
-        }
-        
-        wp_enqueue_style(
-            'wordpress-toolkit-cookieguard-admin-style',
-            WORDPRESS_TOOLKIT_PLUGIN_URL . 'modules/cookieguard/assets/css/admin.css',
-            array(),
-            self::MODULE_VERSION
-        );
-        
-        wp_enqueue_script(
-            'wordpress-toolkit-cookieguard-admin-script',
-            WORDPRESS_TOOLKIT_PLUGIN_URL . 'modules/cookieguard/assets/js/admin.js',
-            array('jquery', 'wp-color-picker'),
-            self::MODULE_VERSION,
-            true
-        );
-        
-        // 加载颜色选择器
-        wp_enqueue_style('wp-color-picker');
+        // 使用统一样式，不需要加载额外的CSS和JS
+        return;
     }
     
     /**

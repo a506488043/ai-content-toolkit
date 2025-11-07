@@ -95,22 +95,16 @@ class TimeCapsule_Item {
     }
     
     /**
-     * 获取物品列表（优化版本，修复N+1查询）
+     * 获取物品列表
      */
     public function get_items($args = array()) {
-        // 使用优化的查询方法
-        if (class_exists('WordPress_Toolkit_Database_Optimizer')) {
-            return WordPress_Toolkit_Database_Optimizer::get_time_capsule_items_optimized($args);
-        }
-
-        // 回退到原始方法
         $items = $this->db->get_items($args);
-
-        // 为每个物品添加额外信息（N+1查询问题，但作为回退）
+        
+        // 为每个物品添加额外信息
         foreach ($items as &$item) {
             $item = $this->enhance_item_data($item);
         }
-
+        
         return $items;
     }
     

@@ -26,8 +26,33 @@ class Auto_Excerpt_Module {
     /**
      * 模块设置
      */
-    private $settings = array(
-        'excerpt_length' => 150,
+    private $settings = array();
+
+    /**
+     * SEO分析器实例
+     */
+    private $seo_analyzer = null;
+
+    /**
+     * SEO分析数据库实例
+     */
+    private $seo_database = null;
+
+    /**
+     * 构造函数
+     */
+    private function __construct() {
+        $this->load_settings();
+        $this->init_hooks();
+        $this->init_seo_analyzer();
+    }
+
+    /**
+     * 加载设置
+     */
+    private function load_settings() {
+        $default_settings = array(
+            'excerpt_length' => 150,
         'auto_generate' => true,
         'use_ai_generation' => true,
         'ai_provider' => 'deepseek',
@@ -43,6 +68,36 @@ class Auto_Excerpt_Module {
         'exclude_shortcodes' => array('gallery', 'video', 'audio', 'caption')
     );
 
+        $saved_settings = get_option('wordpress_toolkit_auto_excerpt_settings', array());
+        $this->settings = wp_parse_args($saved_settings, $default_settings);
+    }
+
+    /**
+     * 初始化SEO分析器
+     */
+    private function init_seo_analyzer() {
+        // 加载SEO分析类
+        require_once WORDPRESS_TOOLKIT_PLUGIN_PATH . 'modules/auto-excerpt/includes/class-seo-analyzer-database.php';
+        require_once WORDPRESS_TOOLKIT_PLUGIN_PATH . 'modules/auto-excerpt/includes/class-seo-analyzer.php';
+
+        $this->seo_database = new Auto_Excerpt_SEO_Analyzer_Database();
+
+        // 创建SEO分析数据表
+        $this->seo_database->create_tables();
+
+        // 初始化SEO分析器
+        $seo_settings = array(
+            'ai_provider' => $this->settings['ai_provider'],
+            'ai_model' => $this->settings['deepseek_model'] ?? 'deepseek-chat',
+            'api_key' => $this->settings['deepseek_api_key'] ?? '',
+            'api_base' => $this->settings['deepseek_api_base'] ?? 'https://api.deepseek.com',
+            'max_tokens' => $this->settings['ai_max_tokens'] ?? 2000,
+            'temperature' => $this->settings['ai_temperature'] ?? 0.3
+        );
+
+        $this->seo_analyzer = new Auto_Excerpt_SEO_Analyzer($seo_settings);
+    }
+
     /**
      * 获取单例实例
      */
@@ -53,22 +108,7 @@ class Auto_Excerpt_Module {
         return self::$instance;
     }
 
-    /**
-     * 构造函数
-     */
-    private function __construct() {
-        $this->load_settings();
-        $this->init_hooks();
-    }
-
-    /**
-     * 加载设置
-     */
-    private function load_settings() {
-        $saved_settings = get_option('wordpress_toolkit_auto_excerpt_settings', array());
-        $this->settings = wp_parse_args($saved_settings, $this->settings);
-    }
-
+    
     /**
      * 初始化钩子
      */
@@ -92,14 +132,27 @@ class Auto_Excerpt_Module {
         // 添加批量生成和单个生成摘要的AJAX处理
         add_action('wp_ajax_batch_generate_excerpts', array($this, 'ajax_batch_generate_excerpts'));
         add_action('wp_ajax_generate_single_excerpt', array($this, 'ajax_generate_single_excerpt'));
+        add_action('wp_ajax_auto_excerpt_generate', array($this, 'ajax_generate_single_excerpt'));
+        add_action('wp_ajax_auto_excerpt_batch_generate', array($this, 'ajax_batch_generate_excerpts'));
 
         // 添加AI生成标签的AJAX处理
         add_action('wp_ajax_generate_ai_tags', array($this, 'ajax_generate_tags'));
         add_action('wp_ajax_apply_ai_tags', array($this, 'ajax_apply_tags'));
         add_action('wp_ajax_batch_generate_tags', array($this, 'ajax_batch_generate_tags'));
+        add_action('wp_ajax_auto_excerpt_generate_tags', array($this, 'ajax_generate_single_tags'));
 
         // 前端脚本
         add_action('wp_enqueue_scripts', array($this, 'enqueue_scripts'));
+
+        // SEO分析相关AJAX处理
+        add_action('wp_ajax_auto_excerpt_seo_analyze', array($this, 'ajax_analyze_post_seo'));
+        add_action('wp_ajax_auto_excerpt_get_seo_report', array($this, 'ajax_get_seo_report'));
+        add_action('wp_ajax_analyze_post_seo', array($this, 'ajax_analyze_post_seo'));
+        add_action('wp_ajax_batch_analyze_seo', array($this, 'ajax_batch_analyze_seo'));
+        add_action('wp_ajax_get_seo_report', array($this, 'ajax_get_seo_report'));
+        add_action('wp_ajax_get_seo_statistics', array($this, 'ajax_get_seo_statistics'));
+        add_action('wp_ajax_get_posts_for_seo', array($this, 'ajax_get_posts_for_seo'));
+        add_action('wp_ajax_get_seo_reports_list', array($this, 'ajax_get_seo_reports_list'));
 
         // 添加定时任务功能
         add_action('wp', array($this, 'schedule_daily_excerpt_generation'));
@@ -906,8 +959,8 @@ class Auto_Excerpt_Module {
             <form method="post" action="">
                 <?php wp_nonce_field('wordpress_toolkit_auto_excerpt'); ?>
 
-                <div class="card">
-                    <h2><?php _e('基本设置', 'wordpress-toolkit'); ?></h2>
+                <div class="toolkit-settings-form">
+                    <h2>📝 基本设置</h2>
 
                     <table class="form-table">
                         <tr>
@@ -956,8 +1009,8 @@ class Auto_Excerpt_Module {
                     </table>
                 </div>
 
-                <div class="card">
-                    <h2><?php _e('AI生成设置', 'wordpress-toolkit'); ?></h2>
+                <div class="toolkit-settings-form">
+                    <h2>🤖 AI生成设置</h2>
 
                     <table class="form-table">
                         <tr>
@@ -1062,20 +1115,59 @@ class Auto_Excerpt_Module {
                             </td>
                         </tr>
                     </table>
+
+                <!-- API测试功能 -->
+                <div style="margin-top: 24px; padding-top: 20px; border-top: 1px solid #ddd;">
+                    <h3 style="margin-bottom: 15px; color: #1d2327;"><?php _e('🧪 API连接测试', 'wordpress-toolkit'); ?></h3>
+                    <p style="margin-bottom: 15px; color: #50575e;"><?php _e('测试API连接是否正常工作，确保配置正确。', 'wordpress-toolkit'); ?></p>
+                    <button type="button" id="test-api-btn" class="button"><?php _e('测试API连接', 'wordpress-toolkit'); ?></button>
+                    <div id="api-test-result" style="margin-top: 15px;"></div>
+                </div>
                 </div>
 
-                <p class="submit">
+                <div class="submit">
                     <input type="submit" name="save_settings" class="button button-primary" value="<?php _e('保存设置', 'wordpress-toolkit'); ?>">
-                </p>
+                </div>
             </form>
-
-            <div class="card">
-                <h2><?php _e('API测试', 'wordpress-toolkit'); ?></h2>
-                <p><?php _e('测试API连接是否正常工作', 'wordpress-toolkit'); ?></p>
-                <button type="button" id="test-api-btn" class="button"><?php _e('测试API连接', 'wordpress-toolkit'); ?></button>
-                <div id="api-test-result" style="margin-top: 10px;"></div>
-            </div>
         </div>
+
+        <style>
+        /* WordPress Toolkit 统一设置页面样式 */
+        .toolkit-settings-form {
+            background: #fff;
+            border: 1px solid #ccd0d4;
+            border-radius: 8px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,.04);
+        }
+
+        .toolkit-settings-form h2 {
+            margin-top: 0;
+            margin-bottom: 20px;
+            font-size: 1.4em;
+            font-weight: 600;
+            color: #1d2327;
+            border-bottom: 2px solid #2271b1;
+            padding-bottom: 8px;
+        }
+
+        .toolkit-settings-form .form-table {
+            margin-top: 20px;
+        }
+
+        .toolkit-settings-form .form-table th {
+            font-weight: 600;
+            color: #1d2327;
+            width: 35%;
+        }
+
+        .toolkit-settings-form .submit {
+            margin-top: 24px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+        }
+        </style>
 
         <script>
         jQuery(document).ready(function($) {
@@ -1455,7 +1547,7 @@ class Auto_Excerpt_Module {
      */
     public function ajax_batch_generate_excerpts() {
         // 验证nonce
-        if (!wp_verify_nonce($_POST['nonce'], 'batch_generate_excerpts_nonce')) {
+        if (!wp_verify_nonce($_POST['nonce'], 'auto_excerpt_batch')) {
             wp_send_json_error(array('message' => __('安全验证失败', 'wordpress-toolkit')));
         }
 
@@ -1562,7 +1654,7 @@ class Auto_Excerpt_Module {
      */
     public function ajax_generate_single_excerpt() {
         // 验证nonce
-        if (!wp_verify_nonce($_POST['nonce'], 'generate_single_excerpt_nonce')) {
+        if (!wp_verify_nonce($_POST['nonce'], 'auto_excerpt_generate')) {
             wp_send_json_error(array('message' => __('安全验证失败', 'wordpress-toolkit')));
         }
 
@@ -1626,6 +1718,56 @@ class Auto_Excerpt_Module {
 
         } catch (Exception $e) {
             error_log("Auto Excerpt: Single post generation error for ID {$post_id}: " . $e->getMessage());
+            wp_send_json_error(array('message' => __('生成失败：', 'wordpress-toolkit') . $e->getMessage()));
+        }
+    }
+
+    /**
+     * AJAX处理单个文章生成标签
+     */
+    public function ajax_generate_single_tags() {
+        // 验证nonce
+        if (!wp_verify_nonce($_POST['nonce'], 'auto_excerpt_generate_tags')) {
+            wp_send_json_error(array('message' => __('安全验证失败', 'wordpress-toolkit')));
+        }
+
+        // 验证用户权限
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array('message' => __('权限不足', 'wordpress-toolkit')));
+        }
+
+        $post_id = intval($_POST['post_id']);
+
+        if (empty($post_id)) {
+            wp_send_json_error(array('message' => __('文章ID无效', 'wordpress-toolkit')));
+        }
+
+        try {
+            $post = get_post($post_id);
+            if (!$post) {
+                wp_send_json_error(array('message' => __('文章不存在', 'wordpress-toolkit')));
+            }
+
+            // 使用AI生成标签
+            $tags = $this->generate_ai_tags($post->post_content, $post->post_title);
+
+            if ($tags && !empty($tags)) {
+                // 设置文章标签
+                wp_set_post_tags($post_id, $tags, false);
+
+                wp_send_json_success(array(
+                    'post_id' => $post_id,
+                    'post_title' => get_the_title($post_id),
+                    'tags' => $tags,
+                    'tag_count' => count($tags),
+                    'message' => __('标签生成成功', 'wordpress-toolkit')
+                ));
+            } else {
+                wp_send_json_error(array('message' => __('标签生成失败', 'wordpress-toolkit')));
+            }
+
+        } catch (Exception $e) {
+            error_log("Auto Tags: Single post generation error for ID {$post_id}: " . $e->getMessage());
             wp_send_json_error(array('message' => __('生成失败：', 'wordpress-toolkit') . $e->getMessage()));
         }
     }
@@ -2106,6 +2248,210 @@ class Auto_Excerpt_Module {
         } catch (Exception $e) {
             error_log('Auto Excerpt: Batch tag generation AJAX error: ' . $e->getMessage());
             wp_send_json_error(array('message' => __('批量生成标签失败：', 'wordpress-toolkit') . $e->getMessage()));
+        }
+    }
+
+    /**
+     * AJAX处理单篇文章SEO分析
+     */
+    public function ajax_analyze_post_seo() {
+        // 验证nonce
+        if (!wp_verify_nonce($_POST['nonce'], 'auto_excerpt_seo_analyze')) {
+            wp_send_json_error(array('message' => __('安全验证失败', 'wordpress-toolkit')));
+        }
+
+        // 验证用户权限
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array('message' => __('权限不足', 'wordpress-toolkit')));
+        }
+
+        $post_id = intval($_POST['post_id']);
+        if ($post_id <= 0) {
+            wp_send_json_error(array('message' => __('无效的文章ID', 'wordpress-toolkit')));
+        }
+
+        try {
+            $result = $this->seo_analyzer->analyze_post_seo($post_id);
+
+            if ($result) {
+                // 直接返回分析结果数据，与前端JavaScript预期格式匹配
+                wp_send_json_success($result);
+            } else {
+                wp_send_json_error(array('message' => __('SEO分析失败', 'wordpress-toolkit')));
+            }
+
+        } catch (Exception $e) {
+            error_log('Auto Excerpt: SEO analysis error: ' . $e->getMessage());
+            wp_send_json_error(array('message' => __('SEO分析失败：', 'wordpress-toolkit') . $e->getMessage()));
+        }
+    }
+
+    /**
+     * AJAX处理批量SEO分析
+     */
+    public function ajax_batch_analyze_seo() {
+        // 验证nonce
+        if (!wp_verify_nonce($_POST['nonce'], 'batch_analyze_seo_nonce')) {
+            wp_send_json_error(array('message' => __('安全验证失败', 'wordpress-toolkit')));
+        }
+
+        // 验证用户权限
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array('message' => __('权限不足', 'wordpress-toolkit')));
+        }
+
+        try {
+            $batch_size = isset($_POST['batch_size']) ? intval($_POST['batch_size']) : 5;
+            $result = $this->seo_analyzer->batch_analyze_posts(array(), $batch_size);
+
+            wp_send_json_success(array(
+                'message' => __('批量SEO分析完成', 'wordpress-toolkit'),
+                'result' => $result
+            ));
+
+        } catch (Exception $e) {
+            error_log('Auto Excerpt: Batch SEO analysis error: ' . $e->getMessage());
+            wp_send_json_error(array('message' => __('批量SEO分析失败：', 'wordpress-toolkit') . $e->getMessage()));
+        }
+    }
+
+    /**
+     * AJAX获取SEO分析报告
+     */
+    public function ajax_get_seo_report() {
+        // 验证nonce
+        if (!wp_verify_nonce($_POST['nonce'], 'auto_excerpt_get_seo_report')) {
+            wp_send_json_error(array('message' => __('安全验证失败', 'wordpress-toolkit')));
+        }
+
+        // 验证用户权限
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array('message' => __('权限不足', 'wordpress-toolkit')));
+        }
+
+        $post_id = intval($_POST['post_id']);
+        if ($post_id <= 0) {
+            wp_send_json_error(array('message' => __('无效的文章ID', 'wordpress-toolkit')));
+        }
+
+        try {
+            $report = $this->seo_analyzer->get_seo_report($post_id);
+
+            if ($report) {
+                // 转换报告为数组格式并直接返回
+                $report_data = json_decode(json_encode($report), true);
+                wp_send_json_success($report_data);
+            } else {
+                wp_send_json_error(array('message' => __('未找到SEO分析报告', 'wordpress-toolkit')));
+            }
+
+        } catch (Exception $e) {
+            error_log('Auto Excerpt: Get SEO report error: ' . $e->getMessage());
+            wp_send_json_error(array('message' => __('获取报告失败：', 'wordpress-toolkit') . $e->getMessage()));
+        }
+    }
+
+    /**
+     * AJAX获取SEO统计信息
+     */
+    public function ajax_get_seo_statistics() {
+        // 验证nonce
+        if (!wp_verify_nonce($_POST['nonce'], 'get_seo_statistics_nonce')) {
+            wp_send_json_error(array('message' => __('安全验证失败', 'wordpress-toolkit')));
+        }
+
+        // 验证用户权限
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array('message' => __('权限不足', 'wordpress-toolkit')));
+        }
+
+        try {
+            $statistics = $this->seo_analyzer->get_seo_statistics();
+
+            wp_send_json_success(array(
+                'message' => __('获取统计信息成功', 'wordpress-toolkit'),
+                'statistics' => $statistics
+            ));
+
+        } catch (Exception $e) {
+            error_log('Auto Excerpt: Get SEO statistics error: ' . $e->getMessage());
+            wp_send_json_error(array('message' => __('获取统计信息失败：', 'wordpress-toolkit') . $e->getMessage()));
+        }
+    }
+
+    /**
+     * AJAX获取文章列表（用于SEO分析）
+     */
+    public function ajax_get_posts_for_seo() {
+        // 验证nonce
+        if (!wp_verify_nonce($_POST['nonce'], 'get_posts_nonce')) {
+            wp_send_json_error(array('message' => __('安全验证失败', 'wordpress-toolkit')));
+        }
+
+        // 验证用户权限
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array('message' => __('权限不足', 'wordpress-toolkit')));
+        }
+
+        try {
+            $args = array(
+                'post_type' => 'post',
+                'post_status' => 'publish',
+                'posts_per_page' => 100,
+                'orderby' => 'modified',
+                'order' => 'DESC'
+            );
+
+            $posts = get_posts($args);
+            $posts_data = array();
+
+            foreach ($posts as $post) {
+                $posts_data[] = array(
+                    'ID' => $post->ID,
+                    'post_title' => get_the_title($post->ID),
+                    'post_modified' => $post->post_modified
+                );
+            }
+
+            wp_send_json_success(array(
+                'message' => __('获取文章列表成功', 'wordpress-toolkit'),
+                'posts' => $posts_data
+            ));
+
+        } catch (Exception $e) {
+            error_log('Auto Excerpt: Get posts error: ' . $e->getMessage());
+            wp_send_json_error(array('message' => __('获取文章列表失败：', 'wordpress-toolkit') . $e->getMessage()));
+        }
+    }
+
+    /**
+     * AJAX获取SEO报告列表
+     */
+    public function ajax_get_seo_reports_list() {
+        // 验证nonce
+        if (!wp_verify_nonce($_POST['nonce'], 'analyze_seo_nonce')) {
+            wp_send_json_error(array('message' => __('安全验证失败', 'wordpress-toolkit')));
+        }
+
+        // 验证用户权限
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array('message' => __('权限不足', 'wordpress-toolkit')));
+        }
+
+        try {
+            $limit = isset($_POST['limit']) ? intval($_POST['limit']) : 50;
+            $offset = isset($_POST['offset']) ? intval($_POST['offset']) : 0;
+
+            $reports = $this->seo_analyzer->get_all_seo_reports($limit, $offset);
+
+            wp_send_json_success(array(
+                'message' => __('获取报告列表成功', 'wordpress-toolkit'),
+                'reports' => $reports
+            ));
+
+        } catch (Exception $e) {
+            error_log('Auto Excerpt: Get SEO reports error: ' . $e->getMessage());
+            wp_send_json_error(array('message' => __('获取报告列表失败：', 'wordpress-toolkit') . $e->getMessage()));
         }
     }
 }

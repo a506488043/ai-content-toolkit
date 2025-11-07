@@ -187,23 +187,12 @@ $click_stats = array();
 
                     <!-- 统计信息 -->
                     <?php
-                    // 安全的COUNT查询 - 使用表名转义
-                    if ($clicks_table_exists) {
-                        $clicks_table = $wpdb->prepare("%i", $wpdb->prefix . 'chf_card_clicks');
-                        $total_clicks = $wpdb->get_var("SELECT COUNT(*) FROM $clicks_table");
-                    } else {
-                        $total_clicks = 0;
-                    }
+                    $total_clicks = $clicks_table_exists ? $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}chf_card_clicks") : 0;
                     $total_clicks = $total_clicks ? intval($total_clicks) : 0;
-                    // 安全的今日点击统计查询
-                    if ($clicks_table_exists) {
-                        $today_clicks = $wpdb->get_var($wpdb->prepare(
-                            "SELECT COUNT(*) FROM " . $wpdb->prepare("%i", $wpdb->prefix . 'chf_card_clicks') . " WHERE DATE(clicked_at) = %s",
-                            current_time('Y-m-d')
-                        ));
-                    } else {
-                        $today_clicks = 0;
-                    }
+                    $today_clicks = $clicks_table_exists ? $wpdb->get_var($wpdb->prepare(
+                        "SELECT COUNT(*) FROM {$wpdb->prefix}chf_card_clicks WHERE DATE(clicked_at) = %s",
+                        current_time('Y-m-d')
+                    )) : 0;
                     $today_clicks = $today_clicks ? intval($today_clicks) : 0;
                     ?>
                     <span class="custom-card-stats" style="margin-left: 20px; color: #666; font-size: 14px;">
@@ -264,19 +253,6 @@ $click_stats = array();
                                 <div style="font-size: 16px; color: #666; margin-bottom: 20px;">
                                     <span class="dashicons dashicons-admin-links" style="font-size: 48px; color: #ccc; display: block; margin-bottom: 10px;"></span>
                                     还没有添加任何网站卡片
-                                </div>
-                                <div style="background: #f9f9f9; padding: 20px; border-radius: 8px; max-width: 600px; margin: 0 auto; text-align: left;">
-                                    <h3 style="margin-top: 0;">如何添加网站卡片？</h3>
-                                    <p>网站卡片会在用户通过短代码访问时自动创建。请按照以下步骤操作：</p>
-                                    <ol>
-                                        <li>在文章或页面中使用短代码：<br>
-                                            <code>[custom_card url="https://example.com"]</code> 或 <br>
-                                            <code>[custom_card_lazy url="https://example.com"]</code>
-                                        </li>
-                                        <li>保存并发布文章/页面</li>
-                                        <li>访问该页面，卡片数据会自动创建并缓存</li>
-                                        <li>刷新此页面即可看到卡片列表</li>
-                                    </ol>
                                 </div>
                             <?php endif; ?>
                         </td>

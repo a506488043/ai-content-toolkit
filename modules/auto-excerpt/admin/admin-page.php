@@ -52,6 +52,9 @@ class Auto_Excerpt_Admin_Page {
         // 添加管理菜单
         add_action('admin_menu', array($this, 'add_admin_menu'));
 
+        // 加载SEO分析相关脚本和样式
+        add_action('admin_enqueue_scripts', array($this, 'enqueue_seo_scripts'));
+
         // 处理批量操作
         add_action('admin_init', array($this, 'handle_batch_operations'));
     }
@@ -108,6 +111,211 @@ class Auto_Excerpt_Admin_Page {
                 <div class="stat-card">
                     <h3><?php _e('摘要覆盖率', 'wordpress-toolkit'); ?></h3>
                     <span class="stat-number"><?php echo $stats['coverage_rate']; ?>%</span>
+                </div>
+            </div>
+
+            <!-- 文章列表和SEO分析 -->
+            <div class="posts-list-section">
+                <h3><?php _e('文章列表与SEO分析', 'wordpress-toolkit'); ?></h3>
+                <div id="posts-list-container">
+                    <?php
+                    // 获取文章列表数据
+                    $per_page = 20;
+                    $current_page = isset($_GET['paged']) ? intval($_GET['paged']) : 1;
+                    $offset = ($current_page - 1) * $per_page;
+
+                    $args = array(
+                        'post_type' => 'post',
+                        'post_status' => 'publish',
+                        'posts_per_page' => $per_page,
+                        'offset' => $offset,
+                        'orderby' => 'modified',
+                        'order' => 'DESC'
+                    );
+
+                    // 处理筛选
+                    if (isset($_GET['status']) && $_GET['status'] !== 'all') {
+                        if ($_GET['status'] === 'with_excerpt') {
+                            $args['meta_query'] = array(
+                                array(
+                                    'key' => 'post_excerpt',
+                                    'value' => '',
+                                    'compare' => '!='
+                                )
+                            );
+                        } elseif ($_GET['status'] === 'without_excerpt') {
+                            $args['meta_query'] = array(
+                                array(
+                                    'key' => 'post_excerpt',
+                                    'value' => '',
+                                    'compare' => '='
+                                )
+                            );
+                        }
+                    }
+
+                    $posts_query = new WP_Query($args);
+                    $total_posts = $posts_query->found_posts;
+                    $total_pages = ceil($total_posts / $per_page);
+
+                    if ($posts_query->have_posts()) {
+                        ?>
+                        <div class="tablenav top">
+                            <div class="alignleft actions bulkactions">
+                                <button type="button" class="button action" id="batch-seo-analyze">
+                                    <span class="dashicons dashicons-search"></span>
+                                    <?php _e('批量SEO分析', 'wordpress-toolkit'); ?>
+                                </button>
+                            </div>
+                            <div class="tablenav-pages">
+                                <span class="displaying-num">
+                                    <?php printf(__('共 %d 篇文章', 'wordpress-toolkit'), $total_posts); ?>
+                                </span>
+                                <?php
+                                $current_url = admin_url('admin.php?page=wordpress-toolkit-auto-excerpt');
+                                if (isset($_GET['status'])) {
+                                    $current_url .= '&status=' . urlencode($_GET['status']);
+                                }
+                                echo paginate_links(array(
+                                    'base' => $current_url . '&paged=%#%',
+                                    'format' => '',
+                                    'prev_text' => __('&laquo;'),
+                                    'next_text' => __('&raquo;'),
+                                    'total' => $total_pages,
+                                    'current' => $current_page
+                                ));
+                                ?>
+                            </div>
+                        </div>
+
+                        <table class="wp-list-table widefat fixed striped">
+                            <thead>
+                                <tr>
+                                    <th scope="col" class="manage-column column-cb check-column">
+                                        <input type="checkbox" id="cb-select-all-1">
+                                    </th>
+                                    <th scope="col"><?php _e('文章标题', 'wordpress-toolkit'); ?></th>
+                                    <th scope="col"><?php _e('摘要状态', 'wordpress-toolkit'); ?></th>
+                                    <th scope="col"><?php _e('SEO得分', 'wordpress-toolkit'); ?></th>
+                                    <th scope="col"><?php _e('修改时间', 'wordpress-toolkit'); ?></th>
+                                    <th scope="col"><?php _e('操作', 'wordpress-toolkit'); ?></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php
+                                while ($posts_query->have_posts()) {
+                                    $posts_query->the_post();
+                                    $post_id = get_the_ID();
+                                    $post_title = get_the_title();
+                                    $has_excerpt = !empty(get_the_excerpt());
+                                    $excerpt_length = mb_strlen(get_the_excerpt());
+
+                                    // 简化SEO分析，直接显示未分析状态
+                                    $seo_score = '-';
+                                    $score_class = '';
+                                    ?>
+                                    <tr>
+                                        <th scope="row" class="check-column">
+                                            <input type="checkbox" name="post_ids[]" value="<?php echo $post_id; ?>" class="post-checkbox">
+                                        </th>
+                                        <td class="column-title">
+                                            <strong>
+                                                <a href="<?php echo get_edit_post_link($post_id); ?>" target="_blank">
+                                                    <?php echo esc_html($post_title); ?>
+                                                </a>
+                                            </strong>
+                                        </td>
+                                        <td>
+                                            <?php if ($has_excerpt): ?>
+                                                <span class="status-badge has-excerpt">
+                                                    <?php _e('有摘要', 'wordpress-toolkit'); ?>
+                                                    <small>(<?php echo $excerpt_length; ?> 字符)</small>
+                                                </span>
+                                            <?php else: ?>
+                                                <span class="status-badge no-excerpt">
+                                                    <?php _e('无摘要', 'wordpress-toolkit'); ?>
+                                                </span>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td>
+                                            <?php if ($seo_score !== '-'): ?>
+                                                <span class="seo-score-badge <?php echo $score_class; ?>">
+                                                    <?php echo $seo_score; ?>
+                                                </span>
+                                            <?php else: ?>
+                                                <span class="seo-score-badge none">
+                                                    <?php _e('未分析', 'wordpress-toolkit'); ?>
+                                                </span>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td><?php echo get_the_modified_date('Y-m-d H:i'); ?></td>
+                                        <td>
+                                            <div class="row-actions">
+                                                <!-- 调试信息：文章ID <?php echo $post_id; ?> -->
+                                                <span class="generate-excerpt">
+                                                    <button type="button" class="button button-small generate-excerpt-btn" data-post-id="<?php echo $post_id; ?>" style="background: #46b450; color: white; border: none; padding: 6px 12px; margin: 2px;">
+                                                        📝 生成摘要
+                                                    </button>
+                                                </span>
+                                                <span class="generate-tags">
+                                                    <button type="button" class="button button-small generate-tags-btn" data-post-id="<?php echo $post_id; ?>" style="background: #ff6900; color: white; border: none; padding: 6px 12px; margin: 2px;">
+                                                        🏷️ 生成标签
+                                                    </button>
+                                                </span>
+                                                <span class="seo-analyze">
+                                                    <button type="button" class="button button-small seo-analyze-btn" data-post-id="<?php echo $post_id; ?>" style="background: #0073aa; color: white; border: none; padding: 6px 12px; margin: 2px;">
+                                                        📊 SEO分析
+                                                    </button>
+                                                </span>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <?php
+                                }
+                                wp_reset_postdata();
+                                ?>
+                            </tbody>
+                        </table>
+
+                        <div class="tablenav bottom">
+                            <div class="alignleft actions bulkactions">
+                                <button type="button" class="button action" id="batch-seo-analyze-bottom">
+                                    <span class="dashicons dashicons-search"></span>
+                                    <?php _e('批量SEO分析', 'wordpress-toolkit'); ?>
+                                </button>
+                            </div>
+                            <div class="tablenav-pages">
+                                <?php
+                                echo paginate_links(array(
+                                    'base' => $current_url . '&paged=%#%',
+                                    'format' => '',
+                                    'prev_text' => __('&laquo;'),
+                                    'next_text' => __('&raquo;'),
+                                    'total' => $total_pages,
+                                    'current' => $current_page
+                                ));
+                                ?>
+                            </div>
+                        </div>
+                        <?php
+                    } else {
+                        echo '<p>' . __('没有找到文章', 'wordpress-toolkit') . '</p>';
+                    }
+                    ?>
+                </div>
+
+                <!-- SEO分析结果模态框 -->
+                <div id="seo-result-modal" class="seo-modal" style="display: none;">
+                    <div class="modal-backdrop"></div>
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h3><?php _e('SEO分析结果', 'wordpress-toolkit'); ?></h3>
+                            <button type="button" class="modal-close">&times;</button>
+                        </div>
+                        <div class="modal-body" id="seo-result-content">
+                            <div class="loading"><?php _e('正在分析...', 'wordpress-toolkit'); ?></div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -230,6 +438,233 @@ class Auto_Excerpt_Admin_Page {
                 grid-template-columns: repeat(2, 1fr);
             }
         }
+
+        /* 文章列表和SEO分析样式 */
+        .posts-list-section {
+            background: #fff;
+            border: 1px solid #e5e5e5;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .status-badge.has-excerpt {
+            background: #f0f6fc;
+            color: #0073aa;
+            border: 1px solid #c3d9ea;
+        }
+
+        .status-badge.no-excerpt {
+            background: #fef7f7;
+            color: #d63638;
+            border: 1px solid #ffabaf;
+        }
+
+        .seo-score-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+            min-width: 45px;
+            text-align: center;
+        }
+
+        .seo-score-badge.excellent {
+            background: #46b450;
+            color: #fff;
+        }
+
+        .seo-score-badge.good {
+            background: #00a0d2;
+            color: #fff;
+        }
+
+        .seo-score-badge.average {
+            background: #ffb900;
+            color: #000;
+        }
+
+        .seo-score-badge.poor {
+            background: #dc3232;
+            color: #fff;
+        }
+
+        .seo-score-badge.none {
+            background: #f0f0f1;
+            color: #666;
+        }
+
+        /* SEO模态框样式 */
+        .seo-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 100000;
+            display: none;
+        }
+
+        .seo-modal .modal-backdrop {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+        }
+
+        .seo-modal .modal-content {
+            position: relative;
+            max-width: 800px;
+            max-height: 90vh;
+            margin: 5vh auto;
+            background: #fff;
+            border-radius: 6px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .seo-modal .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid #e1e1e1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f8f9f9;
+        }
+
+        .seo-modal .modal-header h3 {
+            margin: 0;
+            color: #23282d;
+            font-size: 1.3em;
+        }
+
+        .seo-modal .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: #666;
+            cursor: pointer;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 3px;
+        }
+
+        .seo-modal .modal-close:hover {
+            background: #e1e1e1;
+            color: #23282d;
+        }
+
+        .seo-modal .modal-body {
+            padding: 20px;
+            max-height: calc(90vh - 100px);
+            overflow-y: auto;
+        }
+
+        .seo-modal .loading {
+            text-align: center;
+            padding: 40px 20px;
+            color: #666;
+            font-style: italic;
+        }
+
+        @media screen and (max-width: 768px) {
+            .seo-modal .modal-content {
+                margin: 0;
+                max-height: 100vh;
+                border-radius: 0;
+            }
+
+            .row-actions {
+                display: block;
+                text-align: center;
+            }
+
+            .row-actions span {
+                display: block;
+                margin: 5px 0;
+            }
+        }
+
+        /* 桌面版操作按钮样式 */
+        .row-actions {
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
+        }
+
+        .row-actions span {
+            margin-right: 0;
+        }
+
+        /* 按钮样式 */
+        .row-actions .button {
+            margin: 2px 0;
+            font-size: 12px;
+            line-height: 1.4;
+            height: auto;
+            padding: 6px 12px;
+            white-space: nowrap;
+        }
+
+        .row-actions .seo-analyze-btn {
+            background: #0073aa;
+            color: #fff;
+            border-color: #0073aa;
+        }
+
+        .row-actions .seo-analyze-btn:hover {
+            background: #005a87;
+            border-color: #005a87;
+        }
+
+        .row-actions .generate-excerpt-btn {
+            background: #46b450;
+            color: #fff;
+            border-color: #46b450;
+        }
+
+        .row-actions .generate-excerpt-btn:hover {
+            background: #3d8b40;
+            border-color: #3d8b40;
+        }
+
+        .row-actions .generate-tags-btn {
+            background: #ff6900;
+            color: #fff;
+            border-color: #ff6900;
+        }
+
+        .row-actions .generate-tags-btn:hover {
+            background: #e85d00;
+            border-color: #e85d00;
+        }
+
+        .row-actions .view-seo-report-btn {
+            background: #826eb4;
+            color: #fff;
+            border-color: #826eb4;
+        }
+
+        .row-actions .view-seo-report-btn:hover {
+            background: #6d5aa0;
+            border-color: #6d5aa0;
+        }
         </style>
 
         <script>
@@ -304,6 +739,291 @@ class Auto_Excerpt_Admin_Page {
                         resultsDiv.html('<div class="notice notice-error"><p>操作失败，请重试</p></div>');
                     }
                 });
+            });
+
+            // 生成摘要按钮
+            $(document).on('click', '.generate-excerpt-btn', function() {
+                var button = $(this);
+                var postId = button.data('post-id');
+                var originalText = button.text();
+
+                button.prop('disabled', true).text('生成中...');
+
+                $.ajax({
+                    url: ajaxurl,
+                    type: 'POST',
+                    data: {
+                        action: 'auto_excerpt_generate',
+                        nonce: '<?php echo wp_create_nonce('auto_excerpt_generate'); ?>',
+                        post_id: postId
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            button.text('已生成').addClass('success');
+                            setTimeout(function() {
+                                location.reload();
+                            }, 1500);
+                        } else {
+                            button.prop('disabled', false).text(originalText);
+                            alert('生成失败：' + response.data.message);
+                        }
+                    },
+                    error: function() {
+                        button.prop('disabled', false).text(originalText);
+                        alert('生成失败，请重试');
+                    }
+                });
+            });
+
+            // 生成标签按钮
+            $(document).on('click', '.generate-tags-btn', function() {
+                var button = $(this);
+                var postId = button.data('post-id');
+                var originalText = button.text();
+
+                button.prop('disabled', true).text('生成中...');
+
+                $.ajax({
+                    url: ajaxurl,
+                    type: 'POST',
+                    data: {
+                        action: 'auto_excerpt_generate_tags',
+                        nonce: '<?php echo wp_create_nonce('auto_excerpt_generate_tags'); ?>',
+                        post_id: postId
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            button.text('已生成').addClass('success');
+                            setTimeout(function() {
+                                location.reload();
+                            }, 1500);
+                        } else {
+                            button.prop('disabled', false).text(originalText);
+                            alert('生成失败：' + response.data.message);
+                        }
+                    },
+                    error: function() {
+                        button.prop('disabled', false).text(originalText);
+                        alert('生成失败，请重试');
+                    }
+                });
+            });
+
+            // SEO分析按钮
+            $(document).on('click', '.seo-analyze-btn', function() {
+                var button = $(this);
+                var postId = button.data('post-id');
+                var originalText = button.html();
+
+                button.prop('disabled', true).html('<span class="dashicons dashicons-spinner"></span> 分析中...');
+
+                $.ajax({
+                    url: ajaxurl,
+                    type: 'POST',
+                    data: {
+                        action: 'auto_excerpt_seo_analyze',
+                        nonce: '<?php echo wp_create_nonce('auto_excerpt_seo_analyze'); ?>',
+                        post_id: postId
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            showSEOReport(response.data);
+                            setTimeout(function() {
+                                location.reload();
+                            }, 1000);
+                        } else {
+                            button.prop('disabled', false).html(originalText);
+                            alert('分析失败：' + response.data.message);
+                        }
+                    },
+                    error: function() {
+                        button.prop('disabled', false).html(originalText);
+                        alert('分析失败，请重试');
+                    }
+                });
+            });
+
+            // 查看SEO报告按钮
+            $(document).on('click', '.view-seo-report-btn', function() {
+                var postId = $(this).data('post-id');
+
+                $.ajax({
+                    url: ajaxurl,
+                    type: 'POST',
+                    data: {
+                        action: 'auto_excerpt_get_seo_report',
+                        nonce: '<?php echo wp_create_nonce('auto_excerpt_get_seo_report'); ?>',
+                        post_id: postId
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            showSEOReport(response.data);
+                        } else {
+                            alert('获取报告失败：' + response.data.message);
+                        }
+                    },
+                    error: function() {
+                        alert('获取报告失败，请重试');
+                    }
+                });
+            });
+
+            // 批量SEO分析
+            $('#batch-seo-analyze, #batch-seo-analyze-bottom').on('click', function() {
+                var selectedPosts = $('.post-checkbox:checked').map(function() {
+                    return $(this).val();
+                }).get();
+
+                if (selectedPosts.length === 0) {
+                    alert('请先选择要分析的文章');
+                    return;
+                }
+
+                if (!confirm('确定要对选中的 ' + selectedPosts.length + ' 篇文章进行SEO分析吗？')) {
+                    return;
+                }
+
+                var button = $(this);
+                button.prop('disabled', true).html('<span class="dashicons dashicons-spinner"></span> 批量分析中...');
+
+                var currentIndex = 0;
+                var results = [];
+
+                function analyzeNextPost() {
+                    if (currentIndex >= selectedPosts.length) {
+                        button.prop('disabled', false).html('<span class="dashicons dashicons-search"></span> <?php _e('批量SEO分析', 'wordpress-toolkit'); ?>');
+                        alert('批量分析完成！共分析了 ' + results.length + ' 篇文章。');
+                        location.reload();
+                        return;
+                    }
+
+                    var postId = selectedPosts[currentIndex];
+
+                    $.ajax({
+                        url: ajaxurl,
+                        type: 'POST',
+                        data: {
+                            action: 'auto_excerpt_seo_analyze',
+                            nonce: '<?php echo wp_create_nonce('auto_excerpt_seo_analyze'); ?>',
+                            post_id: postId
+                        },
+                        success: function(response) {
+                            results.push({
+                                post_id: postId,
+                                success: response.success,
+                                message: response.success ? '分析成功' : response.data.message
+                            });
+                        },
+                        complete: function() {
+                            currentIndex++;
+                            setTimeout(analyzeNextPost, 500); // 延迟500ms避免API限制
+                        }
+                    });
+                }
+
+                analyzeNextPost();
+            });
+
+            // 显示SEO报告
+            function showSEOReport(data) {
+                var modal = $('#seo-result-modal');
+                var content = $('#seo-result-content');
+
+                var scoreClass = 'poor';
+                if (data.overall_score >= 80) scoreClass = 'excellent';
+                else if (data.overall_score >= 60) scoreClass = 'good';
+                else if (data.overall_score >= 40) scoreClass = 'average';
+
+                var html = '<div class="seo-analysis-result">' +
+                    '<div class="seo-score-section">' +
+                        '<h3>SEO分析结果</h3>' +
+                        '<div class="score-display">' +
+                            '<div class="score-circle ' + scoreClass + '" data-score="' + data.overall_score + '">' +
+                                '<span class="score-number">' + data.overall_score + '</span>' +
+                            '</div>' +
+                            '<div class="score-label">整体得分</div>' +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="seo-scores-breakdown">' +
+                        '<h3>详细得分</h3>' +
+                        '<div class="scores-grid">' +
+                            '<div class="score-item">' +
+                                '<span class="score-name">标题得分</span>' +
+                                '<div class="score-bar">' +
+                                    '<div class="score-fill animate" style="--score-width: ' + data.title_score + '%;"></div>' +
+                                '</div>' +
+                                '<span class="score-value">' + data.title_score + '</span>' +
+                            '</div>' +
+                            '<div class="score-item">' +
+                                '<span class="score-name">内容得分</span>' +
+                                '<div class="score-bar">' +
+                                    '<div class="score-fill animate" style="--score-width: ' + data.content_score + '%;"></div>' +
+                                '</div>' +
+                                '<span class="score-value">' + data.content_score + '</span>' +
+                            '</div>' +
+                            '<div class="score-item">' +
+                                '<span class="score-name">关键词得分</span>' +
+                                '<div class="score-bar">' +
+                                    '<div class="score-fill animate" style="--score-width: ' + data.keyword_score + '%;"></div>' +
+                                '</div>' +
+                                '<span class="score-value">' + data.keyword_score + '</span>' +
+                            '</div>' +
+                            '<div class="score-item">' +
+                                '<span class="score-name">可读性得分</span>' +
+                                '<div class="score-bar">' +
+                                    '<div class="score-fill animate" style="--score-width: ' + data.readability_score + '%;"></div>' +
+                                '</div>' +
+                                '<span class="score-value">' + data.readability_score + '</span>' +
+                            '</div>' +
+                        '</div>' +
+                    '</div>';
+
+                if (data.keywords && data.keywords.length > 0) {
+                    html += '<div class="seo-keywords-section">' +
+                        '<h3>关键词建议</h3>' +
+                        '<div class="keywords-list">';
+
+                    data.keywords.forEach(function(keyword, index) {
+                        var className = index === 0 ? 'primary' : 'secondary';
+                        html += '<a href="#" class="keyword-tag ' + className + '">' + keyword + '</a>';
+                    });
+
+                    html += '</div></div>';
+                }
+
+                if (data.recommendations && data.recommendations.length > 0) {
+                    html += '<div class="seo-recommendations-section">' +
+                        '<h3>优化建议</h3>' +
+                        '<div class="recommendations-list">';
+
+                    data.recommendations.forEach(function(rec) {
+                        var priorityClass = 'priority-' + rec.priority;
+                        html += '<div class="recommendation-item ' + priorityClass + '">' +
+                            '<div class="recommendation-header">' +
+                                '<span class="recommendation-title">' + rec.title + '</span>' +
+                                '<span class="recommendation-priority">' + rec.priority + '</span>' +
+                            '</div>' +
+                            '<div class="recommendation-description">' + rec.description + '</div>' +
+                            '<div class="recommendation-action">' + rec.action + '</div>' +
+                        '</div>';
+                    });
+
+                    html += '</div></div>';
+                }
+
+                html += '</div>';
+                content.html(html);
+                modal.show();
+            }
+
+            // 模态框关闭
+            $('.modal-close, .modal-backdrop').on('click', function() {
+                $('#seo-result-modal').hide();
+            });
+
+            // 全选/取消全选
+            $('#cb-select-all-1').on('change', function() {
+                $('.post-checkbox').prop('checked', $(this).prop('checked'));
             });
         });
         </script>
@@ -782,6 +1502,34 @@ class Auto_Excerpt_Admin_Page {
                 'processed' => $processed
             ));
         }
+    }
+
+    
+    /**
+     * 加载SEO分析相关脚本和样式
+     */
+    public function enqueue_seo_scripts($hook) {
+        // 只在自动摘要管理页面加载
+        if (strpos($hook, 'wordpress-toolkit-auto-excerpt') === false) {
+            return;
+        }
+
+        // 加载SEO分析器样式
+        wp_enqueue_style(
+            'seo-analyzer-css',
+            WORDPRESS_TOOLKIT_PLUGIN_URL . 'modules/auto-excerpt/assets/css/seo-analyzer.css',
+            array(),
+            '1.0.0'
+        );
+
+        // 加载SEO分析器脚本
+        wp_enqueue_script(
+            'seo-analyzer-js',
+            WORDPRESS_TOOLKIT_PLUGIN_URL . 'modules/auto-excerpt/assets/js/seo-analyzer.js',
+            array('jquery'),
+            '1.0.0',
+            true
+        );
     }
 }
 

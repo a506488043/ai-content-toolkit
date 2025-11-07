@@ -138,27 +138,8 @@ class Custom_Card_Module {
      * 加载管理后台脚本和样式
      */
     public function admin_enqueue_scripts($hook) {
-        // 只在Custom Card设置页面加载
-        if (strpos($hook, 'wordpress-toolkit-custom-card') === false) {
-            return;
-        }
-        
-        // 加载原Custom Card的管理样式
-        wp_enqueue_style(
-            'wordpress-toolkit-custom-card-admin',
-            WORDPRESS_TOOLKIT_PLUGIN_URL . 'modules/custom-card/assets/admin-style.css',
-            array(),
-            self::MODULE_VERSION
-        );
-        
-        // 加载原Custom Card的管理脚本
-        wp_enqueue_script(
-            'wordpress-toolkit-custom-card-admin',
-            WORDPRESS_TOOLKIT_PLUGIN_URL . 'modules/custom-card/assets/admin-script.js',
-            array('jquery'),
-            self::MODULE_VERSION,
-            true
-        );
+        // 使用统一样式，不需要加载额外的CSS和JS
+        return;
     }
     
     /**
@@ -248,31 +229,7 @@ class Custom_Card_Module {
                 </form>
             </div>
 
-            <div class="wordpress-toolkit-admin-section">
-                <h2>使用说明</h2>
-                <h3>如何添加网站卡片？</h3>
-                <p>网站卡片会在用户通过短代码访问时自动创建。请按照以下步骤操作：</p>
-                <ol>
-                    <li>在文章或页面中使用短代码：<br>
-                        <code>[custom_card url="https://example.com"]</code> 或 <br>
-                        <code>[custom_card_lazy url="https://example.com"]</code>
-                    </li>
-                    <li>保存并发布文章/页面</li>
-                    <li>访问该页面，卡片数据会自动创建并缓存</li>
-                    <li>在"工具箱"菜单的"网站卡片列表"页面即可看到卡片数据</li>
-                </ol>
-
-                <h3>功能说明</h3>
-                <ul>
-                    <li>网站卡片会在用户通过短代码访问时自动创建</li>
-                    <li>点击统计会自动记录用户点击卡片的行为</li>
-                    <li>禁用状态的卡片不会在网站上显示</li>
-                    <li>删除卡片会同时删除相关的点击统计数据</li>
-                </ul>
-
-                <p>查看 <a href="<?php echo esc_url(admin_url('admin.php?page=wordpress-toolkit-about')); ?>">功能说明页面</a> 获取更详细的使用方法和示例。</p>
-            </div>
-
+            
             <div class="wordpress-toolkit-admin-section">
                 <h2>缓存管理</h2>
                 <p>当前缓存设置：</p>

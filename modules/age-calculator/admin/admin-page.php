@@ -18,10 +18,11 @@ $show_for_logged_out = isset($options['show_for_logged_out']) ? $options['show_f
 <div class="wrap">
     <h1>年龄计算器设置</h1>
     
-    <div class="wordpress-toolkit-admin-section">
+    <div class="toolkit-settings-form">
+        <h2>⏰ 基本设置</h2>
         <form method="post" action="options.php">
             <?php settings_fields('wordpress_toolkit_age_calculator_options'); ?>
-            
+
             <table class="form-table">
                 <tr>
                     <th scope="row">
@@ -60,18 +61,15 @@ $show_for_logged_out = isset($options['show_for_logged_out']) ? $options['show_f
                     </td>
                 </tr>
             </table>
-            
-            <?php submit_button('保存设置'); ?>
+
+            <div class="submit">
+                <?php submit_button('保存设置'); ?>
+            </div>
         </form>
     </div>
-    
-    <div class="wordpress-toolkit-admin-section">
-        <h2>使用说明</h2>
-        <p>查看 <a href="<?php echo esc_url(admin_url('admin.php?page=wordpress-toolkit')); ?>">工具箱功能说明页面</a> 获取详细的使用方法和示例。</p>
-    </div>
-    
-    <div class="wordpress-toolkit-admin-section">
-        <h2>测试工具</h2>
+
+    <div class="toolkit-settings-form">
+        <h2>🧪 测试工具</h2>
         <p>您可以使用以下工具测试年龄计算功能：</p>
         
         <div class="age-calculator-test-tool">
@@ -100,6 +98,44 @@ $show_for_logged_out = isset($options['show_for_logged_out']) ? $options['show_f
         </div>
     </div>
 </div>
+
+<style>
+/* WordPress Toolkit 统一设置页面样式 */
+.toolkit-settings-form {
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    border-radius: 8px;
+    padding: 24px;
+    margin-bottom: 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.04);
+}
+
+.toolkit-settings-form h2 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    font-size: 1.4em;
+    font-weight: 600;
+    color: #1d2327;
+    border-bottom: 2px solid #2271b1;
+    padding-bottom: 8px;
+}
+
+.toolkit-settings-form .form-table {
+    margin-top: 20px;
+}
+
+.toolkit-settings-form .form-table th {
+    font-weight: 600;
+    color: #1d2327;
+    width: 35%;
+}
+
+.toolkit-settings-form .submit {
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 1px solid #ddd;
+}
+</style>
 
 <script type="text/javascript">
 jQuery(document).ready(function($) {

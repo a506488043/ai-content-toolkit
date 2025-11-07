@@ -1,52 +1,18 @@
 # WordPress Toolkit
 
-**Language / 语言:** [中文](README.md) | [English](en.md)
+**Language / Language:** [中文](README.md) | [English](en.md)
 
-A powerful, secure, and reliable WordPress comprehensive toolkit that integrates seven practical tool modules to provide comprehensive functionality support for websites.
+A powerful, secure, and reliable WordPress comprehensive toolkit that integrates four practical tool modules to provide comprehensive functionality support for websites.
 
 ## 📋 Basic Information
 
 - **Plugin Name**: WordPress Toolkit
-- **Version**: 1.1.0 (Latest Optimized Version)
+- **Version**: 1.0.6
 - **Author**: www.saiita.com.cn
 - **License**: GPL v2 or later
 - **Minimum Requirements**: WordPress 5.0+, PHP 7.4+
-- **Tested Compatibility**: WordPress 6.4+
+- **Tested Compatibility**: WordPress 6.4
 - **Plugin URL**: https://www.saiita.com.cn
-
-## 🚀 Latest Optimization Highlights
-
-### 🛡️ Security Enhancement (A+ Grade)
-- ✅ **Zero Security Vulnerabilities**: Fixed all SQL injection, XSS, CSRF risks
-- ✅ **Unified Security Verification**: Complete nonce and permission verification system
-- ✅ **Security Event Monitoring**: Real-time security event logging and auditing
-- ✅ **Input Data Validation**: Comprehensive data sanitization and validation mechanisms
-
-### ⚡ Performance Optimization (60%+ Improvement)
-- ✅ **Smart Resource Merging**: CSS/JS files automatically merged and compressed
-- ✅ **Database Optimization**: Fixed N+1 queries, added key indexes
-- ✅ **Upgraded Caching Strategy**: Multi-level caching and smart invalidation mechanisms
-- ✅ **HTTP Request Optimization**: 70% reduction in request count
-
-### 🔧 Code Quality (Enterprise Standards)
-- ✅ **Zero Duplicate Code**: Code duplication reduced from 45% to 5%
-- ✅ **Modular Architecture**: Unified base classes and standard interfaces
-- ✅ **Automation Tools**: Complete development and debugging toolkit
-- ✅ **Comprehensive Documentation**: Detailed API documentation and usage guides
-
----
-
-## 📊 Optimization Results Comparison
-
-| Metric | Before | After | Improvement |
-|-------|--------|-------|-------------|
-| **Security** | B- (6/10) | A+ (9.5/10) | +58% |
-| **Performance** | 5/10 | 8/10 | +60% |
-| **Maintainability** | 6/10 | 9/10 | +50% |
-| **Code Duplication** | 45% | 5% | -89% |
-| **HTTP Requests** | 32 files | 8-10 files | -70% |
-
-*For detailed optimization report, see [CODE_OPTIMIZATION_REPORT.md](CODE_OPTIMIZATION_REPORT.md)*
 
 ## 🛠️ Core Modules
 
@@ -206,96 +172,47 @@ Intelligent article optimization system supporting AI-powered excerpt generation
 - 🔄 **Fallback Mechanism**: Automatic fallback to traditional algorithms when AI fails
 - 📝 **Multiple Modes**: Support for intelligent extraction and simple truncation modes
 
-### 🔧 REST Proxy Fix
-**Version**: 1.0.0
+**User Interface**:
+- Unified management interface design
+- Real-time status display and progress feedback
+- Filtering and pagination functionality
+- AI-generated excerpt marking display
 
-Fixes WordPress REST proxy connection issues and protects legitimate services.
+**Configuration Options**:
+- AI feature toggle and API configuration
+- Excerpt length and format settings
+- Auto-generation rules configuration
+- Caching and performance optimization
 
-**Core Features**:
-- ✅ **Connection Repair**: Fixes WordPress REST proxy connection failures
-- ✅ **Domain Filtering**: Intelligent domain filtering and protection
-- ✅ **Service Protection**: Protects legitimate WordPress services
-- ✅ **Security Enhancement**: Blocks problematic WordPress.com domains
-- ✅ **Whitelist System**: Configurable domain whitelist/blacklist
+## 🏗️ Technical Architecture
 
----
-
-## 🏗️ Optimized Technical Architecture
-
-### Enterprise-Grade Modular Design
+### Modular Design
 ```
 wordpress-toolkit/
-├── 📄 wordpress-toolkit.php          # Main plugin file
-├── 📄 uninstall.php                  # Uninstall script
-├── 📁 modules/                       # Function module directory
-│   ├── 📁 custom-card/              # Website card module
-│   ├── 📁 age-calculator/           # Age calculator module
-│   ├── 📁 time-capsule/             # Item management module
-│   ├── 📁 cookieguard/              # Cookie consent module
-│   ├── 📁 simple-friendlink/        # Friend links module
-│   ├── 📁 auto-excerpt/             # Auto excerpt module
-│   └── 📄 rest-proxy-fix.php        # REST proxy fix
-├── 📁 includes/                     # Core library
-│   ├── 📄 class-logger.php          # Logging system
-│   ├── 📄 class-admin-page-template.php # Admin template
-│   ├── 📄 class-utility-functions.php   # Utility functions
-│   ├── 📄 class-asset-manager.php       # Resource manager
-│   ├── 📁 security/                    # Security components
-│   │   └── 📄 class-security-utils.php    # Security tools
-│   ├── 📁 database/                    # Database components
-│   │   └── 📄 class-database-optimizer.php # Database optimizer
-│   └── 📁 abstracts/                   # Base classes
-│       ├── 📄 abstract-module-base.php     # Module base class
-│       └── 📄 abstract-ajax-handler.php   # AJAX handler base
-├── 📁 assets/                       # Optimized assets
-│   ├── 📁 css/                      # Merged stylesheets
-│   │   ├── variables.css             # CSS variables
-│   │   ├── common.css                # Common styles
-│   │   └── admin.css                 # Admin styles
-│   └── 📁 js/                       # Merged scripts
-│       ├── toolkit-core.js           # Core JavaScript
-│       └── admin.js                  # Admin scripts
-├── 📁 languages/                     # Language files
-│   └── 📄 wordpress-toolkit.pot       # Translation template
-├── 📄 README.md                     # Documentation (Chinese)
-├── 📄 en.md                         # Documentation (English)
-├── 📄 CODE_OPTIMIZATION_REPORT.md   # Optimization report
-├── 📄 ARCHITECTURE.md              # Architecture documentation
-└── 📄 DEVELOPER_GUIDE.md           # Developer guide
+├── wordpress-toolkit.php          # Main plugin file
+├── modules/                       # Function module directory
+│   ├── custom-card/              # Website card module
+│   ├── age-calculator/           # Age calculator module
+│   ├── time-capsule/             # Item management module
+│   ├── simple-friendlink/        # Friend links template module
+│   ├── cookieguard/              # Cookie consent module
+│   └── auto-excerpt/             # Auto excerpt module
+├── assets/                       # Asset files
+│   ├── css/                      # Style files
+│   └── js/                       # JavaScript files
+├── includes/                     # Core library
+│   ├── class-admin-page-template.php
+│   ├── class-logger.php
+│   └── i18n.php
+└── languages/                     # Language files
+    └── wordpress-toolkit.pot
 ```
 
-### 🔧 Advanced Architecture Features
-
-#### 🛡️ Security Architecture
-- **Unified Security System**: Centralized security verification and logging
-- **Input Validation**: Comprehensive data sanitization and validation
-- **Permission Management**: Fine-grained access control
-- **Security Event Monitoring**: Real-time security event tracking
-
-#### ⚡ Performance Architecture
-- **Smart Resource Merging**: Automatic CSS/JS file merging and compression
-- **Multi-level Caching**: Database → Memory → File caching strategy
-- **Database Optimization**: N+1 query elimination and intelligent indexing
-- **Lazy Loading**: On-demand resource loading based on page context
-
-#### 🔧 Code Architecture
-- **DRY Principle**: 89% reduction in code duplication
-- **Modular Design**: Unified base classes and standard interfaces
-- **Dependency Injection**: Clean dependency management
-- **Plugin Hook Integration**: Seamless WordPress ecosystem integration
-
-### 🎯 Unified Management Interface
-- **Toolkit Menu**: All tools managed under unified "Toolkit" menu
-- **Role-based Access**: Different permissions for different user roles
-- **Consistent UI**: Unified design language across all modules
-- **Responsive Design**: Perfect adaptation for mobile and desktop
-- **Real-time Feedback**: Instant status updates and error handling
-
-### 📊 Performance Metrics
-- **HTTP Requests**: Reduced from 32 to 8-10 files (70% reduction)
-- **Page Load Speed**: 60-70% performance improvement
-- **Database Queries**: N+1 query elimination, 80%+ fewer queries
-- **Code Maintainability**: 70% reduction in maintenance workload
+### Unified Management Interface
+- **Toolkit Menu**: All tools managed under the unified "Toolkit" menu
+- **Permission Levels**: Different user permissions for different function modules
+- **Settings Pages**: Each module has independent settings pages
+- **Quick Navigation**: Convenient function descriptions and quick links
 
 ## 🔒 Security Features
 
@@ -590,12 +507,6 @@ A: Yes, the plugin is compatible with all WordPress themes, including custom the
 
 ### Q: How to get technical support?
 A: For technical support, please visit: https://www.saiita.com.cn
-
-## 📚 Documentation
-
-- **[Optimization Report](CODE_OPTIMIZATION_REPORT.md)** - Detailed code quality improvement report
-- **[Architecture Documentation](ARCHITECTURE.md)** - Complete plugin architecture guide
-- **[Developer Guide](DEVELOPER_GUIDE.md)** - Development standards and best practices
 
 ## 🔗 Related Links
 

@@ -546,13 +546,8 @@
     }
     
     function escapeHtml(text) {
-        // 更安全的HTML转义实现
-        if (text === null || text === undefined) {
-            return '';
-        }
-
         const div = document.createElement('div');
-        div.textContent = String(text);
+        div.textContent = text;
         return div.innerHTML;
     }
     

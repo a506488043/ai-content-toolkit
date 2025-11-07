@@ -21,6 +21,17 @@ class TimeCapsule_Database {
     }
     
     /**
+     * 验证表名是否在允许的白名单中
+     */
+    private function validate_table_name($table_name) {
+        $allowed_tables = array(
+            $this->table_items,
+            $this->table_categories
+        );
+        return in_array($table_name, $allowed_tables);
+    }
+
+    /**
      * 更新数据库表结构
      */
     public function update_tables() {
@@ -30,8 +41,14 @@ class TimeCapsule_Database {
         // 检查是否需要添加证书资质相关字段
         $table_name = $this->table_items;
 
+        // 验证表名安全性
+        if (!$this->validate_table_name($table_name)) {
+            wt_log_error('Invalid table name in update_tables', 'time-capsule');
+            return false;
+        }
+
         // 检查字段是否存在
-        $existing_columns = $wpdb->get_col("SHOW COLUMNS FROM {$table_name}");
+        $existing_columns = $wpdb->get_col($wpdb->prepare("SHOW COLUMNS FROM %s", $table_name));
 
         $certificate_fields = array(
             'issue_date' => "ADD COLUMN issue_date date DEFAULT NULL COMMENT '发证时间'",
@@ -59,41 +76,33 @@ class TimeCapsule_Database {
         }
 
         if (!empty($alter_sqls)) {
-            // 安全的ALTER TABLE操作 - 使用白名单验证
-            $allowed_operations = [
-                'ADD COLUMN',
-                'MODIFY COLUMN',
-                'DROP COLUMN'
-            ];
+            $alter_sql = "ALTER TABLE {$table_name} " . implode(', ', $alter_sqls);
 
-            $validated_sqls = [];
-            foreach ($alter_sqls as $sql) {
-                foreach ($allowed_operations as $op) {
-                    if (strpos($sql, $op) === 0) {
-                        $validated_sqls[] = $sql;
-                        break;
-                    }
-                }
+            // 执行ALTER TABLE操作并添加错误处理
+            $result = $wpdb->query($alter_sql);
+            if ($result === false) {
+                wt_log_error('Failed to alter table structure: ' . $wpdb->last_error, 'time-capsule');
+                return false;
             }
 
-            if (!empty($validated_sqls)) {
-                $alter_sql = "ALTER TABLE " . $wpdb->prepare("%i", $table_name) . " " . implode(', ', $validated_sqls);
-                $wpdb->query($alter_sql);
+            // 添加索引，并处理错误
+            $index_operations = array();
+            if (!in_array('issue_date', $existing_columns)) {
+                $index_operations[] = "ALTER TABLE {$table_name} ADD INDEX issue_date (issue_date)";
+            }
+            if (!in_array('renewal_date', $existing_columns)) {
+                $index_operations[] = "ALTER TABLE {$table_name} ADD INDEX renewal_date (renewal_date)";
+            }
+            if (!in_array('certificate_status', $existing_columns)) {
+                $index_operations[] = "ALTER TABLE {$table_name} ADD INDEX certificate_status (certificate_status)";
             }
 
-            // 安全添加索引 - 使用白名单验证
-            $allowed_indexes = [
-                'issue_date' => 'issue_date',
-                'renewal_date' => 'renewal_date',
-                'certificate_status' => 'certificate_status'
-            ];
-
-            foreach ($allowed_indexes as $index_name => $index_column) {
-                if (!in_array($index_name, $existing_columns)) {
-                    $index_sql = "ALTER TABLE " . $wpdb->prepare("%i", $table_name) .
-                                 " ADD INDEX " . $wpdb->prepare("%i", $index_name) .
-                                 " (" . $wpdb->prepare("%i", $index_column) . ")";
-                    $wpdb->query($index_sql);
+            // 执行索引操作
+            foreach ($index_operations as $index_sql) {
+                $result = $wpdb->query($index_sql);
+                if ($result === false) {
+                    wt_log_error('Failed to create index: ' . $wpdb->last_error, 'time-capsule');
+                    // 继续执行，不返回false，因为索引创建失败不会影响主要功能
                 }
             }
         }
@@ -493,9 +502,20 @@ class TimeCapsule_Database {
 
         wt_log_info('Resetting database tables', 'time-capsule-db');
 
-        // 删除现有表
-        $wpdb->query("DROP TABLE IF EXISTS {$this->table_items}");
-        $wpdb->query("DROP TABLE IF EXISTS {$this->table_categories}");
+        // 安全地删除现有表
+        $tables_to_drop = array($this->table_items, $this->table_categories);
+        foreach ($tables_to_drop as $table) {
+            if ($this->validate_table_name($table)) {
+                $result = $wpdb->query("DROP TABLE IF EXISTS {$table}");
+                if ($result === false) {
+                    wt_log_error("Failed to drop table {$table}: " . $wpdb->last_error, 'time-capsule-db');
+                    return false;
+                }
+            } else {
+                wt_log_error('Invalid table name in reset_tables: ' . $table, 'time-capsule-db');
+                return false;
+            }
+        }
 
         // 重新创建表
         $result = $this->create_tables();

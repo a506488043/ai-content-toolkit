@@ -32,24 +32,11 @@ define('WORDPRESS_TOOLKIT_PLUGIN_BASENAME', plugin_basename(__FILE__));
 // 加载日志管理
 require_once WORDPRESS_TOOLKIT_PLUGIN_PATH . 'includes/class-logger.php';
 
+// 加载基础模块类
+require_once WORDPRESS_TOOLKIT_PLUGIN_PATH . 'includes/abstract-class-module-base.php';
+
 // 加载管理页面模板系统
 require_once WORDPRESS_TOOLKIT_PLUGIN_PATH . 'includes/class-admin-page-template.php';
-
-// 加载通用工具类
-require_once WORDPRESS_TOOLKIT_PLUGIN_PATH . 'includes/class-utility-functions.php';
-
-// 加载安全工具类
-require_once WORDPRESS_TOOLKIT_PLUGIN_PATH . 'includes/security/class-security-utils.php';
-
-// 加载数据库优化器
-require_once WORDPRESS_TOOLKIT_PLUGIN_PATH . 'includes/database/class-database-optimizer.php';
-
-// 加载基础抽象类
-require_once WORDPRESS_TOOLKIT_PLUGIN_PATH . 'includes/abstracts/abstract-module-base.php';
-require_once WORDPRESS_TOOLKIT_PLUGIN_PATH . 'includes/abstracts/abstract-ajax-handler.php';
-
-// 加载资源管理器
-require_once WORDPRESS_TOOLKIT_PLUGIN_PATH . 'includes/class-asset-manager.php';
 
 // 加载REST代理修复模块
 require_once WORDPRESS_TOOLKIT_PLUGIN_PATH . 'modules/rest-proxy-fix.php';
@@ -74,11 +61,6 @@ class WordPress_Toolkit {
     private $simple_friendlink = null;
     private $simple_friendlink_admin = null;
     private $auto_excerpt = null;
-
-    /**
-     * 工具类实例
-     */
-    private $asset_manager = null;
     
     /**
      * 获取单例实例
@@ -94,20 +76,10 @@ class WordPress_Toolkit {
      * 构造函数
      */
     private function __construct() {
-        $this->init_asset_manager();
         $this->init_hooks();
         $this->load_modules();
     }
-
-    /**
-     * 初始化资源管理器
-     */
-    private function init_asset_manager() {
-        if (class_exists('WordPress_Toolkit_Asset_Manager')) {
-            $this->asset_manager = new WordPress_Toolkit_Asset_Manager();
-        }
-    }
-
+    
     /**
      * 初始化钩子
      */
@@ -281,11 +253,23 @@ class WordPress_Toolkit {
 
 
         // ======================
-        // 设置菜单 - 插件配置
+        // 工具箱设置菜单 - 集中管理所有模块设置
         // ======================
 
+        // 添加工具箱设置主菜单
+        add_menu_page(
+            __('工具箱设置', 'wordpress-toolkit'),
+            __('工具箱设置', 'wordpress-toolkit'),
+            'manage_options',
+            'wordpress-toolkit-settings',
+            array($this, 'toolkit_settings_main_page'),
+            'dashicons-admin-settings',
+            31 // 位置在工具箱主菜单之后
+        );
+
         // 网站卡片设置
-        add_options_page(
+        add_submenu_page(
+            'wordpress-toolkit-settings',
             __('网站卡片设置', 'wordpress-toolkit'),
             __('网站卡片', 'wordpress-toolkit'),
             'manage_options',
@@ -294,7 +278,8 @@ class WordPress_Toolkit {
         );
 
         // 年龄计算器设置
-        add_options_page(
+        add_submenu_page(
+            'wordpress-toolkit-settings',
             __('年龄计算器设置', 'wordpress-toolkit'),
             __('年龄计算器', 'wordpress-toolkit'),
             'manage_options',
@@ -303,7 +288,8 @@ class WordPress_Toolkit {
         );
 
         // Cookie同意设置
-        add_options_page(
+        add_submenu_page(
+            'wordpress-toolkit-settings',
             __('Cookie同意设置', 'wordpress-toolkit'),
             __('Cookie同意', 'wordpress-toolkit'),
             'manage_options',
@@ -312,8 +298,9 @@ class WordPress_Toolkit {
         );
 
         // 简洁友情链接设置
-        add_options_page(
-            __('简洁友情链接', 'wordpress-toolkit'),
+        add_submenu_page(
+            'wordpress-toolkit-settings',
+            __('简洁友情链接设置', 'wordpress-toolkit'),
             __('简洁友情链接', 'wordpress-toolkit'),
             'manage_options',
             'wordpress-toolkit-simple-friendlink-settings',
@@ -321,7 +308,8 @@ class WordPress_Toolkit {
         );
 
         // 文章优化设置
-        add_options_page(
+        add_submenu_page(
+            'wordpress-toolkit-settings',
             __('文章优化设置', 'wordpress-toolkit'),
             __('文章优化', 'wordpress-toolkit'),
             'manage_options',
@@ -523,9 +511,6 @@ class WordPress_Toolkit {
             'privacy_policy_url' => '',
             'consent_expiry_days' => 365
         ));
-
-        // 添加设置页面样式
-        wp_enqueue_style('cookieguard-admin', plugins_url('assets/cookieguard-admin.css', __FILE__));
         ?>
         <div class="wrap">
             <h1><?php _e('Cookie同意设置', 'wordpress-toolkit'); ?></h1>
@@ -681,10 +666,12 @@ class WordPress_Toolkit {
         <div class="wrap">
             <h1><?php echo __('简洁友情链接设置', 'wordpress-toolkit'); ?></h1>
 
-            <form method="post" action="">
-                <?php wp_nonce_field('wordpress_toolkit_simple_friendlink'); ?>
+            <div class="toolkit-settings-form">
+                <h2>🔗 基本设置</h2>
+                <form method="post" action="">
+                    <?php wp_nonce_field('wordpress_toolkit_simple_friendlink'); ?>
 
-                <table class="form-table">
+                    <table class="form-table">
                     <tr>
                         <th scope="row"><?php _e('用户提交', 'wordpress-toolkit'); ?></th>
                         <td>
@@ -725,11 +712,322 @@ class WordPress_Toolkit {
 
                                     </table>
 
-                <p class="submit">
-                    <input type="submit" name="save_settings" class="button button-primary" value="<?php _e('保存设置', 'wordpress-toolkit'); ?>">
-                </p>
-            </form>
+                    <div class="submit">
+                        <input type="submit" name="save_settings" class="button button-primary" value="<?php _e('保存设置', 'wordpress-toolkit'); ?>">
+                    </div>
+                </form>
+            </div>
         </div>
+
+        <style>
+        /* WordPress Toolkit 统一设置页面样式 */
+        .toolkit-settings-form {
+            background: #fff;
+            border: 1px solid #ccd0d4;
+            border-radius: 8px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,.04);
+        }
+
+        .toolkit-settings-form h2 {
+            margin-top: 0;
+            margin-bottom: 20px;
+            font-size: 1.4em;
+            font-weight: 600;
+            color: #1d2327;
+            border-bottom: 2px solid #2271b1;
+            padding-bottom: 8px;
+        }
+
+        .toolkit-settings-form .form-table {
+            margin-top: 20px;
+        }
+
+        .toolkit-settings-form .form-table th {
+            font-weight: 600;
+            color: #1d2327;
+            width: 35%;
+        }
+
+        .toolkit-settings-form .submit {
+            margin-top: 24px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+        }
+
+        /* SEO分析报告弹框样式 */
+        .seo-report-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1000000;
+        }
+
+        .seo-modal-backdrop {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(2px);
+        }
+
+        .seo-modal-content {
+            position: relative;
+            max-width: 800px;
+            max-height: 90vh;
+            margin: 5vh auto;
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+            overflow: hidden;
+            animation: modalSlideIn 0.3s ease-out;
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-30px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .seo-modal-header {
+            background: linear-gradient(135deg, #2271b1 0%, #135e96 100%);
+            color: #fff;
+            padding: 24px 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .seo-modal-header h2 {
+            margin: 0;
+            font-size: 1.5em;
+            font-weight: 600;
+        }
+
+        .seo-modal-close {
+            background: none;
+            border: none;
+            font-size: 28px;
+            color: #fff;
+            cursor: pointer;
+            padding: 0;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.2s ease;
+        }
+
+        .seo-modal-close:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .seo-modal-body {
+            padding: 32px;
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+
+        .seo-modal-footer {
+            padding: 20px 32px;
+            border-top: 1px solid #e1e1e1;
+            background: #f8f9f9;
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+
+        .seo-report-section {
+            margin-bottom: 32px;
+        }
+
+        .seo-report-section h3 {
+            margin: 0 0 16px 0;
+            font-size: 1.2em;
+            font-weight: 600;
+            color: #1d2327;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .keywords-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .keyword-tag {
+            background: linear-gradient(135deg, #2271b1 0%, #135e96 100%);
+            color: #fff;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+            box-shadow: 0 2px 8px rgba(34, 113, 177, 0.3);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .keyword-tag:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(34, 113, 177, 0.4);
+        }
+
+        .recommendations-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .recommendation-item {
+            border: 1px solid #e1e1e1;
+            border-radius: 8px;
+            padding: 20px;
+            background: #fff;
+            transition: box-shadow 0.2s ease, transform 0.2s ease;
+        }
+
+        .recommendation-item:hover {
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .recommendation-item.priority-high {
+            border-left: 4px solid #d63638;
+        }
+
+        .recommendation-item.priority-medium {
+            border-left: 4px solid #dba617;
+        }
+
+        .recommendation-item.priority-low {
+            border-left: 4px solid #00a32a;
+        }
+
+        .rec-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+
+        .rec-header h4 {
+            margin: 0;
+            font-size: 1.1em;
+            font-weight: 600;
+            color: #1d2327;
+            flex: 1;
+        }
+
+        .priority-badge {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .priority-high .priority-badge {
+            background: #fef7f7;
+            color: #d63638;
+            border: 1px solid #d63638;
+        }
+
+        .priority-medium .priority-badge {
+            background: #fcf9e8;
+            color: #dba617;
+            border: 1px solid #dba617;
+        }
+
+        .priority-low .priority-badge {
+            background: #f0f6fc;
+            color: #00a32a;
+            border: 1px solid #00a32a;
+        }
+
+        .rec-description {
+            color: #3c434a;
+            line-height: 1.6;
+            margin-bottom: 12px;
+        }
+
+        .rec-action {
+            background: #f8f9f9;
+            padding: 12px;
+            border-radius: 6px;
+            border-left: 3px solid #2271b1;
+            color: #1d2327;
+        }
+
+        .rec-action strong {
+            color: #2271b1;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .seo-modal-content {
+                margin: 0;
+                max-height: 100vh;
+                border-radius: 0;
+            }
+
+            .seo-modal-header,
+            .seo-modal-body,
+            .seo-modal-footer {
+                padding: 20px;
+            }
+
+            .keywords-container {
+                gap: 6px;
+            }
+
+            .keyword-tag {
+                font-size: 13px;
+                padding: 6px 12px;
+            }
+
+            .rec-header {
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .priority-badge {
+                align-self: flex-start;
+            }
+        }
+
+        /* 滚动条样式 */
+        .seo-modal-body::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .seo-modal-body::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        .seo-modal-body::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 4px;
+        }
+
+        .seo-modal-body::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
+        </style>
         <?php
     }
 
@@ -751,7 +1049,6 @@ class WordPress_Toolkit {
         if ($this->auto_excerpt) {
             ?>
             <div class="wrap">
-                <h1><?php _e('文章优化', 'wordpress-toolkit'); ?></h1>
                 <?php
                 error_log("WordPress Toolkit: Loading auto excerpt admin page");
                 $stats = $this->auto_excerpt->get_excerpt_stats();
@@ -967,16 +1264,21 @@ class WordPress_Toolkit {
                                     <td><?php echo $post['content_length']; ?> <?php _e('字符', 'wordpress-toolkit'); ?></td>
                                     <td><?php echo $post['date']; ?></td>
                                     <td>
-                                        <a href="<?php echo esc_url($post['edit_url']); ?>" class="button button-small" target="_blank"><?php _e('编辑', 'wordpress-toolkit'); ?></a>
-                                        <a href="<?php echo esc_url($post['view_url']); ?>" class="button button-small" target="_blank"><?php _e('查看', 'wordpress-toolkit'); ?></a>
-                                        <?php if (!$post['has_excerpt']): ?>
-                                        <button type="button" class="button button-small button-primary generate-excerpt-single" data-post-id="<?php echo $post['ID']; ?>" title="为这篇生成智能摘要">
-                                            生成摘要
-                                        </button>
-                                        <?php endif; ?>
-                                        <button type="button" class="button button-small generate-tags-single" data-post-id="<?php echo $post['ID']; ?>" data-title="<?php echo esc_attr($post['title']); ?>" title="AI生成文章标签">
-                                            生成标签
-                                        </button>
+                                        <div class="action-buttons-container">
+                                            <a href="<?php echo esc_url($post['edit_url']); ?>" class="button button-small" target="_blank" style="background: #646970; color: white; border-color: #646970; margin: 0; text-decoration: none;"><?php _e('编辑', 'wordpress-toolkit'); ?></a>
+                                            <a href="<?php echo esc_url($post['view_url']); ?>" class="button button-small" target="_blank" style="background: #646970; color: white; border-color: #646970; margin: 0; text-decoration: none;"><?php _e('查看', 'wordpress-toolkit'); ?></a>
+                                            <?php if (!$post['has_excerpt']): ?>
+                                            <button type="button" class="button button-small generate-excerpt-single" data-post-id="<?php echo $post['ID']; ?>" title="为这篇生成智能摘要" style="background: #46b450; color: white; border-color: #46b450; margin: 0;">
+                                                生成摘要
+                                            </button>
+                                            <?php endif; ?>
+                                            <button type="button" class="button button-small generate-tags-single" data-post-id="<?php echo $post['ID']; ?>" data-title="<?php echo esc_attr($post['title']); ?>" title="AI生成文章标签" style="background: #ff6900; color: white; border-color: #ff6900; margin: 0;">
+                                                生成标签
+                                            </button>
+                                            <button type="button" class="button button-small seo-analyze-single" data-post-id="<?php echo $post['ID']; ?>" title="AI SEO分析" style="background: #0073aa; color: white; border-color: #0073aa; margin: 0;">
+                                                SEO分析
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                                 <?php endforeach; ?>
@@ -1512,7 +1814,7 @@ class WordPress_Toolkit {
                             // 循环显示处理状态，模拟真实的处理进度
                             cycleCount++;
 
-                            // 对于大量文章，使用更慢的进度增长
+                            // For large numbers of articles，使用更慢的进度增长
                             var maxProgress = 95;
                             var progressIncrement = totalPosts > 1000 ? 0.5 : (totalPosts > 500 ? 1 : 2);
                             var baseProgress = 45;
@@ -1531,7 +1833,7 @@ class WordPress_Toolkit {
                             var messageIndex = (cycleCount - 1) % processingMessages.length;
                             var currentMessage = processingMessages[messageIndex] + ' (' + simulatedProcessed + '/' + totalPosts + ')';
 
-                            // 对于大量文章，添加时间提示和进度检查点
+                            // For large numbers of articles，添加时间提示和进度检查点
                             if (totalPosts > 1000) {
                                 if (cycleCount % 8 === 0) {
                                     var remainingMinutes = Math.round((100 - progress) / 10 * 1.5); // 估算剩余时间
@@ -1583,8 +1885,8 @@ class WordPress_Toolkit {
                     var confirmMessage = '确定要为所有无摘要文章批量生成摘要吗？\n\n' +
                         '• 需要处理的文章数量：' + stats.without_excerpt + ' 篇\n' +
                         '• 预计处理时间：' + estimatedTime + '\n' +
-                        '• 处理过程中请不要关闭页面\n' +
-                        '• 大量文章处理可能需要较长时间，请耐心等待';
+                        '• Do not close page during processing\n' +
+                        '• Large number of articles may take longer to process';
 
                     if (showBatchOption) {
                         confirmMessage += '\n\n💡 **建议：对于' + stats.without_excerpt + '篇文章**\n' +
@@ -1607,9 +1909,9 @@ class WordPress_Toolkit {
                     $button.prop('disabled', true);
 
                     // 初始化进度显示
-                    var initMessage = '准备开始处理 ' + stats.without_excerpt + ' 篇无摘要文章...';
+                    var initMessage = 'Processing ' + stats.without_excerpt + ' articles without excerpts...';
                     if (stats.without_excerpt > 1000) {
-                        initMessage += '\n⚠️ 大量文章处理，请耐心等待，避免关闭页面';
+                        initMessage += '\nWarning: Large number of articles, please be patient';
                     }
                     updateProgress('生成摘要', 0, 0, 0, 0, initMessage, stats.without_excerpt);
 
@@ -1673,7 +1975,7 @@ class WordPress_Toolkit {
                             var errorMessage = '';
                             if (status === 'timeout') {
                                 var partialMessage = '\n\n⚠️ **处理可能仍在继续**\n\n' +
-                                    '对于大量文章（' + stats.without_excerpt + ' 篇）的处理：\n' +
+                                    'For large numbers of articles（' + stats.without_excerpt + ' 篇）的处理：\n' +
                                     '• 服务器可能仍在后台继续处理\n' +
                                     '• 建议等待5-10分钟后刷新页面查看结果\n' +
                                     '• 如果仍有大量文章未处理，可以再次运行\n' +
@@ -1706,7 +2008,7 @@ class WordPress_Toolkit {
                                 '<ul>' +
                                 '<li>检查网络连接是否正常</li>' +
                                 '<li>刷新页面后重试</li>' +
-                                '<li>如果是大量文章处理，建议分批进行</li>' +
+                                '<li>如果是大量文章处理，recommend processing in batches</li>' +
                                 '<li>如果问题持续，请联系服务器管理员</li>' +
                                 '</ul></div>').show();
 
@@ -1969,8 +2271,8 @@ class WordPress_Toolkit {
                         '• 需要处理的文章数量：' + stats.total_posts + ' 篇\n' +
                         '• 预计处理时间：' + estimatedTime + '\n' +
                         '• 将为每篇文章生成AI标签并与现有标签合并\n' +
-                        '• 处理过程中请不要关闭页面\n' +
-                        '• 大量文章处理可能需要较长时间，请耐心等待';
+                        '• Do not close page during processing\n' +
+                        '• Large number of articles may take longer to process';
 
                     if (showBatchOption) {
                         confirmMessage += '\n\n💡 **建议：对于' + stats.total_posts + '篇文章**\n' +
@@ -1993,9 +2295,9 @@ class WordPress_Toolkit {
                     $button.prop('disabled', true);
 
                     // 初始化进度显示
-                    var initMessage = '准备开始处理 ' + stats.total_posts + ' 篇文章...';
+                    var initMessage = 'Processing ' + stats.total_posts + ' articles for tag generation...';
                     if (stats.total_posts > 1000) {
-                        initMessage += '\n⚠️ 大量文章标签生成，处理时间较长，请耐心等待';
+                        initMessage += '\nWarning: Large number of articles, processing may take longer';
                     }
                     updateProgress('生成标签', 0, 0, 0, 0, initMessage, stats.total_posts);
 
@@ -2059,7 +2361,7 @@ class WordPress_Toolkit {
                             var errorMessage = '';
                             if (status === 'timeout') {
                                 var partialMessage = '\n\n⚠️ **处理可能仍在继续**\n\n' +
-                                    '对于大量文章（' + stats.total_posts + ' 篇）的标签生成：\n' +
+                                    'For large numbers of articles（' + stats.total_posts + ' 篇）的标签生成：\n' +
                                     '• 服务器可能仍在后台继续处理\n' +
                                     '• 建议等待10-15分钟后刷新页面查看结果\n' +
                                     '• 如果仍有大量文章未处理，可以再次运行\n' +
@@ -2092,7 +2394,7 @@ class WordPress_Toolkit {
                                 '<ul>' +
                                 '<li>检查网络连接是否正常</li>' +
                                 '<li>刷新页面后重试</li>' +
-                                '<li>如果是大量文章处理，建议分批进行</li>' +
+                                '<li>如果是大量文章处理，recommend processing in batches</li>' +
                                 '<li>如果问题持续，请联系服务器管理员</li>' +
                                 '</ul></div>').show();
 
@@ -2103,6 +2405,661 @@ class WordPress_Toolkit {
                         }
                     });
                 });
+
+                // SEO分析功能
+                $('.seo-analyze-single').on('click', function(e) {
+                    e.preventDefault();
+                    var $button = $(this);
+                    var postId = $button.data('post-id');
+
+                    console.log('SEO分析按钮点击 - 文章ID:', postId);
+
+                    if (!postId) {
+                        alert('文章ID无效');
+                        return;
+                    }
+
+                    // 显示加载状态
+                    var originalText = $button.html();
+                    $button.html('<span class="dashicons dashicons-update rotating"></span> 分析中...').prop('disabled', true);
+
+                    // 发送SEO分析请求
+                    $.ajax({
+                        url: ajaxurl,
+                        type: 'POST',
+                        data: {
+                            action: 'auto_excerpt_seo_analyze',
+                            nonce: '<?php echo wp_create_nonce('auto_excerpt_seo_analyze'); ?>',
+                            post_id: postId
+                        },
+                        success: function(response) {
+                            if (response.success) {
+                                // 恢复按钮状态
+                                $button.html(originalText).prop('disabled', false);
+
+                                // 显示美观的SEO分析弹框
+                                console.log('=== AI SEO分析数据结构 ===');
+                                console.log('完整数据:', response.data);
+
+                                if (response.data.recommendations) {
+                                    console.log('建议数量:', response.data.recommendations.length);
+                                    response.data.recommendations.forEach(function(rec, index) {
+                                        console.log(`建议${index + 1}:`, {
+                                            title: rec.title,
+                                            has_action: !!rec.action,
+                                            action_length: rec.action ? rec.action.length : 0,
+                                            has_description: !!rec.description,
+                                            priority: rec.priority
+                                        });
+                                    });
+                                }
+
+                                if (response.data.keywords) {
+                                    console.log('关键词:', response.data.keywords);
+                                }
+
+                                console.log('=== 数据结构结束 ===');
+
+                                showSEOReportModal(postId, response.data);
+
+                                // 不自动刷新页面，让用户有足够时间阅读报告
+                            } else {
+                                alert('SEO分析失败：' + response.data.message);
+                                $button.html(originalText).prop('disabled', false);
+                            }
+                        },
+                        error: function() {
+                            alert('网络错误，请重试');
+                            $button.html(originalText).prop('disabled', false);
+                        }
+                    });
+                });
+
+                // SEO报告弹框函数
+                window.showSEOReportModal = function(postId, data) {
+                    // 构建报告HTML
+                    var reportHtml = '<div class="seo-report-header">';
+                    reportHtml += '<h2>📊 SEO分析报告</h2>';
+                    reportHtml += '<p class="report-post-id">文章ID: ' + postId + '</p>';
+                    reportHtml += '</div>';
+
+                    // 关键词部分
+                    if (data.keywords && data.keywords.length > 0) {
+                        reportHtml += '<div class="seo-report-section">';
+                        reportHtml += '<h3>🔑 推荐关键词</h3>';
+                        reportHtml += '<div class="keywords-container">';
+                        for (var i = 0; i < data.keywords.length; i++) {
+                            reportHtml += '<span class="keyword-tag">' + data.keywords[i] + '</span>';
+                        }
+                        reportHtml += '</div></div>';
+                    }
+
+                    // 内容统计部分
+                    if (data.content_stats) {
+                        reportHtml += '<div class="seo-report-section">';
+                        reportHtml += '<h3>📈 内容统计</h3>';
+                        reportHtml += '<div class="stats-grid">';
+                        if (data.content_stats.word_count) {
+                            reportHtml += '<div class="stat-item"><strong>字数统计:</strong> ' + data.content_stats.word_count + '</div>';
+                        }
+                        if (data.content_stats.reading_time) {
+                            reportHtml += '<div class="stat-item"><strong>预计阅读时间:</strong> ' + data.content_stats.reading_time + '</div>';
+                        }
+                        if (data.content_stats.paragraph_count) {
+                            reportHtml += '<div class="stat-item"><strong>段落数量:</strong> ' + data.content_stats.paragraph_count + '</div>';
+                        }
+                        if (data.content_stats.heading_structure) {
+                            reportHtml += '<div class="stat-item"><strong>标题结构:</strong> ' + data.content_stats.heading_structure + '</div>';
+                        }
+                        reportHtml += '</div></div>';
+                    }
+
+                    // SEO得分分析部分
+                    if (data.seo_score_breakdown) {
+                        reportHtml += '<div class="seo-report-section">';
+                        reportHtml += '<h3>📊 SEO维度分析</h3>';
+                        reportHtml += '<div class="score-breakdown">';
+
+                        if (data.seo_score_breakdown.title_optimization) {
+                            reportHtml += '<div class="score-item"><strong>标题优化:</strong> ' + data.seo_score_breakdown.title_optimization + '</div>';
+                        }
+                        if (data.seo_score_breakdown.content_quality) {
+                            reportHtml += '<div class="score-item"><strong>内容质量:</strong> ' + data.seo_score_breakdown.content_quality + '</div>';
+                        }
+                        if (data.seo_score_breakdown.keyword_strategy) {
+                            reportHtml += '<div class="score-item"><strong>关键词策略:</strong> ' + data.seo_score_breakdown.keyword_strategy + '</div>';
+                        }
+                        if (data.seo_score_breakdown.technical_seo) {
+                            reportHtml += '<div class="score-item"><strong>技术SEO:</strong> ' + data.seo_score_breakdown.technical_seo + '</div>';
+                        }
+                        if (data.seo_score_breakdown.user_experience) {
+                            reportHtml += '<div class="score-item"><strong>用户体验:</strong> ' + data.seo_score_breakdown.user_experience + '</div>';
+                        }
+
+                        reportHtml += '</div></div>';
+                    }
+
+                    // 详细优化建议部分 - 兼容新旧数据格式
+                    var recommendations = data.detailed_recommendations || data.recommendations;
+                    if (recommendations && recommendations.length > 0) {
+                        reportHtml += '<div class="seo-report-section">';
+                        reportHtml += '<h3>💡 详细优化建议</h3>';
+                        reportHtml += '<div class="recommendations-list">';
+
+                        for (var i = 0; i < recommendations.length; i++) {
+                            var rec = recommendations[i];
+                            var priorityClass = rec.priority === 'high' ? 'priority-high' :
+                                               rec.priority === 'medium' ? 'priority-medium' : 'priority-low';
+                            var priorityText = rec.priority === 'high' ? '高优先级' :
+                                              rec.priority === 'medium' ? '中优先级' : '低优先级';
+
+                            reportHtml += '<div class="recommendation-item ' + priorityClass + '">';
+                            reportHtml += '<div class="rec-header">';
+                            reportHtml += '<h4>' + rec.title + '</h4>';
+                            reportHtml += '<span class="priority-badge">' + priorityText + '</span>';
+                            reportHtml += '</div>';
+
+                            // 添加详细调试信息
+                            console.log('SEO分析项数据:', rec);
+                            console.log('Action字段长度:', rec.action ? rec.action.length : 0);
+                            console.log('Action内容预览:', rec.action ? rec.action.substring(0, 100) + '...' : '无action字段');
+
+                            // 优先显示action字段（AI返回的具体行动步骤）
+                            if (rec.action) {
+                                reportHtml += '<div class="rec-action"><strong>行动步骤:</strong></div>';
+                                reportHtml += '<div class="rec-action-content">' + rec.action.replace(/\n/g, '<br>') + '</div>';
+                            }
+
+                            // 显示其他字段（如果有）
+                            if (rec.current_issue) {
+                                reportHtml += '<div class="rec-issue"><strong>当前问题:</strong> ' + rec.current_issue + '</div>';
+                            }
+                            if (rec.why_important) {
+                                reportHtml += '<div class="rec-importance"><strong>重要性:</strong> ' + rec.why_important + '</div>';
+                            }
+                            if (rec.how_to_fix) {
+                                reportHtml += '<div class="rec-fix"><strong>解决方法:</strong> ' + rec.how_to_fix + '</div>';
+                            }
+                            if (rec.example_before && rec.example_after) {
+                                reportHtml += '<div class="rec-examples">';
+                                reportHtml += '<div class="rec-example-before"><strong>修改前:</strong> ' + rec.example_before + '</div>';
+                                reportHtml += '<div class="rec-example-after"><strong>修改后:</strong> ' + rec.example_after + '</div>';
+                                reportHtml += '</div>';
+                            }
+                            if (rec.expected_impact) {
+                                reportHtml += '<div class="rec-impact"><strong>预期效果:</strong> ' + rec.expected_impact + '</div>';
+                            }
+                            if (rec.time_estimate) {
+                                reportHtml += '<div class="rec-time"><strong>预计时间:</strong> ' + rec.time_estimate + '</div>';
+                            }
+                            // 如果没有action字段，显示description作为详细内容
+                            if (!rec.action && rec.description) {
+                                reportHtml += '<div class="rec-description"><strong>详细说明:</strong></div>';
+                                reportHtml += '<div class="rec-description-content">' + rec.description.replace(/\n/g, '<br>') + '</div>';
+                            }
+
+                            reportHtml += '</div>';
+                        }
+
+                        reportHtml += '</div></div>';
+                    }
+
+                    // 内容改进部分
+                    if (data.content_improvements && data.content_improvements.length > 0) {
+                        reportHtml += '<div class="seo-report-section">';
+                        reportHtml += '<h3>✍️ 内容改进建议</h3>';
+                        reportHtml += '<div class="content-improvements">';
+
+                        for (var i = 0; i < data.content_improvements.length; i++) {
+                            var improvement = data.content_improvements[i];
+                            reportHtml += '<div class="improvement-item">';
+                            reportHtml += '<h4>' + improvement.section + '</h4>';
+                            reportHtml += '<p>' + improvement.suggestion + '</p>';
+                            if (improvement.action_items && improvement.action_items.length > 0) {
+                                reportHtml += '<ul class="action-items">';
+                                for (var j = 0; j < improvement.action_items.length; j++) {
+                                    reportHtml += '<li>' + improvement.action_items[j] + '</li>';
+                                }
+                                reportHtml += '</ul>';
+                            }
+                            reportHtml += '</div>';
+                        }
+
+                        reportHtml += '</div></div>';
+                    }
+
+                    // 下一步行动计划
+                    if (data.next_steps && data.next_steps.length > 0) {
+                        reportHtml += '<div class="seo-report-section">';
+                        reportHtml += '<h3>🚀 下一步行动计划</h3>';
+                        reportHtml += '<div class="next-steps">';
+
+                        for (var i = 0; i < data.next_steps.length; i++) {
+                            reportHtml += '<div class="step-item">';
+                            reportHtml += '<span class="step-number">' + (i + 1) + '</span>';
+                            reportHtml += '<span class="step-text">' + data.next_steps[i] + '</span>';
+                            reportHtml += '</div>';
+                        }
+
+                        reportHtml += '</div></div>';
+                    }
+
+                    // 创建弹框
+                    var modalHtml = '<div id="seo-report-modal" class="seo-report-modal" style="display: none;">';
+                    modalHtml += '<div class="seo-modal-backdrop"></div>';
+                    modalHtml += '<div class="seo-modal-content">';
+                    modalHtml += '<div class="seo-modal-header">';
+                    modalHtml += '<h2>📊 SEO分析报告</h2>';
+                    modalHtml += '<button class="seo-modal-close" onclick="closeSEOReportModal()">&times;</button>';
+                    modalHtml += '</div>';
+                    modalHtml += '<div class="seo-modal-body">' + reportHtml + '</div>';
+                    modalHtml += '<div class="seo-modal-footer">';
+                    modalHtml += '<button class="button button-secondary" onclick="closeSEOReportModal()">关闭</button>';
+                    modalHtml += '<button class="button button-primary" onclick="closeSEOReportModal()">完成</button>';
+                    modalHtml += '</div>';
+                    modalHtml += '</div></div>';
+
+                    // 添加到页面并显示
+                    $('body').append(modalHtml);
+
+                    var modal = $('#seo-report-modal');
+
+                    if (modal.length > 0) {
+                        // 设置弹框和所有子元素的样式
+                        modal.css({
+                            'position': 'fixed',
+                            'top': '0',
+                            'left': '0',
+                            'width': '100%',
+                            'height': '100%',
+                            'display': 'block',
+                            'visibility': 'visible',
+                            'opacity': '1',
+                            'z-index': '9999999',
+                            'background': 'rgba(0, 0, 0, 0.6)'
+                        });
+
+                        // 设置弹框各个部分的样式
+                        modal.find('.seo-modal-backdrop').css({
+                            'position': 'absolute',
+                            'top': '0',
+                            'left': '0',
+                            'width': '100%',
+                            'height': '100%',
+                            'background': 'rgba(0, 0, 0, 0.6)',
+                            'backdrop-filter': 'blur(2px)'
+                        });
+
+                        modal.find('.seo-modal-content').css({
+                            'position': 'relative',
+                            'max-width': '800px',
+                            'max-height': '90vh',
+                            'margin': '5vh auto',
+                            'background': '#fff',
+                            'border-radius': '12px',
+                            'box-shadow': '0 20px 40px rgba(0, 0, 0, 0.15)',
+                            'overflow': 'hidden'
+                        });
+
+                        modal.find('.seo-modal-header').css({
+                            'background': 'linear-gradient(135deg, #2271b1 0%, #135e96 100%)',
+                            'color': '#fff',
+                            'padding': '24px 32px',
+                            'display': 'flex',
+                            'justify-content': 'space-between',
+                            'align-items': 'center'
+                        });
+
+                        modal.find('.seo-modal-header h2').css({
+                            'margin': '0',
+                            'font-size': '1.5em',
+                            'font-weight': '600'
+                        });
+
+                        modal.find('.seo-modal-close').css({
+                            'background': 'none',
+                            'border': 'none',
+                            'font-size': '28px',
+                            'color': '#fff',
+                            'cursor': 'pointer',
+                            'padding': '0',
+                            'width': '32px',
+                            'height': '32px',
+                            'border-radius': '50%',
+                            'display': 'flex',
+                            'align-items': 'center',
+                            'justify-content': 'center'
+                        });
+
+                        modal.find('.seo-modal-body').css({
+                            'padding': '32px',
+                            'max-height': '60vh',
+                            'overflow-y': 'auto'
+                        });
+
+                        modal.find('.seo-modal-footer').css({
+                            'padding': '20px 32px',
+                            'border-top': '1px solid #e1e1e1',
+                            'background': '#f8f9f9',
+                            'display': 'flex',
+                            'justify-content': 'flex-end',
+                            'gap': '12px'
+                        });
+
+                        // 关键词样式
+                        modal.find('.keyword-tag').css({
+                            'background': 'linear-gradient(135deg, #2271b1 0%, #135e96 100%)',
+                            'color': '#fff',
+                            'padding': '8px 16px',
+                            'border-radius': '20px',
+                            'font-size': '14px',
+                            'font-weight': '500',
+                            'display': 'inline-block',
+                            'margin': '4px',
+                            'box-shadow': '0 2px 8px rgba(34, 113, 177, 0.3)'
+                        });
+
+                        // 建议卡片样式
+                        modal.find('.recommendation-item').css({
+                            'border': '1px solid #e1e1e1',
+                            'border-radius': '12px',
+                            'padding': '24px',
+                            'background': '#fff',
+                            'margin-bottom': '20px',
+                            'box-shadow': '0 2px 8px rgba(0, 0, 0, 0.06)',
+                            'transition': 'all 0.3s ease',
+                            'position': 'relative'
+                        });
+
+                        // 优先级左边框样式
+                        modal.find('.priority-high').css({
+                            'border-left': '5px solid #d63638',
+                            'border-top-left-radius': '12px',
+                            'border-bottom-left-radius': '12px'
+                        });
+
+                        modal.find('.priority-medium').css({
+                            'border-left': '5px solid #dba617',
+                            'border-top-left-radius': '12px',
+                            'border-bottom-left-radius': '12px'
+                        });
+
+                        modal.find('.priority-low').css({
+                            'border-left': '5px solid #00a32a',
+                            'border-top-left-radius': '12px',
+                            'border-bottom-left-radius': '12px'
+                        });
+
+                        // 建议标题样式
+                        modal.find('.rec-header h4').css({
+                            'margin': '0',
+                            'margin-right': '12px',
+                            'font-size': '1.2em',
+                            'font-weight': '700',
+                            'color': '#1d2327',
+                            'line-height': '1.3',
+                            'flex': '1'
+                        });
+
+                        // 建议头部容器样式
+                        modal.find('.rec-header').css({
+                            'display': 'flex',
+                            'justify-content': 'space-between',
+                            'align-items': 'flex-start',
+                            'margin-bottom': '16px',
+                            'gap': '12px'
+                        });
+
+                        // 优先级徽章样式
+                        modal.find('.priority-badge').css({
+                            'padding': '6px 14px',
+                            'border-radius': '20px',
+                            'font-size': '11px',
+                            'font-weight': '700',
+                            'text-transform': 'uppercase',
+                            'letter-spacing': '0.5px',
+                            'white-space': 'nowrap'
+                        });
+
+                        modal.find('.priority-high .priority-badge').css({
+                            'background': 'linear-gradient(135deg, #fef7f7 0%, #fcecec 100%)',
+                            'color': '#d63638',
+                            'border': '1px solid #d63638',
+                            'box-shadow': '0 2px 4px rgba(214, 54, 56, 0.15)'
+                        });
+
+                        modal.find('.priority-medium .priority-badge').css({
+                            'background': 'linear-gradient(135deg, #fcf9e8 0%, #f8f4e0 100%)',
+                            'color': '#dba617',
+                            'border': '1px solid #dba617',
+                            'box-shadow': '0 2px 4px rgba(219, 166, 23, 0.15)'
+                        });
+
+                        modal.find('.priority-low .priority-badge').css({
+                            'background': 'linear-gradient(135deg, #f0f6fc 0%, #e8f4ed 100%)',
+                            'color': '#00a32a',
+                            'border': '1px solid #00a32a',
+                            'box-shadow': '0 2px 4px rgba(0, 163, 42, 0.15)'
+                        });
+
+                        // 建议描述样式
+                        modal.find('.rec-description').css({
+                            'color': '#3c434a',
+                            'line-height': '1.6',
+                            'font-size': '15px',
+                            'margin': '16px 0'
+                        });
+
+                        // 行动步骤样式
+                        modal.find('.rec-action').css({
+                            'background': 'linear-gradient(135deg, #f8f9fa 0%, #f1f3f5 100%)',
+                            'padding': '16px 20px',
+                            'border-radius': '8px',
+                            'border-left': '4px solid #2271b1',
+                            'color': '#1d2327',
+                            'font-size': '14px',
+                            'line-height': '1.5'
+                        });
+
+                        modal.find('.rec-action strong').css({
+                            'color': '#2271b1',
+                            'font-weight': '700',
+                            'display': 'block',
+                            'margin-bottom': '4px'
+                        });
+
+                        // 新增元素样式
+                        modal.find('.stats-grid').css({
+                            'display': 'grid',
+                            'grid-template-columns': 'repeat(auto-fit, minmax(200px, 1fr))',
+                            'gap': '16px',
+                            'margin-top': '16px'
+                        });
+
+                        modal.find('.stat-item').css({
+                            'background': '#f8f9fa',
+                            'padding': '12px 16px',
+                            'border-radius': '8px',
+                            'border-left': '3px solid #2271b1'
+                        });
+
+                        modal.find('.score-breakdown').css({
+                            'display': 'grid',
+                            'gap': '12px',
+                            'margin-top': '16px'
+                        });
+
+                        modal.find('.score-item').css({
+                            'background': '#f8f9fa',
+                            'padding': '14px 18px',
+                            'border-radius': '8px',
+                            'border-left': '3px solid #2271b1',
+                            'margin-bottom': '8px'
+                        });
+
+                        modal.find('.rec-issue, .rec-importance, .rec-fix, .rec-impact, .rec-time').css({
+                            'margin': '12px 0',
+                            'padding': '12px 16px',
+                            'border-radius': '6px',
+                            'line-height': '1.5'
+                        });
+
+                        // 新增action内容样式
+                        modal.find('.rec-action-content').css({
+                            'background': '#ffffff',
+                            'padding': '16px 20px',
+                            'border-radius': '6px',
+                            'border': '1px solid #e1e1e1',
+                            'margin-top': '8px',
+                            'color': '#3c434a',
+                            'line-height': '1.7',
+                            'font-size': '14px',
+                            'white-space': 'pre-wrap'
+                        });
+
+                        // 新增description内容样式
+                        modal.find('.rec-description-content').css({
+                            'background': '#ffffff',
+                            'padding': '16px 20px',
+                            'border-radius': '6px',
+                            'border': '1px solid #e1e1e1',
+                            'margin-top': '8px',
+                            'color': '#3c434a',
+                            'line-height': '1.7',
+                            'font-size': '14px',
+                            'white-space': 'pre-wrap'
+                        });
+
+                        modal.find('.rec-issue').css({
+                            'background': '#fef7f7',
+                            'border-left': '3px solid #d63638'
+                        });
+
+                        modal.find('.rec-importance').css({
+                            'background': '#f0f6fc',
+                            'border-left': '3px solid #2271b1'
+                        });
+
+                        modal.find('.rec-fix').css({
+                            'background': '#f0f8f0',
+                            'border-left': '3px solid #00a32a'
+                        });
+
+                        modal.find('.rec-impact').css({
+                            'background': '#fcf9e8',
+                            'border-left': '3px solid #dba617'
+                        });
+
+                        modal.find('.rec-time').css({
+                            'background': '#f8f4f4',
+                            'border-left': '3px solid #646970'
+                        });
+
+                        modal.find('.rec-examples').css({
+                            'margin': '16px 0',
+                            'padding': '16px',
+                            'background': '#f8f9fa',
+                            'border-radius': '8px',
+                            'border': '1px dashed #d1d5db'
+                        });
+
+                        modal.find('.rec-example-before, .rec-example-after').css({
+                            'margin': '8px 0',
+                            'padding': '12px',
+                            'border-radius': '6px'
+                        });
+
+                        modal.find('.rec-example-before').css({
+                            'background': '#fef7f7',
+                            'border-left': '3px solid #d63638'
+                        });
+
+                        modal.find('.rec-example-after').css({
+                            'background': '#f0f8f0',
+                            'border-left': '3px solid #00a32a'
+                        });
+
+                        modal.find('.content-improvements').css({
+                            'display': 'grid',
+                            'gap': '20px',
+                            'margin-top': '16px'
+                        });
+
+                        modal.find('.improvement-item').css({
+                            'background': '#f8f9fa',
+                            'padding': '20px',
+                            'border-radius': '12px',
+                            'border-left': '4px solid #2271b1'
+                        });
+
+                        modal.find('.improvement-item h4').css({
+                            'margin': '0 0 12px 0',
+                            'color': '#1d2327',
+                            'font-size': '1.1em',
+                            'font-weight': '600'
+                        });
+
+                        modal.find('.action-items').css({
+                            'margin': '12px 0 0 0',
+                            'padding-left': '20px'
+                        });
+
+                        modal.find('.action-items li').css({
+                            'margin': '6px 0',
+                            'color': '#3c434a',
+                            'line-height': '1.5'
+                        });
+
+                        modal.find('.next-steps').css({
+                            'display': 'flex',
+                            'flex-direction': 'column',
+                            'gap': '16px',
+                            'margin-top': '16px'
+                        });
+
+                        modal.find('.step-item').css({
+                            'display': 'flex',
+                            'align-items': 'flex-start',
+                            'gap': '16px',
+                            'padding': '16px',
+                            'background': '#f8f9fa',
+                            'border-radius': '12px',
+                            'border-left': '4px solid #2271b1'
+                        });
+
+                        modal.find('.step-number').css({
+                            'background': '#2271b1',
+                            'color': '#fff',
+                            'width': '32px',
+                            'height': '32px',
+                            'border-radius': '50%',
+                            'display': 'flex',
+                            'align-items': 'center',
+                            'justify-content': 'center',
+                            'font-weight': '700',
+                            'font-size': '14px',
+                            'flex-shrink': '0'
+                        });
+
+                        modal.find('.step-text').css({
+                            'flex': '1',
+                            'line-height': '1.5',
+                            'color': '#1d2327',
+                            'font-size': '15px'
+                        });
+
+                        modal.fadeIn(300);
+                    } else {
+                        console.error('弹框元素创建失败！');
+                    }
+                };
+
+                // 关闭SEO报告弹框
+                window.closeSEOReportModal = function() {
+                    $('#seo-report-modal').fadeOut(300, function() {
+                        $(this).remove();
+                    });
+                };
             });
             </script>
             <?php
@@ -2111,6 +3068,7 @@ class WordPress_Toolkit {
         }
     }
 
+    
     /**
      * 文章优化设置页面 - 设置菜单中
      */
@@ -2243,6 +3201,163 @@ class WordPress_Toolkit {
     }
     
     
+    /**
+     * 工具箱设置主页面
+     */
+    public function toolkit_settings_main_page() {
+        // 验证用户权限
+        if (!current_user_can('manage_options')) {
+            wp_die(__('权限不足', 'wordpress-toolkit'));
+        }
+        ?>
+        <div class="wrap">
+            <h1><?php _e('工具箱设置', 'wordpress-toolkit'); ?></h1>
+            <p><?php _e('欢迎使用WordPress Toolkit设置中心！在这里您可以配置所有模块的参数。', 'wordpress-toolkit'); ?></p>
+
+            <div class="wordpress-toolkit-settings-overview">
+                <div class="settings-grid">
+                    <div class="settings-card">
+                        <h2><span class="dashicons dashicons-admin-post"></span> <?php _e('网站卡片', 'wordpress-toolkit'); ?></h2>
+                        <p><?php _e('配置网站卡片的缓存、显示和抓取设置。', 'wordpress-toolkit'); ?></p>
+                        <a href="<?php echo admin_url('admin.php?page=wordpress-toolkit-custom-card-settings'); ?>" class="button button-primary"><?php _e('配置网站卡片', 'wordpress-toolkit'); ?></a>
+                    </div>
+
+                    <div class="settings-card">
+                        <h2><span class="dashicons dashicons-clock"></span> <?php _e('年龄计算器', 'wordpress-toolkit'); ?></h2>
+                        <p><?php _e('设置年龄计算器的显示样式和默认参数。', 'wordpress-toolkit'); ?></p>
+                        <a href="<?php echo admin_url('admin.php?page=wordpress-toolkit-age-calculator-settings'); ?>" class="button button-primary"><?php _e('配置年龄计算器', 'wordpress-toolkit'); ?></a>
+                    </div>
+
+                    <div class="settings-card">
+                        <h2><span class="dashicons dashicons-shield-alt"></span> <?php _e('Cookie同意', 'wordpress-toolkit'); ?></h2>
+                        <p><?php _e('管理Cookie同意通知的显示内容和行为。', 'wordpress-toolkit'); ?></p>
+                        <a href="<?php echo admin_url('admin.php?page=wordpress-toolkit-cookieguard-settings'); ?>" class="button button-primary"><?php _e('配置Cookie同意', 'wordpress-toolkit'); ?></a>
+                    </div>
+
+                    <div class="settings-card">
+                        <h2><span class="dashicons dashicons-admin-links"></span> <?php _e('友情链接', 'wordpress-toolkit'); ?></h2>
+                        <p><?php _e('设置友情链接的显示方式和管理选项。', 'wordpress-toolkit'); ?></p>
+                        <a href="<?php echo admin_url('admin.php?page=wordpress-toolkit-simple-friendlink-settings'); ?>" class="button button-primary"><?php _e('配置友情链接', 'wordpress-toolkit'); ?></a>
+                    </div>
+
+                    <div class="settings-card">
+                        <h2><span class="dashicons dashicons-edit"></span> <?php _e('文章优化', 'wordpress-toolkit'); ?></h2>
+                        <p><?php _e('配置自动摘要、标签生成等文章优化功能。', 'wordpress-toolkit'); ?></p>
+                        <a href="<?php echo admin_url('admin.php?page=wordpress-toolkit-auto-excerpt-settings'); ?>" class="button button-primary"><?php _e('配置文章优化', 'wordpress-toolkit'); ?></a>
+                    </div>
+
+                    <div class="settings-card">
+                        <h2><span class="dashicons dashicons-admin-network"></span> <?php _e('REST代理修复', 'wordpress-toolkit'); ?></h2>
+                        <p><?php _e('解决WordPress与官方服务连接的问题。', 'wordpress-toolkit'); ?></p>
+                        <a href="<?php echo admin_url('admin.php?page=wp-toolkit-rest-proxy-fix'); ?>" class="button button-primary"><?php _e('配置REST代理', 'wordpress-toolkit'); ?></a>
+                    </div>
+                </div>
+            </div>
+
+            <style>
+            /* WordPress Toolkit 统一设置页面样式 */
+            .settings-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+                gap: 20px;
+                margin-top: 20px;
+            }
+
+            .settings-card {
+                background: #fff;
+                border: 1px solid #ccd0d4;
+                border-radius: 8px;
+                padding: 20px;
+                box-shadow: 0 1px 3px rgba(0,0,0,.04);
+                transition: box-shadow 0.2s ease;
+            }
+
+            .settings-card:hover {
+                box-shadow: 0 2px 8px rgba(0,0,0,.08);
+            }
+
+            .settings-card h2 {
+                margin-top: 0;
+                margin-bottom: 16px;
+                font-size: 1.3em;
+                font-weight: 600;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                color: #1d2327;
+            }
+
+            .settings-card p {
+                margin-bottom: 16px;
+                color: #50575e;
+                line-height: 1.5;
+            }
+
+            .settings-card .dashicons {
+                font-size: 1.3em;
+                width: 1.3em;
+                height: 1.3em;
+                color: #2271b1;
+            }
+
+            .settings-card .button {
+                background: #2271b1;
+                border-color: #2271b1;
+                color: #fff;
+                text-decoration: none;
+                font-size: 14px;
+                line-height: 1.4;
+                padding: 8px 16px;
+                border-radius: 4px;
+                transition: all 0.2s ease;
+            }
+
+            .settings-card .button:hover {
+                background: #135e96;
+                border-color: #135e96;
+                color: #fff;
+            }
+
+            /* 通用设置表单样式 */
+            .toolkit-settings-form {
+                background: #fff;
+                border: 1px solid #ccd0d4;
+                border-radius: 8px;
+                padding: 24px;
+                margin-bottom: 20px;
+                box-shadow: 0 1px 3px rgba(0,0,0,.04);
+            }
+
+            .toolkit-settings-form h2 {
+                margin-top: 0;
+                margin-bottom: 20px;
+                font-size: 1.4em;
+                font-weight: 600;
+                color: #1d2327;
+                border-bottom: 2px solid #2271b1;
+                padding-bottom: 8px;
+            }
+
+            .toolkit-settings-form .form-table {
+                margin-top: 20px;
+            }
+
+            .toolkit-settings-form .form-table th {
+                font-weight: 600;
+                color: #1d2327;
+                width: 35%;
+            }
+
+            .toolkit-settings-form .submit {
+                margin-top: 24px;
+                padding-top: 20px;
+                border-top: 1px solid #ddd;
+            }
+            </style>
+        </div>
+        <?php
+    }
+
     /**
      * 功能说明页面 - 统一的功能说明
      */
@@ -2465,6 +3580,40 @@ class WordPress_Toolkit {
         </div>
         
         <style>
+        /* 按钮容器样式优化 */
+        .action-buttons-container {
+            display: flex;
+            flex-wrap: nowrap;
+            gap: 4px;
+            align-items: center;
+            justify-content: flex-start;
+            white-space: nowrap;
+            min-width: max-content;
+        }
+
+        .action-buttons-container .button,
+        .action-buttons-container a.button {
+            margin: 0 !important;
+            font-size: 12px !important;
+            line-height: 1.2 !important;
+            padding: 6px 8px !important;
+            white-space: nowrap;
+            flex-shrink: 0;
+            width: 80px !important;
+            text-align: center;
+            box-sizing: border-box;
+            display: inline-block;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* 响应式设计 - 小屏幕时允许换行 */
+        @media (max-width: 1200px) {
+            .action-buttons-container {
+                flex-wrap: wrap;
+            }
+        }
+
         .wordpress-toolkit-about {
             max-width: 100%;
             box-sizing: border-box;

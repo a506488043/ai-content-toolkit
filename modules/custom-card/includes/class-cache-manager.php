@@ -301,10 +301,13 @@ class ChfmCard_Cache_Manager {
         // 3. 从Opcache删除
         if ($this->opcache_enabled) {
             $opcache_file = $this->get_opcache_file($url_hash);
-            if (file_exists($opcache_file)) {
-                @unlink($opcache_file);
-                if (function_exists('opcache_invalidate')) {
-                    opcache_invalidate($opcache_file, true);
+            if (file_exists($opcache_file) && $this->validate_file_path($opcache_file)) {
+                if (unlink($opcache_file) === false) {
+                    wt_log_error('Failed to delete opcache file: ' . $opcache_file, 'custom-card');
+                } else {
+                    if (function_exists('opcache_invalidate')) {
+                        opcache_invalidate($opcache_file, true);
+                    }
                 }
             }
         }
@@ -340,10 +343,13 @@ class ChfmCard_Cache_Manager {
                 $files = glob($cache_dir . '/*.php');
                 foreach ($files as $file) {
                     // 验证文件路径安全
-                    if ($this->is_safe_cache_file($file)) {
-                        @unlink($file);
-                        if (function_exists('opcache_invalidate')) {
-                            opcache_invalidate($file, true);
+                    if ($this->is_safe_cache_file($file) && $this->validate_file_path($file)) {
+                        if (unlink($file) === false) {
+                            wt_log_error('Failed to delete cache file: ' . $file, 'custom-card');
+                        } else {
+                            if (function_exists('opcache_invalidate')) {
+                                opcache_invalidate($file, true);
+                            }
                         }
                     }
                 }
@@ -365,25 +371,56 @@ class ChfmCard_Cache_Manager {
     }
     
     /**
+     * 验证文件路径是否安全
+     *
+     * @param string $file_path 文件路径
+     * @return bool 是否安全
+     */
+    private function validate_file_path($file_path) {
+        $real_path = realpath($file_path);
+        if ($real_path === false) {
+            return false;
+        }
+
+        $upload_dir = wp_upload_dir();
+        $allowed_base_paths = array(
+            realpath($upload_dir['basedir'] . '/chfm-card-cache'),
+            realpath(WP_CONTENT_DIR . '/cache/chf-cards')
+        );
+
+        foreach ($allowed_base_paths as $base_path) {
+            if ($base_path && str_starts_with($real_path, $base_path)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * 获取Opcache缓存目录
-     * 
+     *
      * @return string 缓存目录路径
      */
     private function get_opcache_dir() {
         $upload_dir = wp_upload_dir();
         $cache_dir = $upload_dir['basedir'] . '/chfm-card-cache';
-        
+
         // 确保目录存在
         if (!is_dir($cache_dir)) {
             wp_mkdir_p($cache_dir);
-            
+
             // 创建index.php防止目录列表
             $index_file = $cache_dir . '/index.php';
             if (!file_exists($index_file)) {
-                file_put_contents($index_file, '<?php // Silence is golden');
+                if ($this->validate_file_path($index_file)) {
+                    file_put_contents($index_file, '<?php // Silence is golden');
+                } else {
+                    wt_log_error('Invalid file path for index.php creation: ' . $index_file, 'custom-card');
+                }
             }
         }
-        
+
         return $cache_dir;
     }
     
@@ -414,7 +451,11 @@ class ChfmCard_Cache_Manager {
         $file_time = filemtime($opcache_file);
         if ($file_time === false || (time() - $file_time) > $this->cache_expire) {
             // 文件过期，删除并返回false
-            @unlink($opcache_file);
+            if ($this->validate_file_path($opcache_file)) {
+                if (unlink($opcache_file) === false) {
+                    wt_log_error('Failed to delete expired cache file: ' . $opcache_file, 'custom-card');
+                }
+            }
             return false;
         }
         
@@ -450,16 +491,20 @@ class ChfmCard_Cache_Manager {
             'data' => $data
         ], JSON_PRETTY_PRINT);
         
-        // 写入文件
-        $result = file_put_contents($opcache_file, $json_data);
-        
-        // 如果写入成功且Opcache可用，使其失效以便重新缓存
-        if ($result && function_exists('opcache_invalidate')) {
-            opcache_invalidate($opcache_file, true);
+        // 安全地写入文件
+        if ($this->validate_file_path($opcache_file)) {
+            $result = file_put_contents($opcache_file, $json_data);
+
+            // 如果写入成功且Opcache可用，使其失效以便重新缓存
+            if ($result && function_exists('opcache_invalidate')) {
+                opcache_invalidate($opcache_file, true);
+            }
+
+            return $result !== false;
+        } else {
+            wt_log_error('Invalid file path for cache writing: ' . $opcache_file, 'custom-card');
+            return false;
         }
-        
-        return ($result !== false);
-    }
     
     /**
      * 检查缓存是否可用
@@ -575,13 +620,7 @@ class ChfmCard_Cache_Manager {
             );
         }
         
-        // 安全的COUNT查询 - 使用预处理语句和表名转义
-        $table_name = $wpdb->prepare("%i", $table);
-        if (empty($where)) {
-            return (int) $wpdb->get_var("SELECT COUNT(*) FROM $table_name");
-        } else {
-            return (int) $wpdb->get_var("SELECT COUNT(*) FROM $table_name $where");
-        }
+        return (int) $wpdb->get_var("SELECT COUNT(*) FROM $table $where");
     }
     
     /**

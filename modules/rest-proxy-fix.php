@@ -268,10 +268,10 @@ class WordPress_Toolkit_REST_Proxy_Fix {
      * 添加管理菜单
      */
     public function add_admin_menu() {
-        // 添加到WordPress Toolkit主菜单下的子菜单
+        // 添加到工具箱设置菜单下的子菜单
         add_submenu_page(
-            'wordpress-toolkit',
-            'REST代理修复',
+            'wordpress-toolkit-settings',
+            'REST代理修复设置',
             'REST代理修复',
             'manage_options',
             'wp-toolkit-rest-proxy-fix',
@@ -374,7 +374,7 @@ class WordPress_Toolkit_REST_Proxy_Fix {
         }
         ?>
         <div class="wrap">
-            <h1>WordPress Toolkit - REST代理修复</h1>
+            <h1>REST代理修复设置</h1>
 
             <form method="post" action="">
                 <?php wp_nonce_field('wp_toolkit_rest_proxy_settings', 'wp_toolkit_rest_proxy_nonce'); ?>
@@ -384,8 +384,8 @@ class WordPress_Toolkit_REST_Proxy_Fix {
                     <p><?php echo $settings['enabled'] ? 'REST代理连接问题已成功修复，插件正在运行中。' : 'REST代理修复功能已禁用，不会阻止任何请求。'; ?></p>
                 </div>
 
-                <div class="card">
-                    <h2>基本设置</h2>
+                <div class="toolkit-settings-form">
+                    <h2>⚙️ 基本设置</h2>
                     <table class="form-table">
                         <tr>
                             <th scope="row">
@@ -398,11 +398,13 @@ class WordPress_Toolkit_REST_Proxy_Fix {
                         </tr>
                     </table>
 
-                    <?php submit_button('保存设置', 'primary', 'save_settings'); ?>
+                    <div class="submit">
+                        <?php submit_button('保存设置', 'primary', 'save_settings'); ?>
+                    </div>
                 </div>
 
-                <div class="card">
-                    <h2>阻止域名管理</h2>
+                <div class="toolkit-settings-form">
+                    <h2>🚫 阻止域名管理</h2>
                     <p>这些域名的请求将被阻止。</p>
 
                     <table class="widefat">
@@ -450,8 +452,8 @@ class WordPress_Toolkit_REST_Proxy_Fix {
                     </table>
                 </div>
 
-                <div class="card">
-                    <h2>保护域名管理</h2>
+                <div class="toolkit-settings-form">
+                    <h2>✅ 保护域名管理</h2>
                     <p>这些域名的请求将被允许访问。</p>
 
                     <table class="widefat">
@@ -811,6 +813,44 @@ class WordPress_Toolkit_REST_Proxy_Fix {
                 </style>
             </form>
         </div>
+
+        <style>
+        /* WordPress Toolkit 统一设置页面样式 */
+        .toolkit-settings-form {
+            background: #fff;
+            border: 1px solid #ccd0d4;
+            border-radius: 8px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,.04);
+        }
+
+        .toolkit-settings-form h2 {
+            margin-top: 0;
+            margin-bottom: 20px;
+            font-size: 1.4em;
+            font-weight: 600;
+            color: #1d2327;
+            border-bottom: 2px solid #2271b1;
+            padding-bottom: 8px;
+        }
+
+        .toolkit-settings-form .form-table {
+            margin-top: 20px;
+        }
+
+        .toolkit-settings-form .form-table th {
+            font-weight: 600;
+            color: #1d2327;
+            width: 35%;
+        }
+
+        .toolkit-settings-form .submit {
+            margin-top: 24px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+        }
+        </style>
         <?php
     }
 

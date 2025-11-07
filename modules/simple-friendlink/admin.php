@@ -28,8 +28,6 @@ class Simple_FriendLink_Admin {
         }
         ?>
         <div class="wrap">
-            <h1><?php _e('友情链接 - 待审核申请', 'wordpress-toolkit'); ?></h1>
-
             <p class="description">
                 <?php _e('已发布的友情链接请使用WordPress内置的"链接"管理功能。此页面仅显示用户提交的待审核申请。', 'wordpress-toolkit'); ?>
                 <a href="<?php echo admin_url('link-manager.php'); ?>" class="button">
