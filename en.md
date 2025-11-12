@@ -2,7 +2,7 @@
 
 **Language / Language:** [中文](README.md) | [English](en.md)
 
-A powerful, secure, and reliable WordPress comprehensive toolkit that integrates seven practical tool modules to provide comprehensive functionality support for websites.
+A powerful, secure, and reliable WordPress comprehensive toolkit that integrates nine practical tool modules to provide comprehensive functionality support for websites.
 
 ## 📋 Basic Information
 
@@ -184,6 +184,58 @@ Intelligent article optimization system supporting AI-powered excerpt generation
 - Auto-generation rules configuration
 - Caching and performance optimization
 
+### 🏷️ Category Optimization
+**Version**: 1.0.0
+
+Intelligent category description generation system that automatically generates optimized descriptions based on articles within each category.
+
+**Core Features**:
+- ✅ **AI Description Generation**: Smart description generation based on category article content
+- ✅ **Batch Optimization**: One-click batch AI description generation for all categories
+- ✅ **Intelligent Analysis**: Analyzes topics and keywords of category articles
+- ✅ **SEO Friendly**: Generates SEO-compliant description content
+- ✅ **Status Management**: Real-time display of category optimization status
+- ✅ **Responsive Interface**: Modern management interface design
+
+**Technical Features**:
+- 🧠 **AI Intelligence Analysis**: Automatically analyzes article content and topics within categories
+- 📊 **Chinese Content Optimization**: Specialized AI generation optimization for Chinese content
+- 🏷️ **AI Marking**: Automatic identification and marking of AI-generated descriptions
+- ⚡ **Batch Processing**: Efficient batch generation and status updates
+- 🎨 **Unified Interface**: Consistent design style with other modules
+
+**User Interface**:
+- Compact statistics information panel
+- Real-time optimization status display
+- Filtering and batch operation features
+- AI-generated description marking display
+
+### 🏷️ Tag Optimization
+**Version**: 1.0.0
+
+Intelligent tag description generation system that automatically generates optimized descriptions based on articles within each tag.
+
+**Core Features**:
+- ✅ **AI Description Generation**: Smart description generation based on tag article content
+- ✅ **Batch Optimization**: One-click batch AI description generation for all tags
+- ✅ **Intelligent Analysis**: Analyzes topics and keywords of tag articles
+- ✅ **SEO Friendly**: Generates SEO-compliant description content
+- ✅ **Status Management**: Real-time display of tag optimization status
+- ✅ **Responsive Interface**: Modern management interface design
+
+**Technical Features**:
+- 🧠 **AI Intelligence Analysis**: Automatically analyzes article content and topics within tags
+- 📊 **Chinese Content Optimization**: Specialized AI generation optimization for Chinese content
+- 🏷️ **AI Marking**: Automatic identification and marking of AI-generated descriptions
+- ⚡ **Batch Processing**: Efficient batch generation and status updates
+- 🎨 **Unified Interface**: Consistent design style with category optimization
+
+**User Interface**:
+- Statistics information panel (total tags, optimized, pending, failed)
+- Real-time optimization status display
+- Filtering and batch operation features
+- AI-generated description marking display
+
 ### 🛡️ REST Proxy Fix
 **Version**: 1.0.0
 
@@ -240,7 +292,9 @@ wordpress-toolkit/
 │   ├── time-capsule/             # Item management module
 │   ├── cookieguard/              # Cookie consent module
 │   ├── simple-friendlink/        # Friend links module
-│   └── auto-excerpt/             # Article optimization module
+│   ├── auto-excerpt/             # Article optimization module
+│   ├── category-optimization/    # Category optimization module
+│   └── tag-optimization/         # Tag optimization module
 ├── assets/                       # Asset files
 │   ├── css/                      # Style files
 │   │   ├── variables.css         # CSS variable system
@@ -443,6 +497,8 @@ wordpress-toolkit/
 - **Cookie Consent**: Style configuration, text settings, behavior configuration
 - **Friend Links**: Link moderation, category management, user submissions
 - **Article Optimization**: Excerpt management, AI configuration, batch processing
+- **Category Optimization**: Category description AI generation, batch optimization, status management
+- **Tag Optimization**: Tag description AI generation, batch optimization, statistics panel
 
 ### Settings Pages
 - **Website Card Settings**: Cache configuration, fetch settings, display options
@@ -450,6 +506,8 @@ wordpress-toolkit/
 - **Cookie Consent Settings**: Style selection, text configuration, regional settings
 - **Friend Links Settings**: Moderation rules, submission permissions, display configuration
 - **Article Optimization Settings**: AI configuration, excerpt rules, batch settings
+- **Category Optimization Settings**: AI API configuration, generation rules, batch settings
+- **Tag Optimization Settings**: AI API configuration, generation rules, statistics settings
 
 ## 📈 Use Cases
 
@@ -764,7 +822,7 @@ $template->render();
 ## ❓ Frequently Asked Questions
 
 ### Q: What tools does this plugin include?
-A: WordPress Toolkit includes seven core tools:
+A: WordPress Toolkit includes nine core tools:
 1. **Website Cards** - Automatically fetch website metadata
 2. **Age Calculator** - Precisely calculate age
 3. **Item Management** - Item management and warranty tracking
@@ -772,6 +830,8 @@ A: WordPress Toolkit includes seven core tools:
 5. **Friend Links Management** - Complete friend link management and display system
 6. **REST Proxy Fix** - Intelligent WordPress REST proxy connection issue fix
 7. **Article Optimization** - AI-powered intelligent article optimization system
+8. **Category Optimization** - AI-powered intelligent category description generation system
+9. **Tag Optimization** - AI-powered intelligent tag description generation system
 
 ### Q: Can I use individual tools separately?
 A: Yes, each tool is an independent module. You can enable or disable corresponding modules as needed without affecting other functions.

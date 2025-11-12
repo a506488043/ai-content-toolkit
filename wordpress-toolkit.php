@@ -130,6 +130,14 @@ class WordPress_Toolkit {
         require_once WORDPRESS_TOOLKIT_PLUGIN_PATH . 'modules/auto-excerpt/auto-excerpt-module.php';
         $this->auto_excerpt = Auto_Excerpt_Module::get_instance();
 
+        // 加载Category Optimization模块
+        require_once WORDPRESS_TOOLKIT_PLUGIN_PATH . 'modules/category-optimization/category-optimization-module.php';
+        $this->category_optimization = Category_Optimization_Module::get_instance();
+
+        // 加载Tag Optimization模块
+        require_once WORDPRESS_TOOLKIT_PLUGIN_PATH . 'modules/tag-optimization/tag-optimization-module.php';
+        $this->tag_optimization = Tag_Optimization_Module::get_instance();
+
         // Auto Excerpt 管理功能已整合到设置页面，无需额外加载
 
         // 调试日志
@@ -250,6 +258,8 @@ class WordPress_Toolkit {
                 array($this, 'auto_excerpt_admin_page')
             );
         }
+
+        // 分类优化菜单已由模块自动注册
 
 
         // ======================
@@ -383,6 +393,7 @@ class WordPress_Toolkit {
         if ($this->time_capsule) $this->time_capsule->admin_enqueue_scripts($hook);
         if ($this->cookieguard) $this->cookieguard->admin_enqueue_scripts($hook);
         if ($this->auto_excerpt) $this->auto_excerpt->admin_enqueue_scripts($hook);
+        if ($this->category_optimization) $this->category_optimization->admin_enqueue_scripts($hook);
         // Simple_FriendLink_Module 不需要特殊的管理页面资源加载
     }
     
@@ -397,6 +408,7 @@ class WordPress_Toolkit {
         if ($this->cookieguard) $this->cookieguard->enqueue_scripts();
         if ($this->simple_friendlink) $this->simple_friendlink->enqueue_scripts();
         if ($this->auto_excerpt) $this->auto_excerpt->enqueue_scripts();
+        if ($this->category_optimization) $this->category_optimization->enqueue_scripts();
     }
     
     /**
@@ -1343,7 +1355,7 @@ class WordPress_Toolkit {
                 text-align: center !important;
                 padding: 0 10px !important;
                 font-size: 13px !important;
-                height: 30px !important;
+                height: 26px !important;
                 line-height: 28px !important;
                 overflow: hidden !important;
                 text-overflow: ellipsis !important;
@@ -3181,6 +3193,7 @@ class WordPress_Toolkit {
         }
     }
 
+    
     /**
      * CookieGuard管理页面 - 安全版本
      */

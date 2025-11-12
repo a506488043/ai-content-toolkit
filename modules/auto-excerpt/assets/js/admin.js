@@ -53,12 +53,19 @@ jQuery(document).ready(function($) {
         generateBtn.prop('disabled', true).text('生成中...');
         excerptResult.html('<p style="color: #0073aa;">正在生成摘要...</p>');
 
+        // 调试日志
+        console.log('Auto Excerpt: 开始AJAX请求');
+        console.log('Auto Excerpt: Config', AutoExcerptConfig);
+        console.log('Auto Excerpt: Action - generate_single_excerpt');
+        console.log('Auto Excerpt: Nonce -', AutoExcerptConfig.nonce);
+        console.log('Auto Excerpt: Post ID -', postId);
+
         // 调用AJAX生成摘要
         $.ajax({
             url: AutoExcerptConfig.ajaxUrl,
             type: 'POST',
             data: {
-                action: 'generate_auto_excerpt',
+                action: 'generate_single_excerpt',
                 nonce: AutoExcerptConfig.nonce,
                 post_id: postId,
                 content: content,
@@ -67,6 +74,7 @@ jQuery(document).ready(function($) {
                 smart_extraction: true
             },
             success: function(response) {
+                console.log('Auto Excerpt: AJAX响应', response);
                 generateBtn.prop('disabled', false).text('生成智能摘要');
 
                 if (response.success) {
@@ -86,12 +94,14 @@ jQuery(document).ready(function($) {
                         }
                     });
                 } else {
+                    console.log('Auto Excerpt: 生成失败', response.data);
                     excerptResult.html('<p style="color: #d63638;">生成失败：' + response.data.message + '</p>');
                 }
             },
             error: function(xhr, status, error) {
+                console.log('Auto Excerpt: AJAX错误', xhr.responseText);
                 generateBtn.prop('disabled', false).text('生成智能摘要');
-                excerptResult.html('<p style="color: #d63638;">网络错误：' + error + '</p>');
+                excerptResult.html('<p style="color: #d63638;">网络错误：' + error + '</p><pre>' + xhr.responseText + '</pre>');
             }
         });
     }
