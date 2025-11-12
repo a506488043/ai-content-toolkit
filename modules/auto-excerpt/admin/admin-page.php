@@ -117,6 +117,17 @@ class Auto_Excerpt_Admin_Page {
             <!-- 文章列表和SEO分析 -->
             <div class="posts-list-section">
                 <h3><?php _e('文章列表与SEO分析', 'wordpress-toolkit'); ?></h3>
+                <?php if (!function_exists('wordpress_toolkit_is_ai_available') || !wordpress_toolkit_is_ai_available()): ?>
+                <div class="notice notice-warning inline" style="margin-bottom: 20px;">
+                    <p>
+                        <strong>⚠️ <?php _e('AI功能未配置', 'wordpress-toolkit'); ?></strong><br>
+                        <?php _e('SEO分析功能需要配置AI服务。请前往', 'wordpress-toolkit'); ?>
+                        <a href="<?php echo admin_url('admin.php?page=wordpress-toolkit-ai-settings'); ?>" class="button button-primary">
+                            <?php _e('工具箱设置 → AI设置', 'wordpress-toolkit'); ?>
+                        </a>
+                    </p>
+                </div>
+                <?php endif; ?>
                 <div id="posts-list-container">
                     <?php
                     // 获取文章列表数据
@@ -668,7 +679,19 @@ class Auto_Excerpt_Admin_Page {
         </style>
 
         <script>
+        // 全局配置对象，供SEO分析器使用
+        var AutoExcerptConfig = {
+            ajaxUrl: '<?php echo admin_url('admin-ajax.php'); ?>',
+            seoNonce: '<?php echo wp_create_nonce('auto_excerpt_seo_nonce'); ?>'
+        };
+
         jQuery(document).ready(function($) {
+            // 调试信息：检查组件是否正确加载
+            console.log('SEO Components loaded:', {
+                SEOAnalyzer: typeof window.SEOAnalyzer,
+                SEOReportDisplay: typeof window.SEOReportDisplay,
+                AutoExcerptConfig: typeof window.AutoExcerptConfig
+            });
             // 标签页切换
             $('.auto-excerpt-tabs .nav-tab').on('click', function(e) {
                 e.preventDefault();
@@ -857,6 +880,11 @@ class Auto_Excerpt_Admin_Page {
                     },
                     success: function(response) {
                         if (response.success) {
+                            console.log('=== 获取SEO报告数据结构 ===');
+                            console.log('完整数据:', response.data);
+                            console.log('SEOAnalyzer可用:', typeof window.SEOAnalyzer);
+                            console.log('SEOReportDisplay可用:', typeof window.SEOReportDisplay);
+                            console.log('=== 数据结构结束 ===');
                             showSEOReport(response.data);
                         } else {
                             alert('获取报告失败：' + response.data.message);
@@ -924,96 +952,119 @@ class Auto_Excerpt_Admin_Page {
                 analyzeNextPost();
             });
 
-            // 显示SEO报告
+            // 显示SEO报告 - 使用完整AI分析逻辑
             function showSEOReport(data) {
                 var modal = $('#seo-result-modal');
                 var content = $('#seo-result-content');
 
-                var scoreClass = 'poor';
-                if (data.overall_score >= 80) scoreClass = 'excellent';
-                else if (data.overall_score >= 60) scoreClass = 'good';
-                else if (data.overall_score >= 40) scoreClass = 'average';
+                console.log('=== showSEOReport 调试信息 ===');
+                console.log('SEOReportDisplay:', typeof window.SEOReportDisplay);
+                console.log('SEOAnalyzer:', typeof window.SEOAnalyzer);
+                console.log('数据结构:', data);
 
-                var html = '<div class="seo-analysis-result">' +
-                    '<div class="seo-score-section">' +
-                        '<h3>SEO分析结果</h3>' +
-                        '<div class="score-display">' +
-                            '<div class="score-circle ' + scoreClass + '" data-score="' + data.overall_score + '">' +
-                                '<span class="score-number">' + data.overall_score + '</span>' +
-                            '</div>' +
-                            '<div class="score-label">整体得分</div>' +
-                        '</div>' +
-                    '</div>' +
-                    '<div class="seo-scores-breakdown">' +
-                        '<h3>详细得分</h3>' +
-                        '<div class="scores-grid">' +
-                            '<div class="score-item">' +
-                                '<span class="score-name">标题得分</span>' +
-                                '<div class="score-bar">' +
-                                    '<div class="score-fill animate" style="--score-width: ' + data.title_score + '%;"></div>' +
-                                '</div>' +
-                                '<span class="score-value">' + data.title_score + '</span>' +
-                            '</div>' +
-                            '<div class="score-item">' +
-                                '<span class="score-name">内容得分</span>' +
-                                '<div class="score-bar">' +
-                                    '<div class="score-fill animate" style="--score-width: ' + data.content_score + '%;"></div>' +
-                                '</div>' +
-                                '<span class="score-value">' + data.content_score + '</span>' +
-                            '</div>' +
-                            '<div class="score-item">' +
-                                '<span class="score-name">关键词得分</span>' +
-                                '<div class="score-bar">' +
-                                    '<div class="score-fill animate" style="--score-width: ' + data.keyword_score + '%;"></div>' +
-                                '</div>' +
-                                '<span class="score-value">' + data.keyword_score + '</span>' +
-                            '</div>' +
-                            '<div class="score-item">' +
-                                '<span class="score-name">可读性得分</span>' +
-                                '<div class="score-bar">' +
-                                    '<div class="score-fill animate" style="--score-width: ' + data.readability_score + '%;"></div>' +
-                                '</div>' +
-                                '<span class="score-value">' + data.readability_score + '</span>' +
-                            '</div>' +
-                        '</div>' +
-                    '</div>';
+                // 清空内容容器，确保没有重复标题
+                content.empty();
 
-                if (data.keywords && data.keywords.length > 0) {
-                    html += '<div class="seo-keywords-section">' +
-                        '<h3>关键词建议</h3>' +
-                        '<div class="keywords-list">';
+                // 强制使用新的SEOReportDisplay组件
+                try {
+                    if (typeof window.SEOReportDisplay !== 'undefined') {
+                        console.log('使用新的SEOReportDisplay组件');
+                        var reportDisplay = new SEOReportDisplay();
+                        reportDisplay.displayCompleteReport(data, '#seo-result-content');
+                    } else if (typeof window.SEOAnalyzer !== 'undefined') {
+                        console.log('降级使用旧的SEO分析器');
+                        // 使用新的完整显示逻辑，而不是旧的displaySimpleReport
+                        var html = '<div class="seo-ai-report-container">';
 
-                    data.keywords.forEach(function(keyword, index) {
-                        var className = index === 0 ? 'primary' : 'secondary';
-                        html += '<a href="#" class="keyword-tag ' + className + '">' + keyword + '</a>';
-                    });
+                        // 手动构建完整的AI分析报告
+                        html += '<div class="report-header">';
+                        html += '<h2>🤖 AI SEO 完整分析报告</h2>';
+                        html += '<div class="report-meta">';
+                        html += '<span class="report-date">分析时间: ' + new Date().toLocaleString('zh-CN') + '</span>';
+                        html += '<span class="ai-provider">AI引擎: ' + (data.ai_provider || 'DeepSeek') + '</span>';
+                        html += '</div>';
+                        html += '</div>';
 
-                    html += '</div></div>';
+                        // 显示AI分析数据
+                        if (data.raw_ai_analysis) {
+                            html += '<div class="ai-full-analysis">';
+                            html += '<h3>🧠 AI 完整分析</h3>';
+                            try {
+                                var aiData = JSON.parse(data.raw_ai_analysis);
+                                if (aiData.keywords && aiData.keywords.length > 0) {
+                                    html += '<div class="keyword-section">';
+                                    html += '<h4>🎯 关键词</h4>';
+                                    aiData.keywords.forEach(function(keyword) {
+                                        html += '<span class="keyword-tag">' + keyword + '</span>';
+                                    });
+                                    html += '</div>';
+                                }
+                                if (aiData.recommendations && aiData.recommendations.length > 0) {
+                                    html += '<div class="recommendations-section">';
+                                    html += '<h4>💡 优化建议</h4>';
+                                    aiData.recommendations.forEach(function(rec, index) {
+                                        html += '<div class="recommendation-item">';
+                                        html += '<h5>' + (index + 1) + '. ' + (rec.title || '建议') + '</h5>';
+                                        if (rec.description) {
+                                            html += '<p><strong>问题描述:</strong> ' + rec.description + '</p>';
+                                        }
+                                        if (rec.action) {
+                                            html += '<p><strong>操作步骤:</strong> ' + rec.action + '</p>';
+                                        }
+                                        if (rec.impact) {
+                                            html += '<p><strong>预期效果:</strong> ' + rec.impact + '</p>';
+                                        }
+                                        html += '</div>';
+                                    });
+                                    html += '</div>';
+                                }
+                            } catch (e) {
+                                html += '<div class="raw-analysis">';
+                                html += '<pre>' + data.raw_ai_analysis + '</pre>';
+                                html += '</div>';
+                            }
+                            html += '</div>';
+                        }
+
+                        // 显示基础得分信息
+                        html += '<div class="score-details">';
+                        html += '<h3>📈 SEO 得分详情</h3>';
+                        html += '<p><strong>整体得分:</strong> ' + (data.overall_score || 0) + '</p>';
+                        html += '<p><strong>标题得分:</strong> ' + (data.title_score || 0) + '</p>';
+                        html += '<p><strong>内容得分:</strong> ' + (data.content_score || 0) + '</p>';
+                        html += '<p><strong>关键词得分:</strong> ' + (data.keyword_score || 0) + '</p>';
+                        html += '<p><strong>可读性得分:</strong> ' + (data.readability_score || 0) + '</p>';
+                        html += '</div>';
+
+                        html += '</div>';
+                        content.html(html);
+                    } else {
+                        // 完全降级方案
+                        console.log('使用完全降级方案');
+                        var html = '<div class="seo-analysis-result">';
+                        html += '<h2>🤖 AI SEO 分析报告</h2>';
+                        html += '<p><strong>文章：</strong>' + (data.post_title || '未知') + '</p>';
+                        html += '<p><strong>整体得分：</strong>' + (data.overall_score || 0) + '</p>';
+
+                        // 显示原始AI分析数据
+                        if (data.raw_ai_analysis) {
+                            html += '<div class="ai-analysis-section">';
+                            html += '<h3>🧠 AI 分析内容</h3>';
+                            html += '<div class="ai-content">';
+                            html += '<pre>' + data.raw_ai_analysis + '</pre>';
+                            html += '</div>';
+                            html += '</div>';
+                        }
+                        html += '</div>';
+                        content.html(html);
+                    }
+                } catch (error) {
+                    console.error('显示报告时出错:', error);
+                    content.html('<div class="notice notice-error"><p>显示报告时出错: ' + error.message + '</p></div>');
                 }
 
-                if (data.recommendations && data.recommendations.length > 0) {
-                    html += '<div class="seo-recommendations-section">' +
-                        '<h3>优化建议</h3>' +
-                        '<div class="recommendations-list">';
-
-                    data.recommendations.forEach(function(rec) {
-                        var priorityClass = 'priority-' + rec.priority;
-                        html += '<div class="recommendation-item ' + priorityClass + '">' +
-                            '<div class="recommendation-header">' +
-                                '<span class="recommendation-title">' + rec.title + '</span>' +
-                                '<span class="recommendation-priority">' + rec.priority + '</span>' +
-                            '</div>' +
-                            '<div class="recommendation-description">' + rec.description + '</div>' +
-                            '<div class="recommendation-action">' + rec.action + '</div>' +
-                        '</div>';
-                    });
-
-                    html += '</div></div>';
-                }
-
-                html += '</div>';
-                content.html(html);
                 modal.show();
+                console.log('=== showSEOReport 结束 ===');
             }
 
             // 模态框关闭
@@ -1522,11 +1573,28 @@ class Auto_Excerpt_Admin_Page {
             '1.0.0'
         );
 
+        // 加载新的SEO报告显示样式
+        wp_enqueue_style(
+            'seo-report-display-css',
+            WORDPRESS_TOOLKIT_PLUGIN_URL . 'modules/auto-excerpt/assets/css/seo-report-display.css',
+            array(),
+            '1.0.0'
+        );
+
         // 加载SEO分析器脚本
         wp_enqueue_script(
             'seo-analyzer-js',
             WORDPRESS_TOOLKIT_PLUGIN_URL . 'modules/auto-excerpt/assets/js/seo-analyzer.js',
             array('jquery'),
+            '1.0.0',
+            true
+        );
+
+        // 加载新的SEO报告显示组件
+        wp_enqueue_script(
+            'seo-report-display-js',
+            WORDPRESS_TOOLKIT_PLUGIN_URL . 'modules/auto-excerpt/assets/js/seo-report-display.js',
+            array('seo-analyzer-js'),
             '1.0.0',
             true
         );

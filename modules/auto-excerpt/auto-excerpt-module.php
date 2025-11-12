@@ -39,12 +39,29 @@ class Auto_Excerpt_Module {
     private $seo_database = null;
 
     /**
+     * 数据库管理器实例
+     */
+    private $db_manager = null;
+
+    /**
+     * 缓存管理器实例
+     */
+    private $cache_manager = null;
+
+    /**
      * 构造函数
      */
     private function __construct() {
+        $this->db_manager = new WordPress_Toolkit_Database_Manager();
+        $this->cache_manager = new WordPress_Toolkit_Cache_Manager();
         $this->load_settings();
         $this->init_hooks();
         $this->init_seo_analyzer();
+
+        // 加载AI设置辅助函数
+        if (file_exists(WORDPRESS_TOOLKIT_PLUGIN_PATH . 'modules/ai-settings/ai-settings-helper.php')) {
+            require_once WORDPRESS_TOOLKIT_PLUGIN_PATH . 'modules/ai-settings/ai-settings-helper.php';
+        }
     }
 
     /**
@@ -54,16 +71,8 @@ class Auto_Excerpt_Module {
         $default_settings = array(
             'excerpt_length' => 150,
         'auto_generate' => true,
-        'use_ai_generation' => true,
-        'ai_provider' => 'deepseek',
-        'deepseek_api_key' => '',
-        'deepseek_api_base' => 'https://api.deepseek.com',
-        'deepseek_model' => 'deepseek-chat',
-        'ai_max_tokens' => 200,
-        'ai_temperature' => 0.7,
         'preserve_formatting' => true,
         'min_content_length' => 200,
-        'fallback_to_simple' => true,
         'smart_extraction' => true,
         'exclude_shortcodes' => array('gallery', 'video', 'audio', 'caption')
     );
@@ -85,17 +94,25 @@ class Auto_Excerpt_Module {
         // 创建SEO分析数据表
         $this->seo_database->create_tables();
 
-        // 初始化SEO分析器
-        $seo_settings = array(
-            'ai_provider' => $this->settings['ai_provider'],
-            'ai_model' => $this->settings['deepseek_model'] ?? 'deepseek-chat',
-            'api_key' => $this->settings['deepseek_api_key'] ?? '',
-            'api_base' => $this->settings['deepseek_api_base'] ?? 'https://api.deepseek.com',
-            'max_tokens' => $this->settings['ai_max_tokens'] ?? 2000,
-            'temperature' => $this->settings['ai_temperature'] ?? 0.3
-        );
+        // 初始化SEO分析器 - 只有在AI功能可用时才初始化
+        if (function_exists('wordpress_toolkit_is_ai_available') && wordpress_toolkit_is_ai_available()) {
+            $config = wordpress_toolkit_get_deepseek_config();
+            $seo_settings = array(
+                'ai_provider' => 'deepseek',
+                'ai_model' => $config['model'],
+                'api_key' => $config['api_key'],
+                'api_base' => $config['api_base'],
+                'max_tokens' => $config['max_tokens'],
+                'temperature' => $config['temperature']
+            );
+            $this->seo_analyzer = new Auto_Excerpt_SEO_Analyzer($seo_settings);
 
-        $this->seo_analyzer = new Auto_Excerpt_SEO_Analyzer($seo_settings);
+            // 检查并更新数据库架构
+            $this->ensure_database_schema();
+        } else {
+            // AI功能不可用，不初始化SEO分析器
+            $this->seo_analyzer = null;
+        }
     }
 
     /**
@@ -109,6 +126,68 @@ class Auto_Excerpt_Module {
     }
 
     
+   /**
+     * 确保数据库架构是最新的
+     */
+    private function ensure_database_schema() {
+        global $wpdb;
+
+        $table_name = $wpdb->prefix . 'auto_excerpt_seo_analysis';
+
+        try {
+            // 检查raw_ai_analysis字段是否存在
+            $raw_column_exists = $wpdb->get_var($wpdb->prepare(
+                "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+                 WHERE TABLE_SCHEMA = %s AND TABLE_NAME = %s AND COLUMN_NAME = %s",
+                DB_NAME,
+                $table_name,
+                'raw_ai_analysis'
+            ));
+
+            if (!$raw_column_exists) {
+                $wpdb->query(
+                    "ALTER TABLE {$table_name}
+                     ADD COLUMN raw_ai_analysis longtext DEFAULT NULL COMMENT 'AI原始完整分析文本'"
+                );
+            }
+
+            // 检查parsed_analysis字段是否存在
+            $parsed_column_exists = $wpdb->get_var($wpdb->prepare(
+                "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+                 WHERE TABLE_SCHEMA = %s AND TABLE_NAME = %s AND COLUMN_NAME = %s",
+                DB_NAME,
+                $table_name,
+                'parsed_analysis'
+            ));
+
+            if (!$parsed_column_exists) {
+                $wpdb->query(
+                    "ALTER TABLE {$table_name}
+                     ADD COLUMN parsed_analysis longtext DEFAULT NULL COMMENT '解析后的AI分析数据(JSON)'"
+                );
+            }
+
+            // 检查ai_model字段类型是否正确
+            $ai_model_type = $wpdb->get_var($wpdb->prepare(
+                "SELECT DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS
+                 WHERE TABLE_SCHEMA = %s AND TABLE_NAME = %s AND COLUMN_NAME = %s",
+                DB_NAME,
+                $table_name,
+                'ai_model'
+            ));
+
+            if ($ai_model_type === 'decimal') {
+                $wpdb->query(
+                    "ALTER TABLE {$table_name}
+                     MODIFY COLUMN ai_model varchar(100) DEFAULT NULL COMMENT 'AI模型'"
+                );
+            }
+
+        } catch (Exception $e) {
+            error_log('Auto Excerpt: Database schema update failed: ' . $e->getMessage());
+        }
+    }
+
     /**
      * 初始化钩子
      */
@@ -152,6 +231,9 @@ class Auto_Excerpt_Module {
         add_action('wp_ajax_get_seo_statistics', array($this, 'ajax_get_seo_statistics'));
         add_action('wp_ajax_get_posts_for_seo', array($this, 'ajax_get_posts_for_seo'));
         add_action('wp_ajax_get_seo_reports_list', array($this, 'ajax_get_seo_reports_list'));
+
+        // 数据库架构更新AJAX处理
+        add_action('wp_ajax_update_seo_analysis_schema', array($this, 'ajax_update_seo_analysis_schema'));
 
         // 添加定时任务功能
         add_action('wp', array($this, 'schedule_daily_excerpt_generation'));
@@ -218,21 +300,27 @@ class Auto_Excerpt_Module {
      * 加载管理后台脚本和样式
      */
     public function admin_enqueue_scripts($hook) {
-        // 只在设置页面加载脚本
-        if ($hook === 'settings_page_wordpress-toolkit-auto-excerpt-settings') {
-            // 仅在设置页面加载样式
+        // 只在相关页面加载统一脚本和样式
+        $valid_pages = [
+            'settings_page_wordpress-toolkit-auto-excerpt-settings',
+            'admin_page_wordpress-toolkit-auto-excerpt',
+            'toplevel_page_wordpress-toolkit'
+        ];
+
+        if (in_array($hook, $valid_pages)) {
+            // 使用统一的模块CSS
             wp_enqueue_style(
-                'auto-excerpt-admin',
-                WORDPRESS_TOOLKIT_PLUGIN_URL . 'modules/auto-excerpt/assets/css/admin.css',
-                array(),
-                '1.0.0'
+                'wordpress-toolkit-modules-admin',
+                WORDPRESS_TOOLKIT_PLUGIN_URL . 'assets/css/modules-admin.css',
+                array('wordpress-toolkit-admin'),
+                WORDPRESS_TOOLKIT_VERSION
             );
 
-            // 加载脚本（用于API测试和管理功能）
+            // 加载统一的模块JavaScript
             wp_enqueue_script(
-                'auto-excerpt-admin',
-                WORDPRESS_TOOLKIT_PLUGIN_URL . 'modules/auto-excerpt/assets/js/admin.js',
-                array('jquery'),
+                'wordpress-toolkit-modules-admin',
+                WORDPRESS_TOOLKIT_PLUGIN_URL . 'assets/js/modules-admin.js',
+                array('jquery', 'wordpress-toolkit-core'),
                 '1.0.0',
                 true
             );
@@ -321,13 +409,13 @@ class Auto_Excerpt_Module {
             <div class="auto-excerpt-header">
                 <h3>
                     <?php _e('智能摘要生成', 'wordpress-toolkit'); ?>
-                    <?php if ($this->settings['use_ai_generation'] && !empty($this->settings['deepseek_api_key'])): ?>
+                    <?php if (wordpress_toolkit_is_ai_available()): ?>
                         <span class="ai-badge">🤖 AI</span>
                     <?php endif; ?>
                 </h3>
                 <p class="description">
                     <?php
-                    if ($this->settings['use_ai_generation'] && !empty($this->settings['deepseek_api_key'])) {
+                    if (wordpress_toolkit_is_ai_available()) {
                         _e('基于DeepSeek AI智能生成摘要，支持中英文混合内容。', 'wordpress-toolkit');
                     } else {
                         _e('基于文章内容智能生成摘要，支持中英文混合内容。', 'wordpress-toolkit');
@@ -437,7 +525,7 @@ class Auto_Excerpt_Module {
         $smart_extraction = isset($_POST['smart_extraction']) ? (bool)$_POST['smart_extraction'] : $this->settings['smart_extraction'];
 
         // 生成摘要
-        $use_ai = $this->settings['use_ai_generation'] && !empty($this->settings['deepseek_api_key']);
+        $use_ai = wordpress_toolkit_is_ai_available();
         $excerpt = $this->generate_excerpt($content, $length, $smart_extraction);
 
         if ($excerpt) {
@@ -486,14 +574,14 @@ class Auto_Excerpt_Module {
         $clean_content = $this->clean_content($content);
 
         // 优先使用AI生成摘要
-        if ($this->settings['use_ai_generation'] && !empty($this->settings['deepseek_api_key'])) {
+        if (wordpress_toolkit_is_ai_available()) {
             $ai_excerpt = $this->generate_ai_excerpt($clean_content, $length);
             if ($ai_excerpt) {
                 return $ai_excerpt;
             }
 
             // 如果AI生成失败且启用了降级机制
-            if ($this->settings['fallback_to_simple']) {
+            if (wordpress_toolkit_get_ai_settings('fallback_to_simple', true)) {
                 error_log('Auto Excerpt: AI生成失败，使用本地算法作为降级方案');
                 return $this->generate_simple_excerpt($clean_content, $length, $smart_extraction);
             }
@@ -509,11 +597,12 @@ class Auto_Excerpt_Module {
     private function generate_ai_excerpt($content, $length) {
         try {
             // 准备API请求
-            $api_key = $this->settings['deepseek_api_key'];
-            $api_base = $this->settings['deepseek_api_base'];
-            $model = $this->settings['deepseek_model'];
-            $max_tokens = $this->settings['ai_max_tokens'];
-            $temperature = $this->settings['ai_temperature'];
+            $config = wordpress_toolkit_get_deepseek_config();
+            $api_key = $config['api_key'];
+            $api_base = $config['api_base'];
+            $model = $config['model'];
+            $max_tokens = $config['max_tokens'];
+            $temperature = $config['temperature'];
 
             // 构建提示词
             $prompt = $this->build_ai_prompt($content, $length);
@@ -928,17 +1017,9 @@ class Auto_Excerpt_Module {
             $settings = array(
                 'excerpt_length' => intval($_POST['excerpt_length']),
                 'auto_generate' => isset($_POST['auto_generate']),
-                'use_ai_generation' => isset($_POST['use_ai_generation']),
-                'ai_provider' => sanitize_text_field($_POST['ai_provider']),
-                'deepseek_api_key' => sanitize_text_field($_POST['deepseek_api_key']),
-                'deepseek_api_base' => esc_url_raw($_POST['deepseek_api_base']),
-                'deepseek_model' => sanitize_text_field($_POST['deepseek_model']),
-                'ai_max_tokens' => intval($_POST['ai_max_tokens']),
-                'ai_temperature' => floatval($_POST['ai_temperature']),
                 'preserve_formatting' => isset($_POST['preserve_formatting']),
                 'min_content_length' => intval($_POST['min_content_length']),
-                'smart_extraction' => isset($_POST['smart_extraction']),
-                'fallback_to_simple' => isset($_POST['fallback_to_simple'])
+                'smart_extraction' => isset($_POST['smart_extraction'])
             );
 
             $this->update_settings($settings);
@@ -1004,119 +1085,22 @@ class Auto_Excerpt_Module {
                 </div>
 
                 <div class="toolkit-settings-form">
-                    <h2>🤖 AI生成设置</h2>
-
-                    <table class="form-table">
-                        <tr>
-                            <th scope="row">
-                                <label for="use_ai_generation"><?php _e('使用AI生成摘要', 'wordpress-toolkit'); ?></label>
-                            </th>
-                            <td>
-                                <input type="checkbox" id="use_ai_generation" name="use_ai_generation" value="1" <?php checked($settings['use_ai_generation']); ?>>
-                                <span class="description"><?php _e('启用后优先使用AI生成更智能的摘要', 'wordpress-toolkit'); ?></span>
-                            </td>
-                        </tr>
-
-                        <tr>
-                            <th scope="row">
-                                <label for="ai_provider"><?php _e('AI提供商', 'wordpress-toolkit'); ?></label>
-                            </th>
-                            <td>
-                                <select id="ai_provider" name="ai_provider">
-                                    <option value="deepseek" <?php selected($settings['ai_provider'], 'deepseek'); ?>><?php _e('DeepSeek', 'wordpress-toolkit'); ?></option>
-                                </select>
-                                <span class="description"><?php _e('选择AI服务提供商', 'wordpress-toolkit'); ?></span>
-                            </td>
-                        </tr>
-
-                        <tr>
-                            <th scope="row">
-                                <label for="deepseek_api_key"><?php _e('DeepSeek API密钥', 'wordpress-toolkit'); ?></label>
-                            </th>
-                            <td>
-                                <input type="password" id="deepseek_api_key" name="deepseek_api_key"
-                                       value="<?php echo esc_attr($settings['deepseek_api_key']); ?>"
-                                       class="regular-text" placeholder="sk-...">
-                                <span class="description">
-                                    <?php _e('从DeepSeek平台获取API密钥', 'wordpress-toolkit'); ?>
-                                    <a href="https://platform.deepseek.com/api_keys" target="_blank"><?php _e('获取密钥', 'wordpress-toolkit'); ?></a><br>
-                                    <?php _e('格式：sk-xxxxxxxx', 'wordpress-toolkit'); ?>
-                                </span>
-                            </td>
-                        </tr>
-
-                        <tr>
-                            <th scope="row">
-                                <label for="deepseek_api_base"><?php _e('API基础URL', 'wordpress-toolkit'); ?></label>
-                            </th>
-                            <td>
-                                <input type="url" id="deepseek_api_base" name="deepseek_api_base"
-                                       value="<?php echo esc_attr($settings['deepseek_api_base']); ?>"
-                                       class="regular-text">
-                                <span class="description"><?php _e('DeepSeek API服务地址（无需修改）', 'wordpress-toolkit'); ?></span>
-                            </td>
-                        </tr>
-
-                        <tr>
-                            <th scope="row">
-                                <label for="deepseek_model"><?php _e('模型', 'wordpress-toolkit'); ?></label>
-                            </th>
-                            <td>
-                                <select id="deepseek_model" name="deepseek_model">
-                                    <option value="deepseek-chat" <?php selected($settings['deepseek_model'], 'deepseek-chat'); ?>>deepseek-chat</option>
-                                    <option value="deepseek-reasoner" <?php selected($settings['deepseek_model'], 'deepseek-reasoner'); ?>>deepseek-reasoner</option>
-                                </select>
-                                <span class="description"><?php _e('选择使用的AI模型', 'wordpress-toolkit'); ?></span>
-                                <p class="description">
-                                    <strong>deepseek-chat:</strong> 快速生成摘要，支持自定义长度和创造性<br>
-                                    <strong>deepseek-reasoner:</strong> 深度思考模式，更准确但稍慢
-                                </p>
-                            </td>
-                        </tr>
-
-                        <tr>
-                            <th scope="row">
-                                <label for="ai_max_tokens"><?php _e('最大Token数', 'wordpress-toolkit'); ?></label>
-                            </th>
-                            <td>
-                                <input type="number" id="ai_max_tokens" name="ai_max_tokens"
-                                       value="<?php echo $settings['ai_max_tokens']; ?>"
-                                       min="50" max="1000" step="10">
-                                <span class="description"><?php _e('AI生成摘要的最大长度', 'wordpress-toolkit'); ?></span>
-                            </td>
-                        </tr>
-
-                        <tr>
-                            <th scope="row">
-                                <label for="ai_temperature"><?php _e('创造性', 'wordpress-toolkit'); ?></label>
-                            </th>
-                            <td>
-                                <input type="range" id="ai_temperature" name="ai_temperature"
-                                       value="<?php echo $settings['ai_temperature']; ?>"
-                                       min="0" max="1" step="0.1">
-                                <span id="temperature-value"><?php echo $settings['ai_temperature']; ?></span>
-                                <span class="description"><?php _e('值越高越有创造性，建议0.3-0.7', 'wordpress-toolkit'); ?></span>
-                            </td>
-                        </tr>
-
-                        <tr>
-                            <th scope="row">
-                                <label for="fallback_to_simple"><?php _e('降级机制', 'wordpress-toolkit'); ?></label>
-                            </th>
-                            <td>
-                                <input type="checkbox" id="fallback_to_simple" name="fallback_to_simple" value="1" <?php checked($settings['fallback_to_simple']); ?>>
-                                <span class="description"><?php _e('AI生成失败时使用本地算法', 'wordpress-toolkit'); ?></span>
-                            </td>
-                        </tr>
-                    </table>
-
-                <!-- API测试功能 -->
-                <div style="margin-top: 24px; padding-top: 20px; border-top: 1px solid #ddd;">
-                    <h3 style="margin-bottom: 15px; color: #1d2327;"><?php _e('🧪 API连接测试', 'wordpress-toolkit'); ?></h3>
-                    <p style="margin-bottom: 15px; color: #50575e;"><?php _e('测试API连接是否正常工作，确保配置正确。', 'wordpress-toolkit'); ?></p>
-                    <button type="button" id="test-api-btn" class="button"><?php _e('测试API连接', 'wordpress-toolkit'); ?></button>
-                    <div id="api-test-result" style="margin-top: 15px;"></div>
-                </div>
+                    <h2>🤖 <?php _e('AI设置链接', 'wordpress-toolkit'); ?></h2>
+                    <p>
+                        <?php _e('AI功能设置已迁移到', 'wordpress-toolkit'); ?>
+                        <a href="<?php echo admin_url('admin.php?page=wordpress-toolkit-ai-settings'); ?>" class="button">
+                            <?php _e('工具箱设置 → AI设置', 'wordpress-toolkit'); ?>
+                        </a>
+                        <?php _e('，请在那里配置API密钥和AI服务参数。', 'wordpress-toolkit'); ?>
+                    </p>
+                    <p>
+                        <strong><?php _e('AI功能状态：', 'wordpress-toolkit'); ?></strong>
+                        <?php if (wordpress_toolkit_is_ai_available()): ?>
+                            <span style="color: #00a32a;">✅ <?php _e('AI功能已启用', 'wordpress-toolkit'); ?></span>
+                        <?php else: ?>
+                            <span style="color: #d63638;">❌ <?php _e('AI功能未配置', 'wordpress-toolkit'); ?></span>
+                        <?php endif; ?>
+                    </p>
                 </div>
 
                 <div class="submit">
@@ -1163,48 +1147,7 @@ class Auto_Excerpt_Module {
         }
         </style>
 
-        <script>
-        jQuery(document).ready(function($) {
-            // 温度值显示
-            $('#ai_temperature').on('input', function() {
-                $('#temperature-value').text($(this).val());
-            });
-
-            // API测试
-            $('#test-api-btn').on('click', function() {
-                var $btn = $(this);
-                var $result = $('#api-test-result');
-
-                $btn.prop('disabled', true).text('<?php _e('测试中...', 'wordpress-toolkit'); ?>');
-                $result.html('<div class="spinner is-inline"></div> <?php _e('正在连接API...', 'wordpress-toolkit'); ?>');
-
-                $.ajax({
-                    url: ajaxurl,
-                    type: 'POST',
-                    data: {
-                        action: 'test_deepseek_api',
-                        nonce: '<?php echo wp_create_nonce('test_deepseek_api'); ?>',
-                        api_key: $('#deepseek_api_key').val(),
-                        api_base: $('#deepseek_api_base').val(),
-                        model: $('#deepseek_model').val()
-                    },
-                    success: function(response) {
-                        if (response.success) {
-                            $result.html('<div class="notice notice-success inline"><p><?php _e('API连接成功！', 'wordpress-toolkit'); ?> ' + response.data.message + '</p></div>');
-                        } else {
-                            $result.html('<div class="notice notice-error inline"><p><?php _e('API连接失败：', 'wordpress-toolkit'); ?> ' + response.data.message + '</p></div>');
-                        }
-                    },
-                    error: function() {
-                        $result.html('<div class="notice notice-error inline"><p><?php _e('网络错误，请重试', 'wordpress-toolkit'); ?></p></div>');
-                    },
-                    complete: function() {
-                        $btn.prop('disabled', false).text('<?php _e('测试API连接', 'wordpress-toolkit'); ?>');
-                    }
-                });
-            });
-        });
-        </script>
+        <!-- AI设置相关功能已迁移到专门的AI设置页面 -->
 
         <style>
         /* 响应式卡片样式 */
@@ -1429,7 +1372,7 @@ class Auto_Excerpt_Module {
                     $is_ai_generated = true;
                 } else {
                     // 使用启发式检测（与生成时的检测逻辑一致）
-                    $use_ai = $this->settings['use_ai_generation'] && !empty($this->settings['deepseek_api_key']);
+                    $use_ai = wordpress_toolkit_is_ai_available();
                     if ($use_ai) {
                         $is_ai_generated = $this->was_ai_generated($post->post_excerpt, $post->post_content);
                     }
@@ -1595,7 +1538,7 @@ class Auto_Excerpt_Module {
                             ));
 
                             // 标记为AI生成（如果使用了AI）
-                            if ($this->settings['use_ai_generation'] && !empty($this->settings['deepseek_api_key'])) {
+                            if (wordpress_toolkit_is_ai_available()) {
                                 update_post_meta($post->ID, '_ai_generated_excerpt', true);
                                 update_post_meta($post->ID, '_auto_excerpt_ai_generated', true);
                             }
@@ -1631,12 +1574,25 @@ class Auto_Excerpt_Module {
      * AJAX处理单个文章生成摘要
      */
     public function ajax_generate_single_excerpt() {
-        // 移除安全验证以简化操作
+        // 使用统一的安全验证
+        if (!WordPress_Toolkit_Security_Validator::verify_admin_ajax('auto_excerpt_nonce')) {
+            return;
+        }
 
-        $post_id = intval($_POST['post_id']);
+        // 清理输入数据
+        $sanitized_data = WordPress_Toolkit_Security_Validator::sanitize_post_data([
+            'post_id' => 'int'
+        ]);
+        $post_id = $sanitized_data['post_id'];
 
-        if (empty($post_id)) {
-            wp_send_json_error(array('message' => __('文章ID无效', 'wordpress-toolkit')));
+        // 验证必填字段
+        $validation = WordPress_Toolkit_Security_Validator::validate_required_fields([
+            'post_id' => $post_id
+        ]);
+
+        if (!$validation['valid']) {
+            wp_send_json_error(array('message' => $validation['errors'][0]));
+            return;
         }
 
         try {
@@ -1664,7 +1620,7 @@ class Auto_Excerpt_Module {
                 ));
 
                 // 标记为AI生成（如果使用了AI）
-                $use_ai = $this->settings['use_ai_generation'] && !empty($this->settings['deepseek_api_key']);
+                $use_ai = wordpress_toolkit_is_ai_available();
                 $is_ai_generated = $use_ai && $this->was_ai_generated($excerpt, $content);
 
                 if ($is_ai_generated) {
@@ -1839,7 +1795,7 @@ class Auto_Excerpt_Module {
                             ));
 
                             // 标记为AI生成（如果使用了AI）
-                            if ($this->settings['use_ai_generation'] && !empty($this->settings['deepseek_api_key'])) {
+                            if (wordpress_toolkit_is_ai_available()) {
                                 update_post_meta($post->ID, '_ai_generated_excerpt', true);
                                 update_post_meta($post->ID, '_auto_excerpt_ai_generated', true);
                             }
@@ -1896,7 +1852,7 @@ class Auto_Excerpt_Module {
         }
 
         // 检查AI设置
-        if (!$this->settings['use_ai_generation'] || empty($this->settings['deepseek_api_key'])) {
+        if (!wordpress_toolkit_is_ai_available()) {
             return array('error' => __('AI生成功能未启用或未配置API密钥', 'wordpress-toolkit'));
         }
 
@@ -1934,10 +1890,11 @@ class Auto_Excerpt_Module {
 标签：";
 
             // 调用DeepSeek API
+            $config = wordpress_toolkit_get_deepseek_config();
             $response = $this->call_deepseek_api(
-                $this->settings['deepseek_api_key'],
-                $this->settings['deepseek_api_base'],
-                $this->settings['deepseek_model'],
+                $config['api_key'],
+                $config['api_base'],
+                $config['model'],
                 $prompt,
                 150,
                 0.3 // 较低的创造性确保标签准确
@@ -2079,7 +2036,7 @@ class Auto_Excerpt_Module {
         error_log('Auto Excerpt: Starting batch tag generation');
 
         // 检查是否启用AI生成
-        if (!$this->settings['use_ai_generation'] || empty($this->settings['deepseek_api_key'])) {
+        if (!wordpress_toolkit_is_ai_available()) {
             return array(
                 'success' => false,
                 'message' => __('AI生成功能未启用或未配置API密钥', 'wordpress-toolkit')
@@ -2201,11 +2158,19 @@ class Auto_Excerpt_Module {
         }
 
         try {
-            $result = $this->seo_analyzer->analyze_post_seo($post_id);
+            if (!$this->seo_analyzer) {
+                wp_send_json_error(array('message' => __('AI功能未配置，请在工具箱设置中配置AI服务', 'wordpress-toolkit')));
+            }
+
+            $result = $this->seo_analyzer->analyze_post($post_id);
 
             if ($result) {
-                // 直接返回分析结果数据，与前端JavaScript预期格式匹配
-                wp_send_json_success($result);
+                // 返回包含完整分析数据的响应，与前端JavaScript预期格式匹配
+                wp_send_json_success(array(
+                    'message' => __('SEO分析完成', 'wordpress-toolkit'),
+                    'analysis' => $result,
+                    'post_id' => $post_id
+                ));
             } else {
                 wp_send_json_error(array('message' => __('SEO分析失败', 'wordpress-toolkit')));
             }
@@ -2223,6 +2188,10 @@ class Auto_Excerpt_Module {
         // 移除安全验证以简化操作
 
         try {
+            if (!$this->seo_analyzer) {
+                wp_send_json_error(array('message' => __('AI功能未配置，请在工具箱设置中配置AI服务', 'wordpress-toolkit')));
+            }
+
             $batch_size = isset($_POST['batch_size']) ? intval($_POST['batch_size']) : 5;
             $result = $this->seo_analyzer->batch_analyze_posts(array(), $batch_size);
 
@@ -2249,12 +2218,42 @@ class Auto_Excerpt_Module {
         }
 
         try {
+            if (!$this->seo_analyzer) {
+                wp_send_json_error(array('message' => __('AI功能未配置，请在工具箱设置中配置AI服务', 'wordpress-toolkit')));
+            }
+
             $report = $this->seo_analyzer->get_seo_report($post_id);
 
             if ($report) {
-                // 转换报告为数组格式并直接返回
+                // 转换报告为数组格式，确保包含完整的AI分析数据
                 $report_data = json_decode(json_encode($report), true);
-                wp_send_json_success($report_data);
+
+                // 直接添加原始AI分析数据到响应中
+                $response_data = array(
+                    'report' => $report_data,
+                    'raw_ai_analysis' => $report->raw_ai_analysis ?? '',
+                    'parsed_analysis' => $report->parsed_analysis ?? array(),
+                    'ai_full_analysis' => $report->raw_ai_analysis ?? '',
+                    'raw_analysis_data' => isset($report_data['analysis_data']) ? $report_data['analysis_data'] : null
+                );
+
+                // 确保report中也包含完整数据
+                if (!isset($response_data['report']['raw_ai_analysis'])) {
+                    $response_data['report']['raw_ai_analysis'] = $report->raw_ai_analysis ?? '';
+                }
+                if (!isset($response_data['report']['parsed_analysis'])) {
+                    $response_data['report']['parsed_analysis'] = $report->parsed_analysis ?? array();
+                }
+
+                // 如果有详细分析数据，尝试解析
+                if (isset($report_data['detailed_analysis']) && is_string($report_data['detailed_analysis'])) {
+                    $detailed_analysis = json_decode($report_data['detailed_analysis'], true);
+                    if ($detailed_analysis) {
+                        $response_data['ai_full_analysis'] = $detailed_analysis;
+                    }
+                }
+
+                wp_send_json_success($response_data);
             } else {
                 wp_send_json_error(array('message' => __('未找到SEO分析报告', 'wordpress-toolkit')));
             }
@@ -2266,12 +2265,35 @@ class Auto_Excerpt_Module {
     }
 
     /**
+     * AJAX更新SEO分析数据库架构
+     */
+    public function ajax_update_seo_analysis_schema() {
+        try {
+            $this->ensure_database_schema();
+
+            wp_send_json_success(array(
+                'message' => '数据库架构更新成功！现在可以重新生成完整的SEO分析了。',
+                'success' => true
+            ));
+        } catch (Exception $e) {
+            wp_send_json_error(array(
+                'message' => '数据库架构更新失败：' . $e->getMessage(),
+                'success' => false
+            ));
+        }
+    }
+
+    /**
      * AJAX获取SEO统计信息
      */
     public function ajax_get_seo_statistics() {
         // 移除安全验证以简化操作
 
         try {
+            if (!$this->seo_analyzer) {
+                wp_send_json_error(array('message' => __('AI功能未配置，请在工具箱设置中配置AI服务', 'wordpress-toolkit')));
+            }
+
             $statistics = $this->seo_analyzer->get_seo_statistics();
 
             wp_send_json_success(array(
@@ -2329,6 +2351,10 @@ class Auto_Excerpt_Module {
         // 移除安全验证以简化操作
 
         try {
+            if (!$this->seo_analyzer) {
+                wp_send_json_error(array('message' => __('AI功能未配置，请在工具箱设置中配置AI服务', 'wordpress-toolkit')));
+            }
+
             $limit = isset($_POST['limit']) ? intval($_POST['limit']) : 50;
             $offset = isset($_POST['offset']) ? intval($_POST['offset']) : 0;
 

@@ -74,6 +74,11 @@ class Category_Optimization_Module {
      */
     public function load_admin_page() {
         if (is_admin()) {
+            // 加载AI设置辅助函数
+            if (file_exists(WORDPRESS_TOOLKIT_PLUGIN_PATH . 'modules/ai-settings/ai-settings-helper.php')) {
+                require_once WORDPRESS_TOOLKIT_PLUGIN_PATH . 'modules/ai-settings/ai-settings-helper.php';
+            }
+
             require_once dirname(__FILE__) . '/admin/admin-page.php';
             // Admin page class will auto-instantiate at the end of the file
         }
@@ -178,7 +183,7 @@ class Category_Optimization_Module {
      * Register settings
      */
     public function register_settings() {
-        register_setting('wordpress_toolkit_category_optimization', 'wordpress_toolkit_deepseek_api_key');
+        // DeepSeek API Key 设置已迁移到AI设置页面
         register_setting('wordpress_toolkit_category_optimization', 'wordpress_toolkit_category_optimization_settings');
 
         add_settings_section(
@@ -188,13 +193,7 @@ class Category_Optimization_Module {
             'wordpress-toolkit-category-optimization'
         );
 
-        add_settings_field(
-            'deepseek_api_key',
-            __('DeepSeek API Key', 'wordpress-toolkit'),
-            array($this, 'deepseek_api_key_callback'),
-            'wordpress-toolkit-category-optimization',
-            'category_optimization_section'
-        );
+        // AI设置已迁移到专门的AI设置页面
     }
 
     /**
@@ -208,9 +207,7 @@ class Category_Optimization_Module {
      * DeepSeek API Key callback
      */
     public function deepseek_api_key_callback() {
-        $api_key = get_option('wordpress_toolkit_deepseek_api_key', '');
-        echo '<input type="password" id="wordpress_toolkit_deepseek_api_key" name="wordpress_toolkit_deepseek_api_key" value="' . esc_attr($api_key) . '" class="regular-text" />';
-        echo '<p class="description">' . __('Enter your DeepSeek API key for AI-powered category optimization.', 'wordpress-toolkit') . '</p>';
+        // DeepSeek API Key callback 已迁移到AI设置页面
     }
 
     
@@ -735,7 +732,7 @@ class Category_Optimization_Module {
      * Generate category description using AI
      */
     private function generate_category_description_ai($category, $posts) {
-        $api_key = get_option('wordpress_toolkit_deepseek_api_key', '');
+        $api_key = wordpress_toolkit_get_ai_settings('deepseek_api_key', '');
         if (empty($api_key)) {
             return false;
         }
@@ -798,7 +795,7 @@ class Category_Optimization_Module {
      * Generate SEO content
      */
     private function generate_seo_content($category, $posts) {
-        $api_key = get_option('wordpress_toolkit_deepseek_api_key', '');
+        $api_key = wordpress_toolkit_get_ai_settings('deepseek_api_key', '');
         if (empty($api_key)) {
             return false;
         }
@@ -877,7 +874,7 @@ class Category_Optimization_Module {
      * Translate Chinese to English
      */
     private function translate_to_english($chinese_text) {
-        $api_key = get_option('wordpress_toolkit_deepseek_api_key', '');
+        $api_key = wordpress_toolkit_get_ai_settings('deepseek_api_key', '');
         if (empty($api_key)) {
             return false;
         }

@@ -38,6 +38,12 @@ require_once WORDPRESS_TOOLKIT_PLUGIN_PATH . 'includes/abstract-class-module-bas
 // 加载管理页面模板系统
 require_once WORDPRESS_TOOLKIT_PLUGIN_PATH . 'includes/class-admin-page-template.php';
 
+// 加载统一核心类
+require_once WORDPRESS_TOOLKIT_PLUGIN_PATH . 'includes/class-security-validator.php';
+require_once WORDPRESS_TOOLKIT_PLUGIN_PATH . 'includes/class-cache-manager.php';
+require_once WORDPRESS_TOOLKIT_PLUGIN_PATH . 'includes/class-database-manager.php';
+require_once WORDPRESS_TOOLKIT_PLUGIN_PATH . 'includes/class-utilities.php';
+
 // 加载REST代理修复模块
 require_once WORDPRESS_TOOLKIT_PLUGIN_PATH . 'modules/rest-proxy-fix.php';
 
@@ -125,6 +131,10 @@ class WordPress_Toolkit {
         // 加载Simple FriendLink管理页面
         require_once WORDPRESS_TOOLKIT_PLUGIN_PATH . 'modules/simple-friendlink/admin.php';
         $this->simple_friendlink_admin = new Simple_FriendLink_Admin();
+
+        // 加载AI Settings模块 - 必须在其他需要AI功能的模块之前加载
+        require_once WORDPRESS_TOOLKIT_PLUGIN_PATH . 'modules/ai-settings/ai-settings-module.php';
+        WordPress_Toolkit_AI_Settings::get_instance(); // 确保AI设置模块被实例化，加载helper函数
 
         // 加载Auto Excerpt模块
         require_once WORDPRESS_TOOLKIT_PLUGIN_PATH . 'modules/auto-excerpt/auto-excerpt-module.php';
@@ -347,6 +357,14 @@ class WordPress_Toolkit {
                 'toolkit-common',
                 WORDPRESS_TOOLKIT_PLUGIN_URL . 'assets/css/common.css',
                 array('toolkit-variables'),
+                WORDPRESS_TOOLKIT_VERSION
+            );
+
+            // 加载SEO分析报告样式
+            wp_enqueue_style(
+                'toolkit-seo-report',
+                WORDPRESS_TOOLKIT_PLUGIN_URL . 'assets/css/seo-report.css',
+                array('toolkit-variables', 'toolkit-common'),
                 WORDPRESS_TOOLKIT_VERSION
             );
 
@@ -1039,6 +1057,270 @@ class WordPress_Toolkit {
         .seo-modal-body::-webkit-scrollbar-thumb:hover {
             background: #a8a8a8;
         }
+
+        /* 完整AI分析报告样式 */
+        .article-info-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+        }
+
+        .article-info-section h2 {
+            margin: 0 0 15px 0;
+            font-size: 1.5em;
+            font-weight: 700;
+        }
+
+        .article-meta {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+        }
+
+        .meta-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px 15px;
+            border-radius: 8px;
+            backdrop-filter: blur(10px);
+        }
+
+        .ai-full-analysis-section {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 25px;
+        }
+
+        .ai-full-analysis-section h3 {
+            margin: 0 0 20px 0;
+            color: #1d2327;
+            font-size: 1.3em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .analysis-section {
+            margin-bottom: 30px;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .analysis-section h4 {
+            margin: 0 0 15px 0;
+            color: #1d2327;
+            font-size: 1.1em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .keywords-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .keyword-chip {
+            background: linear-gradient(45deg, #2271b1, #135e96);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 500;
+            border: 1px solid #2271b1;
+            transition: all 0.3s ease;
+        }
+
+        .keyword-chip:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(34, 113, 177, 0.3);
+        }
+
+        .recommendations-detailed {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .detailed-recommendation {
+            border: 1px solid #e1e1e1;
+            border-radius: 12px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .detailed-recommendation:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+        }
+
+        .detailed-recommendation.priority-high {
+            border-left: 5px solid #d63638;
+        }
+
+        .detailed-recommendation.priority-medium {
+            border-left: 5px solid #dba617;
+        }
+
+        .detailed-recommendation.priority-low {
+            border-left: 5px solid #00a32a;
+        }
+
+        .rec-header {
+            background: #f8f9fa;
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .rec-number {
+            background: #2271b1;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 14px;
+        }
+
+        .rec-priority {
+            font-size: 20px;
+        }
+
+        .rec-title {
+            margin: 0;
+            color: #1d2327;
+            font-size: 1.1em;
+            font-weight: 600;
+            flex: 1;
+        }
+
+        .rec-description,
+        .rec-action {
+            padding: 15px 20px;
+        }
+
+        .rec-description {
+            background: white;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .rec-action {
+            background: #f8f9fa;
+        }
+
+        .action-steps {
+            background: white;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            padding: 15px;
+            margin-top: 8px;
+            line-height: 1.6;
+        }
+
+        .ai-analysis-text {
+            background: white;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 20px;
+            line-height: 1.6;
+            color: #3c434a;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 14px;
+        }
+
+        .ai-analysis-raw-text {
+            background: white;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 20px;
+            line-height: 1.8;
+            color: #1d2327;
+            font-size: 15px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            border-left: 4px solid #2271b1;
+        }
+
+        .basic-analysis-section {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 25px;
+        }
+
+        .basic-recommendations {
+            margin-top: 20px;
+        }
+
+        .basic-recommendations h4 {
+            margin: 0 0 15px 0;
+            color: #1d2327;
+        }
+
+        .technical-stats-section {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 12px;
+            padding: 25px;
+        }
+
+        .technical-stats-section h3 {
+            margin: 0 0 15px 0;
+            color: #1d2327;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .score-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .score-badge.excellent {
+            background: #f0f6fc;
+            color: #00a32a;
+            border: 1px solid #00a32a;
+        }
+
+        .score-badge.good {
+            background: #fcf9e8;
+            color: #dba617;
+            border: 1px solid #dba617;
+        }
+
+        .score-badge.average {
+            background: #fcf9e8;
+            color: #dba617;
+            border: 1px solid #dba617;
+        }
+
+        .score-badge.poor {
+            background: #fef7f7;
+            color: #d63638;
+            border: 1px solid #d63638;
+        }
         </style>
         <?php
     }
@@ -1575,10 +1857,11 @@ class WordPress_Toolkit {
             }
 
             .tag-actions label {
-                display: block;
-                margin: 8px 0;
+                display: inline-block;
+                margin: 8px 15px 8px 0;
                 cursor: pointer;
                 font-weight: 500;
+                white-space: nowrap;
             }
 
             .tag-actions input[type="radio"] {
@@ -2181,8 +2464,8 @@ class WordPress_Toolkit {
 
                         '<div class="tag-actions">' +
                         '<h4>选择操作：</h4>' +
-                        '<label><input type="radio" name="tag_action" value="replace" ' + (suggestedAction === 'replace' ? 'checked' : '') + '> 替换所有标签</label><br>' +
-                        '<label><input type="radio" name="tag_action" value="add" ' + (suggestedAction === 'add' ? 'checked' : '') + '> 添加到现有标签</label><br>' +
+                        '<label><input type="radio" name="tag_action" value="replace" ' + (suggestedAction === 'replace' ? 'checked' : '') + '> 替换所有标签</label>' +
+                        '<label><input type="radio" name="tag_action" value="add" ' + (suggestedAction === 'add' ? 'checked' : '') + '> 添加到现有标签</label>' +
                         '<label><input type="radio" name="tag_action" value="merge"> 合并去重</label>' +
                         '</div>' +
 
@@ -2487,187 +2770,297 @@ class WordPress_Toolkit {
                     });
                 });
 
-                // SEO报告弹框函数
+                // JSON修复函数
+                window.fixBrokenJSON = function(jsonString) {
+                    if (!jsonString || typeof jsonString !== 'string') {
+                        return null;
+                    }
+
+                    let fixed = jsonString.trim();
+
+                    // 提取JSON内容（移除```json标记）
+                    if (fixed.startsWith('```json')) {
+                        fixed = fixed.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+                    }
+
+                    // 1. 修复花括号不匹配
+                    const openBraces = (fixed.match(/\{/g) || []).length;
+                    const closeBraces = (fixed.match(/\}/g) || []).length;
+                    if (openBraces > closeBraces) {
+                        fixed += '}'.repeat(openBraces - closeBraces);
+                        console.log('添加了 ' + (openBraces - closeBraces) + ' 个闭合花括号');
+                    }
+
+                    // 2. 移除控制字符
+                    fixed = fixed.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
+
+                    // 3. 转义未转义的换行符
+                    fixed = fixed.replace(/\n/g, '\\n').replace(/\r/g, '\\r').replace(/\t/g, '\\t');
+
+                    // 4. 修复未闭合的字符串
+                    fixed = fixed.replace(/"([^"]*?)$/, '"$1"');
+
+                    // 5. 移除多余的逗号
+                    fixed = fixed.replace(/,\s*([}\]])/g, '$1');
+
+                    console.log('JSON修复完成');
+                    return fixed;
+                };
+
+                // 构建结构化AI分析部分 - 优化样式
+                window.buildStructuredAISection = function(data) {
+                    var html = '<div class="seo-report-section ai-analysis-container">';
+
+                    // AI分析详情
+                    if (data.ai_analysis && Object.keys(data.ai_analysis).length > 0) {
+                        html += '<div class="analysis-card">';
+                        html += '<h4 class="card-title">📊 AI分析详情</h4>';
+
+                        const labels = {
+                            title_analysis: '标题分析',
+                            content_analysis: '内容分析',
+                            keyword_analysis: '关键词分析',
+                            readability_analysis: '可读性分析'
+                        };
+
+                        Object.entries(data.ai_analysis).forEach(([key, value]) => {
+                            html += '<div class="analysis-row">';
+                            html += '<div class="analysis-content">';
+                            html += '<h4 class="analysis-label">' + (labels[key] || key) + '</h6>';
+                            html += '<p class="analysis-text">' + value + '</p>';
+                            html += '</div>';
+                            html += '</div>';
+                        });
+
+                        html += '</div>';
+                    }
+
+                    // AI关键词
+                    if (data.ai_keywords && data.ai_keywords.length > 0) {
+                        html += '<div class="keywords-card">';
+                        html += '<h4 class="card-title">🏷️ AI推荐关键词</h4>';
+                        html += '<div class="keywords-list">';
+                        data.ai_keywords.forEach(function(keyword) {
+                            html += '<span class="keyword-chip">' + keyword + '</span>';
+                        });
+                        html += '</div></div>';
+                    }
+
+                    // AI推荐
+                    if (data.ai_recommendations && data.ai_recommendations.length > 0) {
+                        html += '<div class="recommendations-card">';
+                        html += '<h4 class="card-title">🤖 AI优化建议</h4>';
+
+                        data.ai_recommendations.forEach(function(rec, index) {
+                            html += '<div class="recommendation-card-item">';
+                            html += '<h5 class="rec-title">' + (index + 1) + '. ' + (rec.title || '优化建议') + '</h5>';
+                            if (rec.description) html += '<p class="rec-desc">' + rec.description + '</p>';
+                            if (rec.action) {
+                                html += '<div class="rec-action">';
+                                html += '<span class="action-label">✓ 操作</span>';
+                                html += '<span class="action-text">' + rec.action + '</span>';
+                                html += '</div>';
+                            }
+                            if (rec.impact) {
+                                html += '<div class="rec-impact">';
+                                html += '<span class="impact-label">⭐ 效果</span>';
+                                html += '<span class="impact-text">' + rec.impact + '</span>';
+                                html += '</div>';
+                            }
+                            html += '</div>';
+                        });
+
+                        html += '</div>';
+                    }
+
+                    // 元信息建议
+                    if (data.ai_meta_info) {
+                        html += '<div class="meta-card">';
+                        html += '<h4 class="card-title">📝 元信息建议</h4>';
+
+                        if (data.ai_meta_info.suggested_title) {
+                            html += '<div class="meta-item">';
+                            html += '<h4 class="meta-label">📄 建议标题</h6>';
+                            html += '<p class="meta-value">' + data.ai_meta_info.suggested_title + '</p>';
+                            html += '</div>';
+                        }
+
+                        if (data.ai_meta_info.meta_description) {
+                            html += '<div class="meta-item">';
+                            html += '<h4 class="meta-label">📋 Meta描述</h6>';
+                            html += '<p class="meta-value">' + data.ai_meta_info.meta_description + '</p>';
+                            html += '</div>';
+                        }
+
+                        if (data.ai_meta_info.focus_keywords && data.ai_meta_info.focus_keywords.length > 0) {
+                            html += '<div class="meta-item">';
+                            html += '<h4 class="meta-label">🎯 核心关键词</h6>';
+                            html += '<div class="keywords-list">';
+                            data.ai_meta_info.focus_keywords.forEach(function(keyword) {
+                                html += '<span class="focus-keyword-chip">' + keyword + '</span>';
+                            });
+                            html += '</div></div>';
+                        }
+
+                        html += '</div>';
+                    }
+
+                    html += '</div>';
+                    return html;
+                };
+
+                // 构建AI分析部分
+                window.buildAIAnalysisSection = function(aiData) {
+                    var html = '<div class="seo-report-section">';
+                    html += '<h3>🤖 AI分析</h3>';
+
+                    // AI分析详情
+                    if (aiData.analysis) {
+                        html += '<div class="analysis-details">';
+                        html += '<h4>📊 AI分析详情</h4>';
+
+                        const labels = {
+                            title_analysis: '标题分析',
+                            content_analysis: '内容分析',
+                            keyword_analysis: '关键词分析',
+                            readability_analysis: '可读性分析'
+                        };
+
+                        Object.entries(aiData.analysis).forEach(([key, value]) => {
+                            html += '<div class="analysis-item">';
+                            html += '<h5>' + (labels[key] || key) + ':</h5>';
+                            html += '<p>' + value + '</p>';
+                            html += '</div>';
+                        });
+
+                        html += '</div>';
+                    }
+
+                    // AI推荐
+                    if (aiData.recommendations && aiData.recommendations.length > 0) {
+                        html += '<div class="ai-recommendations">';
+                        html += '<h4>🤖 AI优化建议</h4>';
+
+                        aiData.recommendations.forEach(function(rec, index) {
+                            html += '<div class="recommendation-item">';
+                            html += '<h5>' + (index + 1) + '. ' + (rec.title || '建议') + '</h5>';
+                            if (rec.description) html += '<p>' + rec.description + '</p>';
+                            if (rec.action) html += '<p><strong>操作:</strong> ' + rec.action + '</p>';
+                            if (rec.impact) html += '<p><strong>效果:</strong> ' + rec.impact + '</p>';
+                            html += '</div>';
+                        });
+
+                        html += '</div>';
+                    }
+
+                    html += '</div>';
+                    return html;
+                };
+
+                // 构建原始分析部分
+                window.buildRawAnalysisSection = function(rawAnalysis) {
+                    var html = '<div class="seo-report-section">';
+                    html += '<h3>🤖 AI分析</h3>';
+                    html += '<div class="raw-analysis">';
+                    html += '<h4>📄 原始分析数据</h4>';
+                    html += '<pre style="background: #f8f9fa; padding: 15px; border-radius: 5px; overflow-x: auto; max-height: 300px; overflow-y: auto;">' +
+                           escapeHtml(rawAnalysis) + '</pre>';
+                    html += '</div></div>';
+                    return html;
+                };
+
+                // HTML转义函数
+                window.escapeHtml = function(text) {
+                    var div = document.createElement('div');
+                    div.textContent = text;
+                    return div.innerHTML;
+                };
+
+                // SEO报告弹框函数 - 简化版本
                 window.showSEOReportModal = function(postId, data) {
-                    // 构建报告HTML
+                    console.log('SEO报告数据:', data); // 调试用
+                    console.log('=== 详细数据检查 ===');
+                    console.log('data.ai_analysis:', data.ai_analysis);
+                    console.log('data.ai_recommendations:', data.ai_recommendations);
+                    console.log('data.ai_keywords:', data.ai_keywords);
+                    console.log('keys in data:', Object.keys(data));
+                    if (data.ai_analysis) {
+                        console.log('data.ai_analysis keys:', Object.keys(data.ai_analysis));
+                    }
+
+                    // 构建报告HTML - 基于实际数据结构
                     var reportHtml = '<div class="seo-report-header">';
-                    reportHtml += '<h2>📊 SEO分析报告</h2>';
                     reportHtml += '<p class="report-post-id">文章ID: ' + postId + '</p>';
                     reportHtml += '</div>';
 
-                    // 关键词部分
-                    if (data.keywords && data.keywords.length > 0) {
+                    // 基础信息
+                    if (data.post_title) {
                         reportHtml += '<div class="seo-report-section">';
-                        reportHtml += '<h3>🔑 推荐关键词</h3>';
-                        reportHtml += '<div class="keywords-container">';
-                        for (var i = 0; i < data.keywords.length; i++) {
-                            reportHtml += '<span class="keyword-tag">' + data.keywords[i] + '</span>';
-                        }
+                        reportHtml += '<h3>📄 文章信息</h3>';
+                        reportHtml += '<p><strong>标题:</strong> ' + data.post_title + '</p>';
+                        reportHtml += '</div>';
+                    }
+
+                    // SEO得分展示
+                    if (data.overall_score !== undefined) {
+                        reportHtml += '<div class="seo-report-section">';
+                        reportHtml += '<h3>📊 SEO得分</h3>';
+                        reportHtml += '<div class="score-grid">';
+                        reportHtml += '<div class="score-item"><strong>整体得分:</strong> <span class="score-value">' + data.overall_score + '</span></div>';
+                        if (data.title_score) reportHtml += '<div class="score-item"><strong>标题得分:</strong> <span class="score-value">' + data.title_score + '</span></div>';
+                        if (data.content_score) reportHtml += '<div class="score-item"><strong>内容得分:</strong> <span class="score-value">' + data.content_score + '</span></div>';
+                        if (data.keyword_score) reportHtml += '<div class="score-item"><strong>关键词得分:</strong> <span class="score-value">' + data.keyword_score + '</span></div>';
+                        if (data.readability_score) reportHtml += '<div class="score-item"><strong>可读性得分:</strong> <span class="score-value">' + data.readability_score + '</span></div>';
                         reportHtml += '</div></div>';
                     }
 
-                    // 内容统计部分
-                    if (data.content_stats) {
+                    // 技术统计
+                    reportHtml += '<div class="seo-report-section">';
+                    reportHtml += '<div class="stats-grid">';
+                    if (data.word_count) reportHtml += '<div class="stat-item"><strong>字数:</strong> ' + data.word_count + ' 字</div>';
+                    if (data.title_length) reportHtml += '<div class="stat-item"><strong>标题长度:</strong> ' + data.title_length + ' 字符</div>';
+                    if (data.image_count) reportHtml += '<div class="stat-item"><strong>图片数量:</strong> ' + data.image_count + ' 个</div>';
+                    if (data.internal_links) reportHtml += '<div class="stat-item"><strong>内部链接:</strong> ' + data.internal_links + ' 个</div>';
+                    if (data.external_links) reportHtml += '<div class="stat-item"><strong>外部链接:</strong> ' + data.external_links + ' 个</div>';
+                    reportHtml += '</div></div>';
+
+                    // 标题结构统计
+                    if (data.heading_counts && Object.keys(data.heading_counts).length > 0) {
                         reportHtml += '<div class="seo-report-section">';
-                        reportHtml += '<h3>📈 内容统计</h3>';
-                        reportHtml += '<div class="stats-grid">';
-                        if (data.content_stats.word_count) {
-                            reportHtml += '<div class="stat-item"><strong>字数统计:</strong> ' + data.content_stats.word_count + '</div>';
-                        }
-                        if (data.content_stats.reading_time) {
-                            reportHtml += '<div class="stat-item"><strong>预计阅读时间:</strong> ' + data.content_stats.reading_time + '</div>';
-                        }
-                        if (data.content_stats.paragraph_count) {
-                            reportHtml += '<div class="stat-item"><strong>段落数量:</strong> ' + data.content_stats.paragraph_count + '</div>';
-                        }
-                        if (data.content_stats.heading_structure) {
-                            reportHtml += '<div class="stat-item"><strong>标题结构:</strong> ' + data.content_stats.heading_structure + '</div>';
-                        }
+                        reportHtml += '<h3>📝 标题结构</h3>';
+                        reportHtml += '<div class="heading-grid">';
+                        Object.keys(data.heading_counts).forEach(function(tag) {
+                            reportHtml += '<div class="heading-item"><span class="heading-tag">' + tag.toUpperCase() + '</span><span class="heading-count">' + data.heading_counts[tag] + '</span></div>';
+                        });
                         reportHtml += '</div></div>';
                     }
 
-                    // SEO得分分析部分
-                    if (data.seo_score_breakdown) {
-                        reportHtml += '<div class="seo-report-section">';
-                        reportHtml += '<h3>📊 SEO维度分析</h3>';
-                        reportHtml += '<div class="score-breakdown">';
-
-                        if (data.seo_score_breakdown.title_optimization) {
-                            reportHtml += '<div class="score-item"><strong>标题优化:</strong> ' + data.seo_score_breakdown.title_optimization + '</div>';
+                    // AI分析部分 - 使用analysis对象中的数据
+                    if (data.analysis && (data.analysis.ai_analysis || data.analysis.ai_recommendations || data.analysis.ai_keywords)) {
+                        console.log('使用analysis对象中的AI数据');
+                        reportHtml += buildStructuredAISection(data.analysis);
+                    } else if (data.analysis) {
+                        console.log('使用analysis对象数据构建AI部分');
+                        // 直接使用analysis对象
+                        reportHtml += buildStructuredAISection(data.analysis);
+                    } else if (data.raw_ai_analysis) {
+                        // 备用：处理原始JSON数据
+                        try {
+                            var aiData = JSON.parse(data.raw_ai_analysis);
+                            reportHtml += buildAIAnalysisSection(aiData);
+                        } catch (e) {
+                            console.log('JSON解析失败，尝试修复:', e);
+                            reportHtml += buildRawAnalysisSection(data.raw_ai_analysis);
                         }
-                        if (data.seo_score_breakdown.content_quality) {
-                            reportHtml += '<div class="score-item"><strong>内容质量:</strong> ' + data.seo_score_breakdown.content_quality + '</div>';
-                        }
-                        if (data.seo_score_breakdown.keyword_strategy) {
-                            reportHtml += '<div class="score-item"><strong>关键词策略:</strong> ' + data.seo_score_breakdown.keyword_strategy + '</div>';
-                        }
-                        if (data.seo_score_breakdown.technical_seo) {
-                            reportHtml += '<div class="score-item"><strong>技术SEO:</strong> ' + data.seo_score_breakdown.technical_seo + '</div>';
-                        }
-                        if (data.seo_score_breakdown.user_experience) {
-                            reportHtml += '<div class="score-item"><strong>用户体验:</strong> ' + data.seo_score_breakdown.user_experience + '</div>';
-                        }
-
-                        reportHtml += '</div></div>';
                     }
 
-                    // 详细优化建议部分 - 兼容新旧数据格式
-                    var recommendations = data.detailed_recommendations || data.recommendations;
-                    if (recommendations && recommendations.length > 0) {
-                        reportHtml += '<div class="seo-report-section">';
-                        reportHtml += '<h3>💡 详细优化建议</h3>';
-                        reportHtml += '<div class="recommendations-list">';
-
-                        for (var i = 0; i < recommendations.length; i++) {
-                            var rec = recommendations[i];
-                            var priorityClass = rec.priority === 'high' ? 'priority-high' :
-                                               rec.priority === 'medium' ? 'priority-medium' : 'priority-low';
-                            var priorityText = rec.priority === 'high' ? '高优先级' :
-                                              rec.priority === 'medium' ? '中优先级' : '低优先级';
-
-                            reportHtml += '<div class="recommendation-item ' + priorityClass + '">';
-                            reportHtml += '<div class="rec-header">';
-                            reportHtml += '<h4>' + rec.title + '</h4>';
-                            reportHtml += '<span class="priority-badge">' + priorityText + '</span>';
-                            reportHtml += '</div>';
-
-                            // 添加详细调试信息
-                            console.log('SEO分析项数据:', rec);
-                            console.log('Action字段长度:', rec.action ? rec.action.length : 0);
-                            console.log('Action内容预览:', rec.action ? rec.action.substring(0, 100) + '...' : '无action字段');
-
-                            // 优先显示action字段（AI返回的具体行动步骤）
-                            if (rec.action) {
-                                reportHtml += '<div class="rec-action"><strong>行动步骤:</strong></div>';
-                                reportHtml += '<div class="rec-action-content">' + rec.action.replace(/\n/g, '<br>') + '</div>';
-                            }
-
-                            // 显示其他字段（如果有）
-                            if (rec.current_issue) {
-                                reportHtml += '<div class="rec-issue"><strong>当前问题:</strong> ' + rec.current_issue + '</div>';
-                            }
-                            if (rec.why_important) {
-                                reportHtml += '<div class="rec-importance"><strong>重要性:</strong> ' + rec.why_important + '</div>';
-                            }
-                            if (rec.how_to_fix) {
-                                reportHtml += '<div class="rec-fix"><strong>解决方法:</strong> ' + rec.how_to_fix + '</div>';
-                            }
-                            if (rec.example_before && rec.example_after) {
-                                reportHtml += '<div class="rec-examples">';
-                                reportHtml += '<div class="rec-example-before"><strong>修改前:</strong> ' + rec.example_before + '</div>';
-                                reportHtml += '<div class="rec-example-after"><strong>修改后:</strong> ' + rec.example_after + '</div>';
-                                reportHtml += '</div>';
-                            }
-                            if (rec.expected_impact) {
-                                reportHtml += '<div class="rec-impact"><strong>预期效果:</strong> ' + rec.expected_impact + '</div>';
-                            }
-                            if (rec.time_estimate) {
-                                reportHtml += '<div class="rec-time"><strong>预计时间:</strong> ' + rec.time_estimate + '</div>';
-                            }
-                            // 如果没有action字段，显示description作为详细内容
-                            if (!rec.action && rec.description) {
-                                reportHtml += '<div class="rec-description"><strong>详细说明:</strong></div>';
-                                reportHtml += '<div class="rec-description-content">' + rec.description.replace(/\n/g, '<br>') + '</div>';
-                            }
-
-                            reportHtml += '</div>';
-                        }
-
-                        reportHtml += '</div></div>';
-                    }
-
-                    // 内容改进部分
-                    if (data.content_improvements && data.content_improvements.length > 0) {
-                        reportHtml += '<div class="seo-report-section">';
-                        reportHtml += '<h3>✍️ 内容改进建议</h3>';
-                        reportHtml += '<div class="content-improvements">';
-
-                        for (var i = 0; i < data.content_improvements.length; i++) {
-                            var improvement = data.content_improvements[i];
-                            reportHtml += '<div class="improvement-item">';
-                            reportHtml += '<h4>' + improvement.section + '</h4>';
-                            reportHtml += '<p>' + improvement.suggestion + '</p>';
-                            if (improvement.action_items && improvement.action_items.length > 0) {
-                                reportHtml += '<ul class="action-items">';
-                                for (var j = 0; j < improvement.action_items.length; j++) {
-                                    reportHtml += '<li>' + improvement.action_items[j] + '</li>';
-                                }
-                                reportHtml += '</ul>';
-                            }
-                            reportHtml += '</div>';
-                        }
-
-                        reportHtml += '</div></div>';
-                    }
-
-                    // 下一步行动计划
-                    if (data.next_steps && data.next_steps.length > 0) {
-                        reportHtml += '<div class="seo-report-section">';
-                        reportHtml += '<h3>🚀 下一步行动计划</h3>';
-                        reportHtml += '<div class="next-steps">';
-
-                        for (var i = 0; i < data.next_steps.length; i++) {
-                            reportHtml += '<div class="step-item">';
-                            reportHtml += '<span class="step-number">' + (i + 1) + '</span>';
-                            reportHtml += '<span class="step-text">' + data.next_steps[i] + '</span>';
-                            reportHtml += '</div>';
-                        }
-
-                        reportHtml += '</div></div>';
-                    }
-
-                    // 创建弹框
+                    // 创建弹框 - 简化版本，无头部
                     var modalHtml = '<div id="seo-report-modal" class="seo-report-modal" style="display: none;">';
                     modalHtml += '<div class="seo-modal-backdrop"></div>';
                     modalHtml += '<div class="seo-modal-content">';
-                    modalHtml += '<div class="seo-modal-header">';
-                    modalHtml += '<h2>📊 SEO分析报告</h2>';
-                    modalHtml += '<button class="seo-modal-close" onclick="closeSEOReportModal()">&times;</button>';
-                    modalHtml += '</div>';
                     modalHtml += '<div class="seo-modal-body">' + reportHtml + '</div>';
                     modalHtml += '<div class="seo-modal-footer">';
                     modalHtml += '<button class="button button-secondary" onclick="closeSEOReportModal()">关闭</button>';
-                    modalHtml += '<button class="button button-primary" onclick="closeSEOReportModal()">完成</button>';
                     modalHtml += '</div>';
                     modalHtml += '</div></div>';
 
@@ -2675,72 +3068,28 @@ class WordPress_Toolkit {
                     $('body').append(modalHtml);
 
                     var modal = $('#seo-report-modal');
-
                     if (modal.length > 0) {
-                        // 设置弹框和所有子元素的样式
                         modal.css({
                             'position': 'fixed',
                             'top': '0',
                             'left': '0',
                             'width': '100%',
                             'height': '100%',
-                            'display': 'block',
-                            'visibility': 'visible',
-                            'opacity': '1',
-                            'z-index': '9999999',
-                            'background': 'rgba(0, 0, 0, 0.6)'
-                        });
-
-                        // 设置弹框各个部分的样式
-                        modal.find('.seo-modal-backdrop').css({
-                            'position': 'absolute',
-                            'top': '0',
-                            'left': '0',
-                            'width': '100%',
-                            'height': '100%',
-                            'background': 'rgba(0, 0, 0, 0.6)',
-                            'backdrop-filter': 'blur(2px)'
-                        });
-
-                        modal.find('.seo-modal-content').css({
-                            'position': 'relative',
-                            'max-width': '800px',
-                            'max-height': '90vh',
-                            'margin': '5vh auto',
-                            'background': '#fff',
-                            'border-radius': '12px',
-                            'box-shadow': '0 20px 40px rgba(0, 0, 0, 0.15)',
-                            'overflow': 'hidden'
-                        });
-
-                        modal.find('.seo-modal-header').css({
-                            'background': 'linear-gradient(135deg, #2271b1 0%, #135e96 100%)',
-                            'color': '#fff',
-                            'padding': '24px 32px',
-                            'display': 'flex',
-                            'justify-content': 'space-between',
-                            'align-items': 'center'
-                        });
-
-                        modal.find('.seo-modal-header h2').css({
-                            'margin': '0',
-                            'font-size': '1.5em',
-                            'font-weight': '600'
-                        });
-
-                        modal.find('.seo-modal-close').css({
-                            'background': 'none',
-                            'border': 'none',
-                            'font-size': '28px',
-                            'color': '#fff',
-                            'cursor': 'pointer',
-                            'padding': '0',
-                            'width': '32px',
-                            'height': '32px',
-                            'border-radius': '50%',
+                            'background': 'rgba(0, 0, 0, 0.5)',
                             'display': 'flex',
                             'align-items': 'center',
-                            'justify-content': 'center'
+                            'justify-content': 'center',
+                            'z-index': '99999'
+                        }).show();
+
+                        modal.find('.seo-modal-content').css({
+                            'background': 'white',
+                            'border-radius': '8px',
+                            'max-width': '800px',
+                            'max-height': '90vh',
+                            'width': '90%',
+                            'overflow': 'hidden',
+                            'box-shadow': '0 20px 60px rgba(0, 0, 0, 0.3)'
                         });
 
                         modal.find('.seo-modal-body').css({
@@ -2751,318 +3100,10 @@ class WordPress_Toolkit {
 
                         modal.find('.seo-modal-footer').css({
                             'padding': '20px 32px',
-                            'border-top': '1px solid #e1e1e1',
-                            'background': '#f8f9f9',
-                            'display': 'flex',
-                            'justify-content': 'flex-end',
-                            'gap': '12px'
+                            'border-top': '1px solid #eee',
+                            'text-align': 'right',
+                            'background': '#f8f9fa'
                         });
-
-                        // 关键词样式
-                        modal.find('.keyword-tag').css({
-                            'background': 'linear-gradient(135deg, #2271b1 0%, #135e96 100%)',
-                            'color': '#fff',
-                            'padding': '8px 16px',
-                            'border-radius': '20px',
-                            'font-size': '14px',
-                            'font-weight': '500',
-                            'display': 'inline-block',
-                            'margin': '4px',
-                            'box-shadow': '0 2px 8px rgba(34, 113, 177, 0.3)'
-                        });
-
-                        // 建议卡片样式
-                        modal.find('.recommendation-item').css({
-                            'border': '1px solid #e1e1e1',
-                            'border-radius': '12px',
-                            'padding': '24px',
-                            'background': '#fff',
-                            'margin-bottom': '20px',
-                            'box-shadow': '0 2px 8px rgba(0, 0, 0, 0.06)',
-                            'transition': 'all 0.3s ease',
-                            'position': 'relative'
-                        });
-
-                        // 优先级左边框样式
-                        modal.find('.priority-high').css({
-                            'border-left': '5px solid #d63638',
-                            'border-top-left-radius': '12px',
-                            'border-bottom-left-radius': '12px'
-                        });
-
-                        modal.find('.priority-medium').css({
-                            'border-left': '5px solid #dba617',
-                            'border-top-left-radius': '12px',
-                            'border-bottom-left-radius': '12px'
-                        });
-
-                        modal.find('.priority-low').css({
-                            'border-left': '5px solid #00a32a',
-                            'border-top-left-radius': '12px',
-                            'border-bottom-left-radius': '12px'
-                        });
-
-                        // 建议标题样式
-                        modal.find('.rec-header h4').css({
-                            'margin': '0',
-                            'margin-right': '12px',
-                            'font-size': '1.2em',
-                            'font-weight': '700',
-                            'color': '#1d2327',
-                            'line-height': '1.3',
-                            'flex': '1'
-                        });
-
-                        // 建议头部容器样式
-                        modal.find('.rec-header').css({
-                            'display': 'flex',
-                            'justify-content': 'space-between',
-                            'align-items': 'flex-start',
-                            'margin-bottom': '16px',
-                            'gap': '12px'
-                        });
-
-                        // 优先级徽章样式
-                        modal.find('.priority-badge').css({
-                            'padding': '6px 14px',
-                            'border-radius': '20px',
-                            'font-size': '11px',
-                            'font-weight': '700',
-                            'text-transform': 'uppercase',
-                            'letter-spacing': '0.5px',
-                            'white-space': 'nowrap'
-                        });
-
-                        modal.find('.priority-high .priority-badge').css({
-                            'background': 'linear-gradient(135deg, #fef7f7 0%, #fcecec 100%)',
-                            'color': '#d63638',
-                            'border': '1px solid #d63638',
-                            'box-shadow': '0 2px 4px rgba(214, 54, 56, 0.15)'
-                        });
-
-                        modal.find('.priority-medium .priority-badge').css({
-                            'background': 'linear-gradient(135deg, #fcf9e8 0%, #f8f4e0 100%)',
-                            'color': '#dba617',
-                            'border': '1px solid #dba617',
-                            'box-shadow': '0 2px 4px rgba(219, 166, 23, 0.15)'
-                        });
-
-                        modal.find('.priority-low .priority-badge').css({
-                            'background': 'linear-gradient(135deg, #f0f6fc 0%, #e8f4ed 100%)',
-                            'color': '#00a32a',
-                            'border': '1px solid #00a32a',
-                            'box-shadow': '0 2px 4px rgba(0, 163, 42, 0.15)'
-                        });
-
-                        // 建议描述样式
-                        modal.find('.rec-description').css({
-                            'color': '#3c434a',
-                            'line-height': '1.6',
-                            'font-size': '15px',
-                            'margin': '16px 0'
-                        });
-
-                        // 行动步骤样式
-                        modal.find('.rec-action').css({
-                            'background': 'linear-gradient(135deg, #f8f9fa 0%, #f1f3f5 100%)',
-                            'padding': '16px 20px',
-                            'border-radius': '8px',
-                            'border-left': '4px solid #2271b1',
-                            'color': '#1d2327',
-                            'font-size': '14px',
-                            'line-height': '1.5'
-                        });
-
-                        modal.find('.rec-action strong').css({
-                            'color': '#2271b1',
-                            'font-weight': '700',
-                            'display': 'block',
-                            'margin-bottom': '4px'
-                        });
-
-                        // 新增元素样式
-                        modal.find('.stats-grid').css({
-                            'display': 'grid',
-                            'grid-template-columns': 'repeat(auto-fit, minmax(200px, 1fr))',
-                            'gap': '16px',
-                            'margin-top': '16px'
-                        });
-
-                        modal.find('.stat-item').css({
-                            'background': '#f8f9fa',
-                            'padding': '12px 16px',
-                            'border-radius': '8px',
-                            'border-left': '3px solid #2271b1'
-                        });
-
-                        modal.find('.score-breakdown').css({
-                            'display': 'grid',
-                            'gap': '12px',
-                            'margin-top': '16px'
-                        });
-
-                        modal.find('.score-item').css({
-                            'background': '#f8f9fa',
-                            'padding': '14px 18px',
-                            'border-radius': '8px',
-                            'border-left': '3px solid #2271b1',
-                            'margin-bottom': '8px'
-                        });
-
-                        modal.find('.rec-issue, .rec-importance, .rec-fix, .rec-impact, .rec-time').css({
-                            'margin': '12px 0',
-                            'padding': '12px 16px',
-                            'border-radius': '6px',
-                            'line-height': '1.5'
-                        });
-
-                        // 新增action内容样式
-                        modal.find('.rec-action-content').css({
-                            'background': '#ffffff',
-                            'padding': '16px 20px',
-                            'border-radius': '6px',
-                            'border': '1px solid #e1e1e1',
-                            'margin-top': '8px',
-                            'color': '#3c434a',
-                            'line-height': '1.7',
-                            'font-size': '14px',
-                            'white-space': 'pre-wrap'
-                        });
-
-                        // 新增description内容样式
-                        modal.find('.rec-description-content').css({
-                            'background': '#ffffff',
-                            'padding': '16px 20px',
-                            'border-radius': '6px',
-                            'border': '1px solid #e1e1e1',
-                            'margin-top': '8px',
-                            'color': '#3c434a',
-                            'line-height': '1.7',
-                            'font-size': '14px',
-                            'white-space': 'pre-wrap'
-                        });
-
-                        modal.find('.rec-issue').css({
-                            'background': '#fef7f7',
-                            'border-left': '3px solid #d63638'
-                        });
-
-                        modal.find('.rec-importance').css({
-                            'background': '#f0f6fc',
-                            'border-left': '3px solid #2271b1'
-                        });
-
-                        modal.find('.rec-fix').css({
-                            'background': '#f0f8f0',
-                            'border-left': '3px solid #00a32a'
-                        });
-
-                        modal.find('.rec-impact').css({
-                            'background': '#fcf9e8',
-                            'border-left': '3px solid #dba617'
-                        });
-
-                        modal.find('.rec-time').css({
-                            'background': '#f8f4f4',
-                            'border-left': '3px solid #646970'
-                        });
-
-                        modal.find('.rec-examples').css({
-                            'margin': '16px 0',
-                            'padding': '16px',
-                            'background': '#f8f9fa',
-                            'border-radius': '8px',
-                            'border': '1px dashed #d1d5db'
-                        });
-
-                        modal.find('.rec-example-before, .rec-example-after').css({
-                            'margin': '8px 0',
-                            'padding': '12px',
-                            'border-radius': '6px'
-                        });
-
-                        modal.find('.rec-example-before').css({
-                            'background': '#fef7f7',
-                            'border-left': '3px solid #d63638'
-                        });
-
-                        modal.find('.rec-example-after').css({
-                            'background': '#f0f8f0',
-                            'border-left': '3px solid #00a32a'
-                        });
-
-                        modal.find('.content-improvements').css({
-                            'display': 'grid',
-                            'gap': '20px',
-                            'margin-top': '16px'
-                        });
-
-                        modal.find('.improvement-item').css({
-                            'background': '#f8f9fa',
-                            'padding': '20px',
-                            'border-radius': '12px',
-                            'border-left': '4px solid #2271b1'
-                        });
-
-                        modal.find('.improvement-item h4').css({
-                            'margin': '0 0 12px 0',
-                            'color': '#1d2327',
-                            'font-size': '1.1em',
-                            'font-weight': '600'
-                        });
-
-                        modal.find('.action-items').css({
-                            'margin': '12px 0 0 0',
-                            'padding-left': '20px'
-                        });
-
-                        modal.find('.action-items li').css({
-                            'margin': '6px 0',
-                            'color': '#3c434a',
-                            'line-height': '1.5'
-                        });
-
-                        modal.find('.next-steps').css({
-                            'display': 'flex',
-                            'flex-direction': 'column',
-                            'gap': '16px',
-                            'margin-top': '16px'
-                        });
-
-                        modal.find('.step-item').css({
-                            'display': 'flex',
-                            'align-items': 'flex-start',
-                            'gap': '16px',
-                            'padding': '16px',
-                            'background': '#f8f9fa',
-                            'border-radius': '12px',
-                            'border-left': '4px solid #2271b1'
-                        });
-
-                        modal.find('.step-number').css({
-                            'background': '#2271b1',
-                            'color': '#fff',
-                            'width': '32px',
-                            'height': '32px',
-                            'border-radius': '50%',
-                            'display': 'flex',
-                            'align-items': 'center',
-                            'justify-content': 'center',
-                            'font-weight': '700',
-                            'font-size': '14px',
-                            'flex-shrink': '0'
-                        });
-
-                        modal.find('.step-text').css({
-                            'flex': '1',
-                            'line-height': '1.5',
-                            'color': '#1d2327',
-                            'font-size': '15px'
-                        });
-
-                        modal.fadeIn(300);
-                    } else {
-                        console.error('弹框元素创建失败！');
                     }
                 };
 
@@ -3073,633 +3114,11 @@ class WordPress_Toolkit {
                     });
                 };
             });
-            </script>
-            <?php
-        } else {
-            echo '<div class="wrap"><div class="error"><p>' . __('文章优化模块未正确加载', 'wordpress-toolkit') . '</p></div></div>';
-        }
-    }
-
-    
-    /**
-     * 文章优化设置页面 - 设置菜单中
-     */
-    public function auto_excerpt_settings_page() {
-        // 验证用户权限
-        if (!current_user_can('manage_options')) {
-            wp_die(__('权限不足', 'wordpress-toolkit'));
-        }
-
-        // 验证nonce（防止CSRF攻击）
-        if (isset($_POST['action']) && !wp_verify_nonce($_POST['_wpnonce'], 'wordpress_toolkit_auto_excerpt')) {
-            wp_die(__('安全验证失败', 'wordpress-toolkit'));
-        }
-
-        if ($this->auto_excerpt) {
-            // 调用文章优化模块的设置页面
-            $this->auto_excerpt->settings_page();
-        } else {
-            echo '<div class="wrap"><h1>' . __('文章优化设置', 'wordpress-toolkit') . '</h1><div class="error"><p>' . __('文章优化模块未正确加载，请检查插件设置。', 'wordpress-toolkit') . '</p></div></div>';
-        }
-    }
-
-/**
-     * 网站卡片页面 - 放在工具箱菜单中
-     */
-    public function custom_cards_list_page() {
-        // 验证用户权限
-        if (!current_user_can('manage_options')) {
-            wp_die(__('权限不足', 'wordpress-toolkit'));
-        }
-
-        // 验证nonce（防止CSRF攻击）
-        if (isset($_POST['action']) && !wp_verify_nonce($_POST['_wpnonce'], 'wordpress_toolkit_custom_card')) {
-            wp_die(__('安全验证失败', 'wordpress-toolkit'));
-        }
-
-        // 调试日志
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('WordPress Toolkit: Custom Cards list page called');
-        }
-
-        if ($this->custom_card) {
-            // 调用自定义卡片模块的卡片列表页面
-            $this->custom_card->cards_list_page();
-        } else {
-            echo '<div class="wrap"><div class="error"><p>Custom Card 模块未正确加载，请检查插件设置。</p></div></div>';
-        }
-    }
-    
-    /**
-     * Age Calculator管理页面 - 安全版本
-     */
-    public function age_calculator_admin_page() {
-        // 验证用户权限
-        if (!current_user_can('manage_options')) {
-            wp_die(__('权限不足', 'wordpress-toolkit'));
-        }
-        
-        // 验证nonce（防止CSRF攻击）
-        if (isset($_POST['action']) && !wp_verify_nonce($_POST['_wpnonce'], 'wordpress_toolkit_age_calculator')) {
-            wp_die(__('安全验证失败', 'wordpress-toolkit'));
-        }
-        
-        if ($this->age_calculator) {
-            $this->age_calculator->admin_page();
-        }
-    }
-    
-    /**
-     * Time Capsule管理页面 - 安全版本
-     */
-    public function time_capsule_admin_page() {
-        // 验证用户权限 - 允许管理员和订阅者访问
-        if (!current_user_can('manage_options') && !current_user_can('read')) {
-            wp_die(__('权限不足', 'wordpress-toolkit'));
-        }
-
-        // 验证nonce（防止CSRF攻击）- 只在有POST数据时验证
-        if (!empty($_POST) && isset($_POST['action']) && !wp_verify_nonce($_POST['_wpnonce'], 'wordpress_toolkit_time_capsule')) {
-            wp_die(__('安全验证失败', 'wordpress-toolkit'));
-        }
-
-        if ($this->time_capsule) {
-            $this->time_capsule->admin_page();
-        }
-    }
-
-    /**
-     * 友情链接管理页面 - 统一管理页面
-     */
-    public function friendlinks_admin_page() {
-        // 验证用户权限
-        if (!current_user_can('manage_options')) {
-            wp_die(__('权限不足', 'wordpress-toolkit'));
-        }
-
-        // 简化验证 - 将nonce验证移到具体的操作处理函数中
-        // 避免在页面加载时进行验证，防止误报
-
-        if ($this->simple_friendlink_admin) {
-            // 调用友情链接管理页面的统一视图
-            $this->simple_friendlink_admin->unified_admin_page();
-        } else {
-            echo '<div class="wrap"><div class="error"><p>' . __('友情链接管理模块未正确加载', 'wordpress-toolkit') . '</p>';
-            echo '<br><strong>调试信息:</strong><br>';
-            echo 'simple_friendlink_admin: ' . ($this->simple_friendlink_admin ? '已加载' : '未加载') . '<br>';
-            echo 'simple_friendlink: ' . ($this->simple_friendlink ? '已加载' : '未加载') . '<br>';
-            echo 'WordPress工具包版本: ' . WORDPRESS_TOOLKIT_VERSION . '<br>';
-            echo '</p></div></div>';
-        }
-    }
-
-    
-    /**
-     * CookieGuard管理页面 - 安全版本
-     */
-    public function cookieguard_admin_page() {
-        // 验证用户权限
-        if (!current_user_can('manage_options')) {
-            wp_die(__('权限不足', 'wordpress-toolkit'));
-        }
-        
-        // 验证nonce（防止CSRF攻击）
-        if (isset($_POST['action']) && !wp_verify_nonce($_POST['_wpnonce'], 'wordpress_toolkit_cookieguard')) {
-            wp_die(__('安全验证失败', 'wordpress-toolkit'));
-        }
-        
-        if ($this->cookieguard) {
-            $this->cookieguard->admin_page();
-        }
-    }
-    
-    
-    /**
-     * 工具箱设置主页面
-     */
-    public function toolkit_settings_main_page() {
-        // 验证用户权限
-        if (!current_user_can('manage_options')) {
-            wp_die(__('权限不足', 'wordpress-toolkit'));
-        }
-        ?>
-        <div class="wrap">
-            <h1><?php _e('工具箱设置', 'wordpress-toolkit'); ?></h1>
-            <p><?php _e('欢迎使用WordPress Toolkit设置中心！在这里您可以配置所有模块的参数。', 'wordpress-toolkit'); ?></p>
-
-            <div class="wordpress-toolkit-settings-overview">
-                <div class="settings-grid">
-                    <div class="settings-card">
-                        <h2><span class="dashicons dashicons-admin-post"></span> <?php _e('网站卡片', 'wordpress-toolkit'); ?></h2>
-                        <p><?php _e('配置网站卡片的缓存、显示和抓取设置。', 'wordpress-toolkit'); ?></p>
-                        <a href="<?php echo admin_url('admin.php?page=wordpress-toolkit-custom-card-settings'); ?>" class="button button-primary"><?php _e('配置网站卡片', 'wordpress-toolkit'); ?></a>
-                    </div>
-
-                    <div class="settings-card">
-                        <h2><span class="dashicons dashicons-clock"></span> <?php _e('年龄计算器', 'wordpress-toolkit'); ?></h2>
-                        <p><?php _e('设置年龄计算器的显示样式和默认参数。', 'wordpress-toolkit'); ?></p>
-                        <a href="<?php echo admin_url('admin.php?page=wordpress-toolkit-age-calculator-settings'); ?>" class="button button-primary"><?php _e('配置年龄计算器', 'wordpress-toolkit'); ?></a>
-                    </div>
-
-                    <div class="settings-card">
-                        <h2><span class="dashicons dashicons-shield-alt"></span> <?php _e('Cookie同意', 'wordpress-toolkit'); ?></h2>
-                        <p><?php _e('管理Cookie同意通知的显示内容和行为。', 'wordpress-toolkit'); ?></p>
-                        <a href="<?php echo admin_url('admin.php?page=wordpress-toolkit-cookieguard-settings'); ?>" class="button button-primary"><?php _e('配置Cookie同意', 'wordpress-toolkit'); ?></a>
-                    </div>
-
-                    <div class="settings-card">
-                        <h2><span class="dashicons dashicons-admin-links"></span> <?php _e('友情链接', 'wordpress-toolkit'); ?></h2>
-                        <p><?php _e('设置友情链接的显示方式和管理选项。', 'wordpress-toolkit'); ?></p>
-                        <a href="<?php echo admin_url('admin.php?page=wordpress-toolkit-simple-friendlink-settings'); ?>" class="button button-primary"><?php _e('配置友情链接', 'wordpress-toolkit'); ?></a>
-                    </div>
-
-                    <div class="settings-card">
-                        <h2><span class="dashicons dashicons-edit"></span> <?php _e('文章优化', 'wordpress-toolkit'); ?></h2>
-                        <p><?php _e('配置自动摘要、标签生成等文章优化功能。', 'wordpress-toolkit'); ?></p>
-                        <a href="<?php echo admin_url('admin.php?page=wordpress-toolkit-auto-excerpt-settings'); ?>" class="button button-primary"><?php _e('配置文章优化', 'wordpress-toolkit'); ?></a>
-                    </div>
-
-                    <div class="settings-card">
-                        <h2><span class="dashicons dashicons-admin-network"></span> <?php _e('REST代理修复', 'wordpress-toolkit'); ?></h2>
-                        <p><?php _e('解决WordPress与官方服务连接的问题。', 'wordpress-toolkit'); ?></p>
-                        <a href="<?php echo admin_url('admin.php?page=wp-toolkit-rest-proxy-fix'); ?>" class="button button-primary"><?php _e('配置REST代理', 'wordpress-toolkit'); ?></a>
-                    </div>
-                </div>
-            </div>
-
-            <style>
-            /* WordPress Toolkit 统一设置页面样式 */
-            .settings-grid {
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-                gap: 20px;
-                margin-top: 20px;
-            }
-
-            .settings-card {
-                background: #fff;
-                border: 1px solid #ccd0d4;
-                border-radius: 8px;
-                padding: 20px;
-                box-shadow: 0 1px 3px rgba(0,0,0,.04);
-                transition: box-shadow 0.2s ease;
-            }
-
-            .settings-card:hover {
-                box-shadow: 0 2px 8px rgba(0,0,0,.08);
-            }
-
-            .settings-card h2 {
-                margin-top: 0;
-                margin-bottom: 16px;
-                font-size: 1.3em;
-                font-weight: 600;
-                display: flex;
-                align-items: center;
-                gap: 10px;
-                color: #1d2327;
-            }
-
-            .settings-card p {
-                margin-bottom: 16px;
-                color: #50575e;
-                line-height: 1.5;
-            }
-
-            .settings-card .dashicons {
-                font-size: 1.3em;
-                width: 1.3em;
-                height: 1.3em;
-                color: #2271b1;
-            }
-
-            .settings-card .button {
-                background: #2271b1;
-                border-color: #2271b1;
-                color: #fff;
-                text-decoration: none;
-                font-size: 14px;
-                line-height: 1.4;
-                padding: 8px 16px;
-                border-radius: 4px;
-                transition: all 0.2s ease;
-            }
-
-            .settings-card .button:hover {
-                background: #135e96;
-                border-color: #135e96;
-                color: #fff;
-            }
-
-            /* 通用设置表单样式 */
-            .toolkit-settings-form {
-                background: #fff;
-                border: 1px solid #ccd0d4;
-                border-radius: 8px;
-                padding: 24px;
-                margin-bottom: 20px;
-                box-shadow: 0 1px 3px rgba(0,0,0,.04);
-            }
-
-            .toolkit-settings-form h2 {
-                margin-top: 0;
-                margin-bottom: 20px;
-                font-size: 1.4em;
-                font-weight: 600;
-                color: #1d2327;
-                border-bottom: 2px solid #2271b1;
-                padding-bottom: 8px;
-            }
-
-            .toolkit-settings-form .form-table {
-                margin-top: 20px;
-            }
-
-            .toolkit-settings-form .form-table th {
-                font-weight: 600;
-                color: #1d2327;
-                width: 35%;
-            }
-
-            .toolkit-settings-form .submit {
-                margin-top: 24px;
-                padding-top: 20px;
-                border-top: 1px solid #ddd;
-            }
-            </style>
-        </div>
+        </script>
         <?php
+        } // End of if ($this->auto_excerpt)
     }
 
-    /**
-     * 功能说明页面 - 统一的功能说明
-     */
-    public function toolbox_about_page() {
-        // 验证用户权限
-        if (!current_user_can('manage_options')) {
-            wp_die(__('权限不足', 'wordpress-toolkit'));
-        }
-        ?>
-        <div class="wrap">
-            <h1>WordPress Toolkit - 功能说明</h1>
-            <div class="wordpress-toolkit-about">
-
-                <div class="about-section">
-                    <h2>网站卡片模块</h2>
-                    <div class="feature-card">
-                        <h3>主要功能</h3>
-                        <ul>
-                            <li>自动抓取网站元数据（标题、描述、图片）</li>
-                            <li>生成美观的网站卡片展示</li>
-                            <li>支持懒加载和即时加载两种模式</li>
-                            <li>多级缓存支持（数据库、Memcached、Opcache）</li>
-                            <li>Gutenberg区块编辑器支持</li>
-                        </ul>
-                        
-                        <h3>使用方法</h3>
-                        <p>使用短代码 <code>[custom_card url="https://example.com"]</code> 或 <code>[custom_card_lazy url="https://example.com"]</code></p>
-                        <p>在Gutenberg编辑器中搜索"Custom Card"区块</p>
-                    </div>
-                </div>
-                
-                <div class="about-section">
-                    <h2>年龄计算器模块</h2>
-                    <div class="feature-card">
-                        <h3>主要功能</h3>
-                        <ul>
-                            <li>精确计算周岁年龄，考虑闰年2月29日</li>
-                            <li>支持多种显示格式（年、月、天、详细）</li>
-                            <li>自动计算和手动计算两种模式</li>
-                            <li>支持自定义页面模板</li>
-                            <li>用户生日记忆功能（登录用户）</li>
-                        </ul>
-                        
-                        <h3>使用方法</h3>
-                        <p>使用短代码 <code>[manus_age_calculator]</code> 显示计算器表单</p>
-                        <p>使用短代码 <code>[manus_age_calculator_form]</code> 仅显示表单</p>
-                        <p>使用页面模板"年龄计算器页面"创建专用页面</p>
-                    </div>
-                </div>
-                
-                <div class="about-section">
-                    <h2>物品管理模块</h2>
-                    <div class="feature-card">
-                        <h3>主要功能</h3>
-                        <ul>
-                            <li>记录和管理个人物品购买信息</li>
-                            <li>追踪物品使用情况和保修状态</li>
-                            <li>分类管理物品（电子产品、家居用品、服装等）</li>
-                            <li>保修到期提醒功能</li>
-                            <li>数据统计和分析</li>
-                        </ul>
-                        
-                        <h3>使用方法</h3>
-                        <p>使用短代码 <code>[time_capsule]</code> 显示物品列表和添加表单</p>
-                        <p>使用短代码 <code>[time_capsule_item id="123"]</code> 显示单个物品详情</p>
-                        <p>使用页面模板"物品管理页面"创建专用页面</p>
-                    </div>
-                </div>
-                
-                <div class="about-section">
-                    <h2>Cookie同意模块</h2>
-                    <div class="feature-card">
-                        <h3>主要功能</h3>
-                        <ul>
-                            <li>符合GDPR要求的Cookie同意通知</li>
-                            <li>苹果风格设计，美观易用</li>
-                            <li>多语言支持</li>
-                            <li>自定义样式和文案</li>
-                            <li>用户偏好记忆</li>
-                        </ul>
-                        
-                        <h3>使用方法</h3>
-                        <p>模块自动启用，无需短代码</p>
-                        <p>在后台设置中配置Cookie通知样式和内容</p>
-                        <p>支持自定义CSS样式覆盖</p>
-                    </div>
-                </div>
-
-                <div class="about-section">
-                    <h2>友情链接模块</h2>
-                    <div class="feature-card">
-                        <h3>主要功能</h3>
-                        <ul>
-                            <li>完整的友情链接管理系统</li>
-                            <li>支持链接分类和状态管理</li>
-                            <li>用户提交友情链接功能</li>
-                            <li>管理员审核机制（统一管理界面）</li>
-                            <li>响应式网格布局展示</li>
-                            <li>支持网站Logo和描述</li>
-                            <li>搜索和分页功能</li>
-                            <li>专用页面模板</li>
-                            <li>AJAX表单提交</li>
-                        </ul>
-
-                        <h3>后台管理</h3>
-                        <p>管理员可在"工具箱" → "友情链接管理"中统一管理所有友情链接</p>
-                        <p>管理页面包含"已发布链接"和"待审核申请"两个标签页</p>
-                        <p>支持批量操作、单个审核、删除等功能</p>
-
-                        <h3>前端显示</h3>
-                        <p>使用页面模板"友情链接页面"或"简洁友情链接页面"创建专用页面</p>
-                        <p>页面将自动包含完整的友情链接展示和提交功能</p>
-                    </div>
-                </div>
-
-                <div class="about-section">
-                    <h2>文章优化模块</h2>
-                    <div class="feature-card">
-                        <h3>主要功能</h3>
-                        <ul>
-                            <li>🤖 <strong>DeepSeek AI智能摘要生成</strong> - 基于AI理解文章核心内容</li>
-                            <li>🔄 <strong>智能降级机制</strong> - AI失败时自动使用本地算法</li>
-                            <li>📝 <strong>中英文混合处理</strong> - 完美支持多语言内容</li>
-                            <li>⚙️ <strong>灵活参数配置</strong> - 可调节创造性、长度等参数</li>
-                            <li>🎯 <strong>精准摘要控制</strong> - 保持语义完整，突出重点</li>
-                            <li>🕐 <strong>定时自动生成</strong> - 凌晨3点自动为无摘要文章生成摘要</li>
-                            <li>🏷️ <strong>AI智能标签生成</strong> - 根据文章内容自动生成相关标签</li>
-                            <li>📊 <strong>统计和筛选</strong> - 实时统计摘要覆盖率和AI生成情况</li>
-                            <li>🔧 <strong>API连接测试</strong> - 确保AI服务正常工作</li>
-                            <li>📝 <strong>程序化调用</strong> - 可供其他功能代码调用</li>
-                            <li>🛡️ <strong>编辑页面兼容</strong> - 避免空白页面问题</li>
-                        </ul>
-
-                        <h3>AI生成优势</h3>
-                        <p>使用DeepSeek AI技术，能够深度理解文章内容，生成更准确、更符合语义的摘要。相比传统算法，AI生成的摘要具有更好的连贯性和概括性。</p>
-
-                        <h3>AI生成模式详解</h3>
-                        <p><strong>技术特点：</strong></p>
-                        <ul>
-                            <li>需要配置DeepSeek API密钥（格式：sk-xxxxxx）</li>
-                            <li>AI会根据文章内容生成更准确、更智能的摘要</li>
-                            <li>支持中英文混合内容的智能理解</li>
-                            <li>可以调节创造性参数控制摘要风格（0.0-1.0）</li>
-                            <li>支持deepseek-chat和deepseek-reasoner两种模型</li>
-                        </ul>
-
-                        <p><strong>官方文档：</strong></p>
-                        <p>详细API说明请参考： <a href="https://api-docs.deepseek.com/zh-cn/" target="_blank">DeepSeek API文档</a></p>
-
-                        <p><strong>当前功能状态：</strong></p>
-                        <ul>
-                            <li>✅ AI配置和API测试功能完全正常</li>
-                            <li>✅ DeepSeek API集成正常工作</li>
-                            <li>✅ 摘要生成算法可供其他功能调用</li>
-                            <li>✅ 定时任务功能正常工作</li>
-                            <li>⚠️ 文章编辑页面功能已暂时禁用</li>
-                        </ul>
-
-                        <p><strong>技术说明：</strong></p>
-                        <p>为了避免WordPress编辑页面出现空白问题，已暂时移除编辑页面的集成功能。核心的AI摘要生成功能完全保留，可以通过代码调用或在未来版本中通过其他方式使用。</p>
-
-                        <p><strong>定时任务功能：</strong></p>
-                        <ul>
-                            <li>每天凌晨3点自动为没有摘要的文章生成摘要</li>
-                            <li>连续3天没有生成摘要则自动停止任务</li>
-                            <li>支持AI生成和传统算法的智能降级</li>
-                            <li>具有完善的错误处理和日志记录</li>
-                        </ul>
-
-                        <p><strong>AI智能标签功能：</strong></p>
-                        <ul>
-                            <li>根据文章标题、内容、摘要智能生成相关标签</li>
-                            <li>智能识别文章主题，生成精准的关键词标签</li>
-                            <li>支持标签对比：显示原有标签和AI生成标签</li>
-                            <li>灵活的应用模式：替换、添加、合并去重</li>
-                            <li>可视化选择界面，用户可自主选择要应用的标签</li>
-                            <li>批量生成标签：一键为所有文章生成AI标签并合并去重</li>
-                            <li>自动创建新标签，支持中英文标签</li>
-                        </ul>
-
-                        <h3>使用方法</h3>
-                        <p><strong>功能管理：</strong>在"工具箱" → "文章优化"中查看功能状态和概览</p>
-                        <p><strong>AI配置：</strong>在"设置" → "文章优化"中配置DeepSeek API密钥和相关参数</p>
-                        <p><strong>API测试：</strong>在设置页面测试API连接是否正常工作</p>
-                        <p><strong>批量生成：</strong>在功能管理页面可批量生成所有无摘要文章的摘要</p>
-                        <p><strong>AI标签生成：</strong>在文章列表中点击"🏷️ 生成标签"按钮，选择要应用的AI标签</p>
-                        <p><strong>程序调用：</strong>摘要生成和标签生成功能可供其他插件或主题代码调用</p>
-
-                        <h3>后台管理</h3>
-                        <p><strong>工具箱 → 文章优化：</strong>查看功能概览、统计数据和批量操作</p>
-                        <p><strong>设置 → 文章优化：</strong>完整配置和参数调整</p>
-                        <p>支持DeepSeek AI配置、连接测试、定时任务设置和参数调整</p>
-
-                        <h3>注意事项</h3>
-                        <p>• 需要配置DeepSeek API密钥才能使用AI生成功能</p>
-                        <p>• API调用会产生费用，请参考DeepSeek的定价说明</p>
-                        <p>• 启用降级机制可确保服务高可用性</p>
-                        <p>• 首次使用建议先测试API连接是否正常</p>
-                        <p>• deepseek-reasoner模型不支持自定义长度和创造性参数</p>
-                        <p>• 建议在调试模式下启用WP_DEBUG以查看详细API日志</p>
-                        <p>• API密钥请妥善保管，避免在代码中硬编码</p>
-                    </div>
-                </div>
-
-                <div class="about-section">
-                    <h2>通用功能</h2>
-                    <div class="feature-card">
-                        <h3>所有模块共享的功能</h3>
-                        <ul>
-                            <li>响应式设计，支持移动端</li>
-                            <li>多语言支持（国际化）</li>
-                            <li>权限控制，确保安全性</li>
-                            <li>详细的错误处理和日志记录</li>
-                            <li>定期更新和维护</li>
-                        </ul>
-                    </div>
-                </div>
-                
-            </div>
-        </div>
-        
-        <style>
-        /* 按钮容器样式优化 */
-        .action-buttons-container {
-            display: flex;
-            flex-wrap: nowrap;
-            gap: 4px;
-            align-items: center;
-            justify-content: flex-start;
-            white-space: nowrap;
-            min-width: max-content;
-        }
-
-        .action-buttons-container .button,
-        .action-buttons-container a.button {
-            margin: 0 !important;
-            font-size: 12px !important;
-            line-height: 1.2 !important;
-            padding: 6px 8px !important;
-            white-space: nowrap;
-            flex-shrink: 0;
-            width: 80px !important;
-            text-align: center;
-            box-sizing: border-box;
-            display: inline-block;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        /* 响应式设计 - 小屏幕时允许换行 */
-        @media (max-width: 1200px) {
-            .action-buttons-container {
-                flex-wrap: wrap;
-            }
-        }
-
-        .wordpress-toolkit-about {
-            max-width: 100%;
-            box-sizing: border-box;
-            width: 100%;
-        }
-        
-        .about-section {
-            margin-bottom: 30px;
-            padding: 20px;
-            background: #fff;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            width: 100%;
-            box-sizing: border-box;
-        }
-        
-        .about-section h2 {
-            color: #2271b1;
-            border-bottom: 2px solid #2271b1;
-            padding-bottom: 10px;
-            margin-top: 0;
-        }
-        
-        .feature-card {
-            background: #f9f9f9;
-            padding: 20px;
-            border-radius: 6px;
-            border-left: 4px solid #2271b1;
-            width: 100%;
-            box-sizing: border-box;
-        }
-        
-        .feature-card h3 {
-            color: #2c3338;
-            margin-top: 0;
-        }
-        
-        .feature-card ul {
-            margin: 10px 0;
-            padding-left: 20px;
-        }
-        
-        .feature-card li {
-            margin-bottom: 5px;
-            line-height: 1.5;
-        }
-        
-        .feature-card code {
-            background: #f0f0f1;
-            padding: 2px 6px;
-            border-radius: 3px;
-            font-family: monospace;
-        }
-        
-        /* 响应式设计 */
-        @media screen and (max-width: 782px) {
-            .about-section {
-                padding: 15px;
-                margin-bottom: 20px;
-            }
-            
-            .feature-card {
-                padding: 15px;
-            }
-            
-            .feature-card h3 {
-                font-size: 16px;
-            }
-        }
-        </style>
-        <?php
-    }
-    
     /**
      * 添加插件操作链接
      */

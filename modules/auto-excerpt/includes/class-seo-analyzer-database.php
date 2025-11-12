@@ -9,13 +9,14 @@ if (!defined('ABSPATH')) {
 
 class Auto_Excerpt_SEO_Analyzer_Database {
 
-    private $wpdb;
+    private $db_manager;
     private $table_seo_analysis;
+    private $cache_manager;
 
     public function __construct() {
-        global $wpdb;
-        $this->wpdb = $wpdb;
-        $this->table_seo_analysis = $wpdb->prefix . 'auto_excerpt_seo_analysis';
+        $this->db_manager = new WordPress_Toolkit_Database_Manager();
+        $this->cache_manager = new WordPress_Toolkit_Cache_Manager();
+        $this->table_seo_analysis = 'auto_excerpt_seo_analysis';
     }
 
     /**
@@ -41,6 +42,8 @@ class Auto_Excerpt_SEO_Analyzer_Database {
             recommendations longtext DEFAULT NULL COMMENT '优化建议(JSON)',
             primary_keywords text DEFAULT NULL COMMENT '主要关键词',
             secondary_keywords text DEFAULT NULL COMMENT '次要关键词',
+            raw_ai_analysis longtext DEFAULT NULL COMMENT 'AI原始完整分析文本',
+            parsed_analysis longtext DEFAULT NULL COMMENT '解析后的AI分析数据(JSON)',
             word_count int(11) DEFAULT 0 COMMENT '字数统计',
             title_length int(11) DEFAULT 0 COMMENT '标题长度',
             meta_description_length int(11) DEFAULT 0 COMMENT '描述长度',
@@ -82,20 +85,22 @@ class Auto_Excerpt_SEO_Analyzer_Database {
             'keyword_score' => floatval($analysis_data['keyword_score'] ?? 0),
             'readability_score' => floatval($analysis_data['readability_score'] ?? 0),
             'overall_score' => floatval($analysis_data['overall_score'] ?? 0),
-            'analysis_data' => wp_json_encode($analysis_data['detailed_analysis'] ?? array()),
-            'recommendations' => wp_json_encode($analysis_data['recommendations'] ?? array()),
-            'primary_keywords' => maybe_serialize($analysis_data['primary_keywords'] ?? array()),
-            'secondary_keywords' => maybe_serialize($analysis_data['secondary_keywords'] ?? array()),
+            'analysis_data' => wp_json_encode($analysis_data),
+            'recommendations' => wp_json_encode($analysis_data['ai_recommendations'] ?? array()),
+            'primary_keywords' => maybe_serialize($analysis_data['ai_keywords'] ?? array()),
+            'secondary_keywords' => maybe_serialize($analysis_data['ai_meta_info']['focus_keywords'] ?? array()),
             'word_count' => intval($analysis_data['word_count'] ?? 0),
             'title_length' => intval($analysis_data['title_length'] ?? 0),
-            'meta_description_length' => intval($analysis_data['meta_description_length'] ?? 0),
+            'meta_description_length' => intval($analysis_data['title_length'] ?? 0),
             'image_count' => intval($analysis_data['image_count'] ?? 0),
             'heading_counts' => wp_json_encode($analysis_data['heading_counts'] ?? array()),
             'internal_links' => intval($analysis_data['internal_links'] ?? 0),
             'external_links' => intval($analysis_data['external_links'] ?? 0),
+            'raw_ai_analysis' => $analysis_data['raw_ai_analysis'] ?? '',
+            'parsed_analysis' => wp_json_encode($analysis_data['ai_analysis'] ?? array()),
             'ai_provider' => sanitize_text_field($analysis_data['ai_provider'] ?? 'deepseek'),
             'ai_model' => sanitize_text_field($analysis_data['ai_model'] ?? ''),
-            'analysis_version' => sanitize_text_field($analysis_data['analysis_version'] ?? '1.0'),
+            'analysis_version' => sanitize_text_field($analysis_data['analysis_version'] ?? '2.0'),
             'analysis_time' => floatval($analysis_data['analysis_time'] ?? 0),
             'created_at' => current_time('mysql'),
             'updated_at' => current_time('mysql')
@@ -134,12 +139,22 @@ class Auto_Excerpt_SEO_Analyzer_Database {
      * 获取SEO分析结果
      */
     public function get_seo_analysis($post_id, $analysis_type = 'seo') {
-        global $wpdb;
+        // 使用缓存
+        $cache_key = "seo_analysis_{$post_id}_{$analysis_type}";
+        $cached_result = $this->cache_manager->get($cache_key, 'seo_analysis');
 
-        $result = $wpdb->get_row($wpdb->prepare(
-            "SELECT * FROM {$this->table_seo_analysis} WHERE post_id = %d AND analysis_type = %s",
-            $post_id, $analysis_type
-        ));
+        if ($cached_result !== false) {
+            return $cached_result;
+        }
+
+        // 使用自定义查询（多个条件）
+        $table_name = $this->db_manager->get_table_name($this->table_seo_analysis);
+        $result = $this->db_manager->get_row_sql(
+            $this->db_manager->wpdb->prepare(
+                "SELECT * FROM {$table_name} WHERE post_id = %d AND analysis_type = %s",
+                $post_id, $analysis_type
+            )
+        );
 
         if ($result) {
             // 解码JSON字段
@@ -148,6 +163,9 @@ class Auto_Excerpt_SEO_Analyzer_Database {
             $result->heading_counts = json_decode($result->heading_counts, true);
             $result->primary_keywords = maybe_unserialize($result->primary_keywords);
             $result->secondary_keywords = maybe_unserialize($result->secondary_keywords);
+
+            // 缓存结果
+            $this->cache_manager->set($cache_key, $result, 3600, 'seo_analysis');
         }
 
         return $result;

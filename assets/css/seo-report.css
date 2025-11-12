@@ -1,0 +1,467 @@
+/* 🌟 AI分析报告 - 超美设计 */
+.ai-analysis-container {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 20px;
+    padding: 2px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+    margin: 20px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.ai-analysis-container > * {
+    background: white;
+    border-radius: 18px;
+    position: relative;
+    overflow: hidden;
+    margin: 0;
+    padding: 25px;
+}
+
+/* 📊 分析卡片 - 蓝色渐变 */
+.analysis-card {
+    background: linear-gradient(135deg, #f8f9ff 0%, #e3f2fd 100%) !important;
+}
+
+.analysis-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #2196F3, #1976D2);
+}
+
+/* 🏷️ 关键词卡片 - 绿色渐变 */
+.keywords-card {
+    background: linear-gradient(135deg, #f1f8e9 0%, #e8f5e8 100%) !important;
+}
+
+.keywords-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #4CAF50, #388E3C);
+}
+
+/* 🤖 推荐建议卡片 - 橙色渐变 */
+.recommendations-card {
+    background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%) !important;
+}
+
+.recommendations-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #FF9800, #F57C00);
+}
+
+/* 📝 元信息卡片 - 紫色渐变 */
+.meta-card {
+    background: linear-gradient(135deg, #f3e5f5 0%, #e1bee7 100%) !important;
+}
+
+.meta-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #9C27B0, #7B1FA2);
+}
+
+/* 💫 卡片标题样式 */
+.card-title {
+    margin: 0 0 20px 0;
+    font-size: 22px;
+    font-weight: 700;
+    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-align: center;
+    padding: 10px 0;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.card-title::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60px;
+    height: 2px;
+    background: linear-gradient(90deg, #3498db, #2980b9);
+    border-radius: 1px;
+}
+
+/* 🌟 分析详情样式 */
+.analysis-row {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 20px;
+    padding: 20px;
+    background: white;
+    border-radius: 12px;
+    border-left: 4px solid #2196F3;
+    box-shadow: 0 4px 12px rgba(33, 150, 243, 0.15);
+    transition: all 0.3s ease;
+    position: relative;
+    z-index: 1;
+}
+
+.analysis-row:hover {
+    transform: translateX(5px);
+    box-shadow: 0 6px 20px rgba(33, 150, 243, 0.25);
+}
+
+.analysis-label,
+.meta-label {
+    margin: 0 0 12px 0;
+    font-size: 18px;
+    font-weight: 700;
+    background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    display: block;
+    position: relative;
+}
+
+.analysis-text {
+    margin: 0;
+    font-size: 16px;
+    line-height: 1.7;
+    color: #37474f;
+    font-weight: 500;
+    background: rgba(33, 150, 243, 0.05);
+    padding: 12px;
+    border-radius: 8px;
+    border-left: 2px solid #2196F3;
+}
+
+/* 🎯 关键词样式 */
+.keywords-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin: 0;
+    padding: 0;
+}
+
+.keyword-chip {
+    display: inline-block;
+    background: linear-gradient(135deg, #4CAF50 0%, #388E3C 100%);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 25px;
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0;
+    box-shadow: 0 4px 8px rgba(76, 175, 80, 0.3);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.keyword-chip::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, rgba(255,255,255,0.3) 0%, transparent 100%);
+    transition: left 0.3s ease;
+}
+
+.keyword-chip:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 16px rgba(76, 175, 80, 0.4);
+}
+
+.keyword-chip:hover::before {
+    left: 100%;
+}
+
+.focus-keyword-chip {
+    display: inline-block;
+    background: linear-gradient(135deg, #9C27B0 0%, #7B1FA2 100%);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 25px;
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0;
+    box-shadow: 0 4px 8px rgba(156, 39, 176, 0.3);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.focus-keyword-chip::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, rgba(255,255,255,0.3) 0%, transparent 100%);
+    transition: left 0.3s ease;
+}
+
+.focus-keyword-chip:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 16px rgba(156, 39, 176, 0.4);
+}
+
+.focus-keyword-chip:hover::before {
+    left: 100%;
+}
+
+/* 🚀 推荐建议样式 */
+.recommendation-card-item {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 16px;
+    border-left: 4px solid #FF9800;
+    box-shadow: 0 4px 12px rgba(255, 152, 0, 0.15);
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.recommendation-card-item::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 100%;
+    background: linear-gradient(90deg, rgba(255, 152, 0, 0.05) 0%, transparent 100%);
+    transition: opacity 0.3s ease;
+    opacity: 0;
+}
+
+.recommendation-card-item:hover::before {
+    opacity: 1;
+}
+
+.recommendation-card-item:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(255, 152, 0, 0.25);
+}
+
+.recommendation-card-item:last-child {
+    margin-bottom: 0;
+}
+
+.rec-title {
+    margin: 0 0 12px 0;
+    font-size: 20px;
+    font-weight: 700;
+    color: #2c3e50;
+    background: linear-gradient(135deg, #FF9800 0%, #F57C00 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.rec-desc {
+    margin: 0 0 16px 0;
+    font-size: 16px;
+    line-height: 1.7;
+    color: #37474f;
+    background: rgba(255, 152, 0, 0.05);
+    padding: 12px;
+    border-radius: 8px;
+    border-left: 2px solid #FF9800;
+}
+
+.rec-action,
+.rec-impact {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
+    position: relative;
+    z-index: 2;
+}
+
+.rec-action:last-child,
+.rec-impact:last-child {
+    margin-bottom: 0;
+}
+
+.action-label,
+.impact-label {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 80px;
+    padding: 8px 12px;
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: 20px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+}
+
+.action-label {
+    background: linear-gradient(135deg, #4CAF50 0%, #388E3C 100%);
+    color: white;
+}
+
+.impact-label {
+    background: linear-gradient(135deg, #FF9800 0%, #F57C00 100%);
+    color: white;
+}
+
+.action-label:hover,
+.impact-label:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.action-text,
+.impact-text {
+    font-size: 16px;
+    color: #37474f;
+    font-weight: 500;
+    flex: 1;
+    background: white;
+    padding: 8px 12px;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* 📋 元信息样式 */
+.meta-item {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 16px;
+    border-left: 4px solid #9C27B0;
+    box-shadow: 0 4px 12px rgba(156, 39, 176, 0.15);
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.meta-item::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 100%;
+    background: linear-gradient(90deg, rgba(156, 39, 176, 0.05) 0%, transparent 100%);
+    transition: opacity 0.3s ease;
+    opacity: 0;
+}
+
+.meta-item:hover::before {
+    opacity: 1;
+}
+
+.meta-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(156, 39, 176, 0.25);
+}
+
+.meta-item:last-child {
+    margin-bottom: 0;
+}
+
+.meta-value {
+    margin: 0;
+    font-size: 16px;
+    line-height: 1.6;
+    color: #37474f;
+    background: white;
+    padding: 14px;
+    border-radius: 8px;
+    border: 2px solid #9C27B0;
+    box-shadow: inset 0 1px 3px rgba(156, 39, 176, 0.1);
+}
+
+/* ✨ 动画效果 */
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.ai-analysis-container > * {
+    animation: slideIn 0.6s ease-out forwards;
+    opacity: 0;
+}
+
+.ai-analysis-container > *:nth-child(1) {
+    animation-delay: 0.1s;
+}
+
+.ai-analysis-container > *:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.ai-analysis-container > *:nth-child(3) {
+    animation-delay: 0.3s;
+}
+
+.ai-analysis-container > *:nth-child(4) {
+    animation-delay: 0.4s;
+}
+
+/* 📱 响应式设计 */
+@media (max-width: 768px) {
+    .ai-analysis-container {
+        margin: 15px;
+        padding: 1px;
+    }
+
+    .ai-analysis-container > * {
+        padding: 20px;
+        border-radius: 15px;
+    }
+
+    .card-title {
+        font-size: 20px;
+    }
+
+    .analysis-row {
+        flex-direction: column;
+        padding: 16px;
+    }
+
+    .keywords-list {
+        justify-content: center;
+    }
+
+    .rec-title {
+        font-size: 18px;
+        text-align: center;
+    }
+
+    .rec-action,
+    .rec-impact {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+    }
+}

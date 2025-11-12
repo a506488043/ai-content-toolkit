@@ -1,6 +1,7 @@
 <?php
 /**
- * AI SEO分析器核心类
+ * 全新SEO AI分析器
+ * 提供完整的AI驱动的SEO分析报告
  */
 
 if (!defined('ABSPATH')) {
@@ -19,7 +20,7 @@ class Auto_Excerpt_SEO_Analyzer extends WordPress_Toolkit_Module_Base {
             'ai_model' => 'deepseek-chat',
             'api_key' => '',
             'api_base' => 'https://api.deepseek.com',
-            'max_tokens' => 2000,
+            'max_tokens' => 4000, // 增加到4000 tokens确保完整JSON响应
             'temperature' => 0.3,
             'analysis_timeout' => 30
         ));
@@ -28,9 +29,7 @@ class Auto_Excerpt_SEO_Analyzer extends WordPress_Toolkit_Module_Base {
     /**
      * 分析单篇文章的SEO
      */
-    public function analyze_post_seo($post_id) {
-        $start_time = microtime(true);
-
+    public function analyze_post($post_id) {
         try {
             $post = get_post($post_id);
             if (!$post) {
@@ -43,87 +42,56 @@ class Auto_Excerpt_SEO_Analyzer extends WordPress_Toolkit_Module_Base {
             // 执行AI分析
             $ai_analysis = $this->perform_ai_analysis($content_data);
 
-            // 计算各项得分
-            $scores = $this->calculate_seo_scores($content_data, $ai_analysis);
-
-            // 生成优化建议
-            $recommendations = $this->generate_recommendations($content_data, $scores, $ai_analysis);
-
             // 构建完整分析结果
-            $analysis_result = array_merge($content_data, $scores, array(
-                'detailed_analysis' => $ai_analysis,
-                'recommendations' => $recommendations,
-                'ai_provider' => $this->settings['ai_provider'],
-                'ai_model' => $this->settings['ai_model'],
-                'analysis_version' => '1.0',
-                'analysis_time' => round(microtime(true) - $start_time, 3)
-            ));
+            $analysis_result = $this->build_complete_analysis($content_data, $ai_analysis);
 
             // 保存到数据库
-            $save_result = $this->database->save_seo_analysis($post_id, $analysis_result);
+            $this->database->save_seo_analysis($post_id, $analysis_result);
 
-            if (!$save_result) {
-                throw new Exception("Failed to save SEO analysis result");
-            }
-
-            $this->log_module_action("SEO analysis completed for post: {$post_id}", 'info', array(
-                'post_title' => $post->post_title,
-                'overall_score' => $analysis_result['overall_score']
-            ));
+            error_log('[SEO ANALYZER] Analysis completed for post: ' . $post_id . ' | Score: ' . $analysis_result['overall_score']);
 
             return $analysis_result;
 
         } catch (Exception $e) {
-            $this->log_module_action("SEO analysis failed for post: {$post_id} - " . $e->getMessage(), 'error');
-            return false;
+            error_log('[SEO ANALYZER] Analysis failed for post: ' . $post_id . ' - ' . $e->getMessage());
+            return $this->create_fallback_analysis($post_id);
         }
     }
 
     /**
-     * 批量分析文章SEO
-     */
-    public function batch_analyze_posts($post_ids = array(), $batch_size = 5) {
-        if (empty($post_ids)) {
-            // 获取需要分析的文章
-            $posts = $this->database->get_posts_for_analysis($batch_size * 2);
-            $post_ids = wp_list_pluck($posts, 'ID');
-        }
-
-        if (empty($post_ids)) {
-            return array(
-                'success' => true,
-                'message' => '没有需要分析的文章',
-                'analyzed' => 0,
-                'failed' => 0,
-                'results' => array()
-            );
-        }
-
-        return $this->process_in_batches($post_ids, array($this, 'analyze_post_seo'), $batch_size, 'seo-analyzer');
-    }
-
-    /**
-     * 准备内容分析数据
+     * 准备文章分析数据
      */
     private function prepare_content_data($post) {
         $content = $post->post_content;
-        $title = $post->post_title;
-        $excerpt = $post->post_excerpt;
+        $plain_text = strip_tags($content);
+        $plain_text = preg_replace('/\s+/', ' ', $plain_text);
 
-        // 清理内容
-        $content = $this->clean_content($content);
+        // 提取标题
+        $title = get_the_title($post);
 
-        // 提取纯文本
-        $plain_text = $this->extract_plain_text($content);
+        // 提取描述
+        $excerpt = $post->post_excerpt ?: $this->generate_excerpt($content);
 
-        // 分析内容结构
-        $structure_analysis = $this->analyze_content_structure($content);
+        // 统计信息
+        $word_count = str_word_count($plain_text);
+        $title_length = mb_strlen($title, 'UTF-8');
 
-        // 分析链接
-        $link_analysis = $this->analyze_links($content);
+        // 图片统计
+        $image_count = substr_count($content, '<img');
 
-        // 提取图片信息
-        $image_analysis = $this->analyze_images($content);
+        // 链接统计
+        $internal_links = substr_count($content, 'href="' . home_url());
+        $external_links = substr_count($content, 'href="http') - $internal_links;
+
+        // 标题标签统计
+        $heading_counts = array(
+            'h1' => substr_count($content, '<h1'),
+            'h2' => substr_count($content, '<h2'),
+            'h3' => substr_count($content, '<h3'),
+            'h4' => substr_count($content, '<h4'),
+            'h5' => substr_count($content, '<h5'),
+            'h6' => substr_count($content, '<h6')
+        );
 
         return array(
             'post_id' => $post->ID,
@@ -131,16 +99,12 @@ class Auto_Excerpt_SEO_Analyzer extends WordPress_Toolkit_Module_Base {
             'content' => $content,
             'plain_text' => $plain_text,
             'excerpt' => $excerpt,
-            'word_count' => $this->count_words($plain_text),
-            'title_length' => mb_strlen($title),
-            'meta_description_length' => mb_strlen($excerpt),
-            'image_count' => count($image_analysis['images']),
-            'heading_counts' => $structure_analysis['headings'],
-            'internal_links' => $link_analysis['internal_count'],
-            'external_links' => $link_analysis['external_count'],
-            'structure_analysis' => $structure_analysis,
-            'link_analysis' => $link_analysis,
-            'image_analysis' => $image_analysis
+            'word_count' => $word_count,
+            'title_length' => $title_length,
+            'image_count' => $image_count,
+            'internal_links' => $internal_links,
+            'external_links' => $external_links,
+            'heading_counts' => $heading_counts
         );
     }
 
@@ -148,17 +112,12 @@ class Auto_Excerpt_SEO_Analyzer extends WordPress_Toolkit_Module_Base {
      * 执行AI分析
      */
     private function perform_ai_analysis($content_data) {
-        if (empty($this->settings['api_key'])) {
-            throw new Exception('AI API key not configured');
-        }
-
-        $prompt = $this->build_analysis_prompt($content_data);
+        error_log("WordPress Toolkit: 开始执行AI分析");
+        $prompt = $this->build_ai_prompt($content_data);
+        error_log("WordPress Toolkit: AI提示词构建完成，长度 = " . strlen($prompt));
 
         $response = $this->call_ai_api($prompt);
-
-        if (!$response) {
-            throw new Exception('AI analysis request failed');
-        }
+        error_log("WordPress Toolkit: AI API调用完成，响应长度 = " . strlen($response));
 
         return $this->parse_ai_response($response);
     }
@@ -166,104 +125,66 @@ class Auto_Excerpt_SEO_Analyzer extends WordPress_Toolkit_Module_Base {
     /**
      * 构建AI分析提示词
      */
-    private function build_analysis_prompt($content_data) {
-        $max_content_length = 3000;
-        $content = mb_substr($content_data['plain_text'], 0, $max_content_length);
+    private function build_ai_prompt($content_data) {
+        $title = $content_data['title'];
+        $excerpt = $content_data['excerpt'];
+        $word_count = $content_data['word_count'];
+        $title_length = $content_data['title_length'];
 
-        if (mb_strlen($content_data['plain_text']) > $max_content_length) {
-            $content .= '...(内容已截断)';
+        // 限制内容长度以避免token超限
+        $max_content_length = 2000;
+        $content = mb_substr($content_data['plain_text'], 0, $max_content_length, 'UTF-8');
+
+        if (mb_strlen($content_data['plain_text'], 'UTF-8') > $max_content_length) {
+            $content .= '...(content truncated)';
         }
 
         return <<<PROMPT
-作为一名专业的SEO分析师，请对以下文章进行全面深入的SEO分析，提供具体、可执行的优化建议。
+作为专业SEO分析师，请分析以下文章。只返回JSON格式，不要其他解释文字。
 
-文章标题：{$content_data['title']}
-文章摘要：{$content_data['excerpt']}
-文章字数：{$content_data['word_count']} 字
-标题长度：{$content_data['title_length']} 字符
+文章信息：
+标题：{$title}
+摘要：{$excerpt}
+字数：{$word_count}字
+标题长度：{$title_length}字符
 
-文章内容：
+内容：
 {$content}
 
-请从以下8个维度进行详细分析，并提供具体改进建议：
-
-1. **标题优化分析**
-   - 标题长度是否合适（最佳50-60字符）
-   - 是否包含目标关键词
-   - 标题吸引力和点击率潜力
-   - 数字、疑问词、情感词使用情况
-   - 与内容相关性分析
-
-2. **内容质量评估**
-   - 内容深度和完整性
-   - 信息价值和原创性
-   - 可读性和易懂性
-   - 段落结构和逻辑性
-   - 字数是否充足（建议1500+字）
-
-3. **关键词策略**
-   - 识别主要目标关键词（3-5个）
-   - 长尾关键词机会（5-8个）
-   - 关键词密度分析（建议2-3%）
-   - 关键词分布合理性
-   - LSI语义相关词建议
-
-4. **内容结构优化**
-   - H1-H6标签使用情况
-   - 段落长度控制（建议100-200字）
-   - 列表和格式化使用
-   - 内部链接建设建议
-   - 信息的层次结构
-
-5. **技术SEO检查**
-   - 图片alt属性优化
-   - 元描述优化建议
-   - URL结构优化
-   - 页面加载速度因素
-   - 移动端适配
-
-6. **用户体验优化**
-   - 内容可扫读性
-   - 重点信息突出显示
-   - 视觉元素使用
-   - 阅读时间预估
-   - 互动元素建议
-
-7. **竞争对手分析**
-   - 同类文章常见做法
-   - 差异化机会
-   - 内容覆盖度比较
-   - 独特价值主张
-
-8. **具体执行计划**
-   - 优先级排序的改进行动
-   - 预期效果预估
-   - 实施时间建议
-   - 成功指标定义
-
-请返回JSON格式分析报告：
+请直接返回标准JSON格式：
+```json
 {
     "keywords": ["关键词1", "关键词2", "关键词3", "关键词4", "关键词5"],
+    "score": {
+        "overall": 85,
+        "title": 80,
+        "content": 85,
+        "readability": 90,
+        "technical": 80
+    },
+    "analysis": {
+        "title_analysis": "标题分析",
+        "content_analysis": "内容分析",
+        "keyword_analysis": "关键词分析",
+        "readability_analysis": "可读性分析"
+    },
     "recommendations": [
         {
-            "title": "优化建议标题",
-            "description": "问题的具体说明",
-            "action": "详细的操作步骤（分步骤说明，每步具体怎么做）",
-            "priority": "high"
+            "title": "建议标题",
+            "description": "问题描述",
+            "action": "具体操作",
+            "impact": "预期效果"
         }
-    ]
+    ],
+    "meta_info": {
+        "suggested_title": "优化后的标题",
+        "meta_description": "meta描述",
+        "focus_keywords": ["核心词1", "核心词2"]
+    }
 }
+```
 
-要求：
-- keywords: 提供5个最相关的关键词
-- recommendations: 提供6-8条具体的、可执行的优化建议
-- 每条建议都要包含"标题-说明-行动步骤"
-- action字段必须提供详细的分步骤操作指南，而不是简单的描述
-- priority: 用high/medium/low表示优先级
-- 确保建议实用性强、可操作
-- action字段内容要详尽，包含具体的实施步骤
-- 请只返回JSON格式，不要添加任何其他文字说明
-
+重要：确保JSON语法正确，只返回代码块
 PROMPT;
     }
 
@@ -271,21 +192,24 @@ PROMPT;
      * 调用AI API
      */
     private function call_ai_api($prompt) {
+        error_log("WordPress Toolkit: 开始调用AI API");
         $api_url = rtrim($this->settings['api_base'], '/') . '/v1/chat/completions';
+        error_log("WordPress Toolkit: API URL = " . $api_url);
+        error_log("WordPress Toolkit: API Key = " . substr($this->settings['api_key'], 0, 10) . "...");
 
         $request_data = array(
             'model' => $this->settings['ai_model'],
             'messages' => array(
                 array(
                     'role' => 'system',
-                    'content' => '你是一个专业的SEO分析师，擅长内容优化和搜索引擎优化。请提供准确、实用的分析建议。'
+                    'content' => 'You are a professional SEO analyst. Always return valid JSON format that can be directly parsed.'
                 ),
                 array(
                     'role' => 'user',
                     'content' => $prompt
                 )
             ),
-            'max_tokens' => $this->settings['max_tokens'],
+            'max_tokens' => 4000, // 增加到4000 tokens确保完整JSON响应 // 增加到2000 tokens确保完整JSON响应
             'temperature' => $this->settings['temperature'],
             'stream' => false
         );
@@ -301,22 +225,32 @@ PROMPT;
         ));
 
         if (is_wp_error($response)) {
+            error_log("WordPress Toolkit: API请求失败 - " . $response->get_error_message());
             throw new Exception('API request failed: ' . $response->get_error_message());
         }
 
         $response_code = wp_remote_retrieve_response_code($response);
         $response_body = wp_remote_retrieve_body($response);
 
+        error_log("WordPress Toolkit: API响应状态码 = " . $response_code);
+        error_log("WordPress Toolkit: API响应体长度 = " . strlen($response_body));
+        error_log("WordPress Toolkit: API响应内容 = " . substr($response_body, 0, 500) . "...");
+        error_log("WordPress Toolkit: API完整响应数据 = " . $response_body);
+
         if ($response_code !== 200) {
+            error_log("WordPress Toolkit: API响应错误 - 状态码 = " . $response_code);
             throw new Exception("API request failed with status code: {$response_code}");
         }
 
         $data = json_decode($response_body, true);
         if (json_last_error() !== JSON_ERROR_NONE) {
+            error_log("WordPress Toolkit: API响应JSON解析失败 - " . json_last_error_msg());
             throw new Exception('API response parsing failed');
         }
 
         if (!isset($data['choices'][0]['message']['content'])) {
+            error_log("WordPress Toolkit: API响应格式无效 - 缺少choices[0][message][content]");
+            error_log("WordPress Toolkit: 实际响应数据 = " . print_r($data, true));
             throw new Exception('Invalid API response format');
         }
 
@@ -324,472 +258,228 @@ PROMPT;
     }
 
     /**
-     * 解析AI响应
+     * 解析AI响应 - 简化版本
      */
     private function parse_ai_response($response) {
-        // 清理响应内容
         $response = trim($response);
 
-        // 尝试多种方式提取JSON
-        $json_content = null;
+        // 添加调试日志
+        error_log("WordPress Toolkit: AI响应原始数据长度 = " . strlen($response));
+        error_log("WordPress Toolkit: AI完整响应数据 = " . $response);
 
-        // 方法1: 提取```json代码块
+        // 简单直接提取JSON
+        $json_content = '';
+
+        // 优先提取```json代码块
         if (preg_match('/```json\s*(.*?)\s*```/s', $response, $matches)) {
             $json_content = trim($matches[1]);
+            error_log("WordPress Toolkit: 通过```json代码块提取JSON成功");
         }
-        // 方法2: 提取大括号内容
+        // 备选：直接提取JSON对象
         elseif (preg_match('/\{.*\}/s', $response, $matches)) {
             $json_content = trim($matches[0]);
-        }
-        // 方法3: 直接使用响应
-        else {
-            $json_content = $response;
+            error_log("WordPress Toolkit: 直接提取JSON对象");
         }
 
-        // 记录基本信息（避免中文字符编码问题）
-        error_log('[SEO ANALYZER] Original AI response length: ' . strlen($response));
-        error_log('[SEO ANALYZER] Extracted JSON content length: ' . strlen($json_content));
+        if (empty($json_content)) {
+            error_log("WordPress Toolkit: 无法提取JSON内容");
+            return $this->create_basic_analysis($response);
+        }
+
+        error_log("WordPress Toolkit: 提取的JSON内容 = " . substr($json_content, 0, 300) . "...");
+        error_log("WordPress Toolkit: 完整提取的JSON = " . $json_content);
 
         // 尝试解析JSON
         $analysis_data = json_decode($json_content, true);
 
         if (json_last_error() !== JSON_ERROR_NONE) {
-            // 如果解析失败，生成一个默认的分析结果
-            error_log('[SEO ANALYZER] JSON parsing failed, using default analysis: ' . json_last_error_msg());
-            return $this->generate_default_analysis($json_content);
+            error_log("WordPress Toolkit: JSON解析失败 - " . json_last_error_msg());
+            error_log("WordPress Toolkit: JSON错误码 = " . json_last_error());
+            error_log("WordPress Toolkit: 失败的JSON内容 = " . $json_content);
+            error_log("WordPress Toolkit: 失败的JSON长度 = " . strlen($json_content));
+            // JSON解析失败，返回基础结构
+            return $this->create_basic_analysis($response);
         }
 
-        // 添加成功解析的调试信息（完全避免中文字符编码问题）
-        if (isset($analysis_data['recommendations']) && is_array($analysis_data['recommendations'])) {
-            $recommendation_count = count($analysis_data['recommendations']);
-            error_log('[SEO ANALYZER] Successfully parsed ' . $recommendation_count . ' recommendations');
-
-            $action_count = 0;
-            $total_action_length = 0;
-            foreach ($analysis_data['recommendations'] as $index => $rec) {
-                if (isset($rec['action']) && !empty($rec['action'])) {
-                    $action_count++;
-                    $total_action_length += strlen($rec['action']);
-                }
-            }
-
-            error_log("[SEO ANALYZER] Recommendations with actions: {$action_count}/{$recommendation_count}");
-            error_log("[SEO ANALYZER] Average action length: " . ($action_count > 0 ? round($total_action_length / $action_count) : 0) . " characters");
-
-            // 检查keywords
-            if (isset($analysis_data['keywords']) && is_array($analysis_data['keywords'])) {
-                error_log('[SEO ANALYZER] Keywords found: ' . count($analysis_data['keywords']));
-            }
-        } else {
-            error_log('[SEO ANALYZER] WARNING: No recommendations found in parsed data');
-        }
-
+        error_log("WordPress Toolkit: JSON解析成功");
         return $analysis_data;
     }
 
     /**
-     * 生成默认分析结果（当AI响应解析失败时）
+     * 创建基础分析结构（当JSON解析失败时）
      */
-    private function generate_default_analysis($ai_response) {
-        // 尝试从响应中提取一些有用信息
-        $keywords = array();
-        $recommendations = array();
-
-        // 简单的关键词提取
-        if (preg_match_all('/关键词[：:]\s*([^。\n]+)/', $ai_response, $matches)) {
-            foreach ($matches[1] as $match) {
-                $keywords = array_merge($keywords, explode('、', trim($match)));
-            }
-        }
-
-        // 生成通用建议
-        $recommendations = array(
-            array(
-                'title' => '优化文章标题',
-                'description' => '确保标题包含目标关键词且长度适中（建议30-60字符）',
-                'action' => '检查标题是否准确反映文章内容',
-                'priority' => 'medium'
-            ),
-            array(
-                'title' => '增加内容深度',
-                'description' => '文章内容应该更加详细和有价值',
-                'action' => '添加更多细节、案例和实用信息',
-                'priority' => 'high'
-            )
-        );
-
+    private function create_basic_analysis($raw_response) {
         return array(
-            'keywords' => array_slice($keywords, 0, 5),
-            'recommendations' => $recommendations,
-            'content_analysis' => 'AI响应解析失败，使用基础分析'
+            'keywords' => array(),
+            'score' => array(
+                'overall' => 70,
+                'title' => 70,
+                'content' => 70,
+                'readability' => 70,
+                'technical' => 70
+            ),
+            'analysis' => array(
+                'title_analysis' => 'AI analysis parsing failed',
+                'content_analysis' => 'AI analysis parsing failed',
+                'keyword_analysis' => 'AI analysis parsing failed',
+                'readability_analysis' => 'AI analysis parsing failed'
+            ),
+            'recommendations' => array(
+                array(
+                    'title' => '重新分析',
+                    'description' => 'AI分析解析失败，建议重新生成分析',
+                    'action' => '点击重新生成按钮获取完整分析',
+                    'priority' => 'high',
+                    'impact' => '获取完整的AI分析报告'
+                )
+            ),
+            'meta_info' => array(
+                'suggested_title' => '',
+                'meta_description' => '',
+                'focus_keywords' => array()
+            )
         );
     }
 
     /**
-     * 计算SEO得分
+     * 构建完整分析结果
      */
-    private function calculate_seo_scores($content_data, $ai_analysis) {
+    private function build_complete_analysis($content_data, $ai_analysis) {
+        // 计算基础SEO得分
+        $basic_scores = $this->calculate_basic_scores($content_data);
+
+        // 合并AI分析得分
+        $ai_scores = $ai_analysis['score'] ?? array();
+
+        // 最终得分（AI分析权重70%，基础SEO权重30%）
+        $final_scores = array(
+            'overall_score' => round(($ai_scores['overall'] ?? 70) * 0.7 + $basic_scores['overall_score'] * 0.3, 1),
+            'title_score' => round(($ai_scores['title'] ?? 70) * 0.7 + $basic_scores['title_score'] * 0.3, 1),
+            'content_score' => round(($ai_scores['content'] ?? 70) * 0.7 + $basic_scores['content_score'] * 0.3, 1),
+            'keyword_score' => round(($ai_scores['technical'] ?? 70) * 0.7 + $basic_scores['keyword_score'] * 0.3, 1),
+            'readability_score' => round(($ai_scores['readability'] ?? 70) * 0.7 + $basic_scores['readability_score'] * 0.3, 1)
+        );
+
+        // 检查AI分析数据结构 - 直接使用解析后的AI数据
+        $raw_response = is_string($ai_analysis) ? $ai_analysis : json_encode($ai_analysis);
+
+        // 构建完整结果
+        return array(
+            // 基础信息
+            'post_id' => $content_data['post_id'],
+            'post_title' => $content_data['title'],
+            'word_count' => $content_data['word_count'],
+            'title_length' => $content_data['title_length'],
+
+            // SEO得分
+            'overall_score' => $final_scores['overall_score'],
+            'title_score' => $final_scores['title_score'],
+            'content_score' => $final_scores['content_score'],
+            'keyword_score' => $final_scores['keyword_score'],
+            'readability_score' => $final_scores['readability_score'],
+
+            // 技术统计
+            'image_count' => $content_data['image_count'],
+            'internal_links' => $content_data['internal_links'],
+            'external_links' => $content_data['external_links'],
+            'heading_counts' => $content_data['heading_counts'],
+
+            // AI完整分析数据
+            'raw_ai_analysis' => $raw_response,
+            'ai_keywords' => $ai_analysis['keywords'] ?? array(),
+            'ai_analysis' => $ai_analysis['analysis'] ?? array(),
+            'ai_recommendations' => $ai_analysis['recommendations'] ?? array(),
+            'ai_meta_info' => $ai_analysis['meta_info'] ?? array(),
+
+            // 元数据
+            'ai_provider' => $this->settings['ai_provider'],
+            'ai_model' => $this->settings['ai_model'],
+            'analysis_time' => microtime(true)
+        );
+    }
+
+    /**
+     * 计算基础SEO得分
+     */
+    private function calculate_basic_scores($content_data) {
         $scores = array();
 
         // 标题得分
-        $title_score = $this->calculate_title_score($content_data, $ai_analysis);
-        $scores['title_score'] = $title_score;
-
-        // 内容得分
-        $content_score = $this->calculate_content_score($content_data, $ai_analysis);
-        $scores['content_score'] = $content_score;
-
-        // 关键词得分
-        $keyword_score = $this->calculate_keyword_score($content_data, $ai_analysis);
-        $scores['keyword_score'] = $keyword_score;
-
-        // 可读性得分
-        $readability_score = $this->calculate_readability_score($content_data, $ai_analysis);
-        $scores['readability_score'] = $readability_score;
-
-        // 整体得分 (加权平均)
-        $weights = array(
-            'title_score' => 0.25,
-            'content_score' => 0.35,
-            'keyword_score' => 0.25,
-            'readability_score' => 0.15
-        );
-
-        $overall_score = 0;
-        foreach ($weights as $score_type => $weight) {
-            $overall_score += $scores[$score_type] * $weight;
+        $title_length = $content_data['title_length'];
+        if ($title_length >= 30 && $title_length <= 60) {
+            $scores['title_score'] = 85;
+        } elseif ($title_length >= 20 && $title_length <= 70) {
+            $scores['title_score'] = 75;
+        } else {
+            $scores['title_score'] = 60;
         }
-        $scores['overall_score'] = round($overall_score, 2);
 
-        // 提取关键词信息
-        if (isset($ai_analysis['keyword_analysis']['primary_keywords'])) {
-            $scores['primary_keywords'] = $ai_analysis['keyword_analysis']['primary_keywords'];
+        // 内容得分（基于字数）
+        $word_count = $content_data['word_count'];
+        if ($word_count >= 1000) {
+            $scores['content_score'] = 85;
+        } elseif ($word_count >= 500) {
+            $scores['content_score'] = 75;
+        } else {
+            $scores['content_score'] = 65;
         }
-        if (isset($ai_analysis['keyword_analysis']['secondary_keywords'])) {
-            $scores['secondary_keywords'] = $ai_analysis['keyword_analysis']['secondary_keywords'];
-        }
+
+        // 关键词得分（基于内容密度）
+        $scores['keyword_score'] = 70; // 基础分，由AI分析增强
+
+        // 可读性得分（基于段落和结构）
+        $scores['readability_score'] = 75; // 基础分，由AI分析增强
+
+        // 整体得分
+        $scores['overall_score'] = round((
+            $scores['title_score'] * 0.25 +
+            $scores['content_score'] * 0.35 +
+            $scores['keyword_score'] * 0.25 +
+            $scores['readability_score'] * 0.15
+        ), 1);
 
         return $scores;
     }
 
     /**
-     * 计算标题得分
+     * 生成降级分析
      */
-    private function calculate_title_score($content_data, $ai_analysis) {
-        $score = 0;
-        $title = $content_data['title'];
-        $length = $content_data['title_length'];
-
-        // 长度评分 (40%)
-        if ($length >= 30 && $length <= 60) {
-            $score += 40;
-        } elseif ($length >= 20 && $length <= 70) {
-            $score += 30;
-        } else {
-            $score += 10;
-        }
-
-        // AI分析评分 (60%)
-        if (isset($ai_analysis['title_analysis']['score'])) {
-            $score += $ai_analysis['title_analysis']['score'] * 0.6;
-        } else {
-            $score += 30;
-        }
-
-        return min(100, round($score, 2));
-    }
-
-    /**
-     * 计算内容得分
-     */
-    private function calculate_content_score($content_data, $ai_analysis) {
-        $score = 0;
-        $word_count = $content_data['word_count'];
-
-        // 字数评分 (30%)
-        if ($word_count >= 1000) {
-            $score += 30;
-        } elseif ($word_count >= 500) {
-            $score += 25;
-        } elseif ($word_count >= 300) {
-            $score += 20;
-        } else {
-            $score += 10;
-        }
-
-        // 结构评分 (20%)
-        $headings = $content_data['heading_counts'];
-        if (isset($headings['h2']) && $headings['h2'] > 0) {
-            $score += 20;
-        } elseif (isset($headings['h3']) && $headings['h3'] > 0) {
-            $score += 15;
-        } else {
-            $score += 5;
-        }
-
-        // AI分析评分 (50%)
-        if (isset($ai_analysis['content_analysis']['score'])) {
-            $score += $ai_analysis['content_analysis']['score'] * 0.5;
-        } else {
-            $score += 25;
-        }
-
-        return min(100, round($score, 2));
-    }
-
-    /**
-     * 计算关键词得分
-     */
-    private function calculate_keyword_score($content_data, $ai_analysis) {
-        $score = 0;
-
-        // AI分析评分 (80%)
-        if (isset($ai_analysis['keyword_analysis']['score'])) {
-            $score += $ai_analysis['keyword_analysis']['score'] * 0.8;
-        } else {
-            $score += 40;
-        }
-
-        // 关键词数量评分 (20%)
-        $primary_count = isset($ai_analysis['keyword_analysis']['primary_keywords']) ?
-                        count($ai_analysis['keyword_analysis']['primary_keywords']) : 0;
-        $secondary_count = isset($ai_analysis['keyword_analysis']['secondary_keywords']) ?
-                          count($ai_analysis['keyword_analysis']['secondary_keywords']) : 0;
-
-        if ($primary_count >= 3 && $secondary_count >= 5) {
-            $score += 20;
-        } elseif ($primary_count >= 2 && $secondary_count >= 3) {
-            $score += 15;
-        } elseif ($primary_count >= 1) {
-            $score += 10;
-        } else {
-            $score += 5;
-        }
-
-        return min(100, round($score, 2));
-    }
-
-    /**
-     * 计算可读性得分
-     */
-    private function calculate_readability_score($content_data, $ai_analysis) {
-        $score = 0;
-        $content = $content_data['plain_text'];
-
-        // 句子长度分析 (30%)
-        $sentences = preg_split('/[.!?。！？]+/', $content, -1, PREG_SPLIT_NO_EMPTY);
-        $avg_sentence_length = 0;
-        if (!empty($sentences)) {
-            $total_chars = 0;
-            foreach ($sentences as $sentence) {
-                $total_chars += mb_strlen(trim($sentence));
-            }
-            $avg_sentence_length = $total_chars / count($sentences);
-        }
-
-        if ($avg_sentence_length <= 20) {
-            $score += 30;
-        } elseif ($avg_sentence_length <= 30) {
-            $score += 25;
-        } elseif ($avg_sentence_length <= 40) {
-            $score += 15;
-        } else {
-            $score += 5;
-        }
-
-        // AI分析评分 (70%)
-        if (isset($ai_analysis['content_analysis']['readability_score'])) {
-            $score += $ai_analysis['content_analysis']['readability_score'] * 0.7;
-        } else {
-            $score += 35;
-        }
-
-        return min(100, round($score, 2));
-    }
-
-    /**
-     * 生成优化建议
-     */
-    private function generate_recommendations($content_data, $scores, $ai_analysis) {
-        $recommendations = array();
-        $overall_score = $scores['overall_score'];
-
-        // 高优先级建议 (得分 < 60)
-        if ($overall_score < 60) {
-            if ($scores['title_score'] < 70) {
-                $recommendations[] = array(
+    private function create_fallback_analysis($post_id) {
+        return array(
+            'post_id' => $post_id,
+            'overall_score' => 60,
+            'title_score' => 60,
+            'content_score' => 60,
+            'keyword_score' => 60,
+            'readability_score' => 60,
+            'raw_ai_analysis' => '{"error": "AI analysis failed"}',
+            'ai_keywords' => array(),
+            'ai_recommendations' => array(
+                array(
+                    'title' => '检查AI配置',
+                    'description' => 'AI分析失败，请检查AI服务配置',
+                    'action' => '检查API密钥和网络连接',
                     'priority' => 'high',
-                    'category' => 'title',
-                    'title' => '优化标题',
-                    'description' => '标题需要进一步优化以提高SEO效果',
-                    'action' => '调整标题长度，添加关键词，增强吸引力'
-                );
-            }
-
-            if ($scores['content_score'] < 70) {
-                $recommendations[] = array(
-                    'priority' => 'high',
-                    'category' => 'content',
-                    'title' => '丰富内容质量',
-                    'description' => '内容质量需要提升',
-                    'action' => '增加内容长度，改善结构，提供更多价值'
-                );
-            }
-        }
-
-        // 中优先级建议 (得分 60-80)
-        if ($overall_score >= 60 && $overall_score < 80) {
-            if ($scores['keyword_score'] < 70) {
-                $recommendations[] = array(
-                    'priority' => 'medium',
-                    'category' => 'keywords',
-                    'title' => '优化关键词',
-                    'description' => '关键词使用可以进一步优化',
-                    'action' => '调整关键词密度，添加长尾关键词'
-                );
-            }
-
-            if ($scores['readability_score'] < 70) {
-                $recommendations[] = array(
-                    'priority' => 'medium',
-                    'category' => 'readability',
-                    'title' => '改善可读性',
-                    'description' => '文章可读性有待提升',
-                    'action' => '缩短句子长度，使用更多小标题，增加段落分隔'
-                );
-            }
-        }
-
-        // 低优先级建议 (得分 >= 80)
-        if ($overall_score >= 80) {
-            $recommendations[] = array(
-                'priority' => 'low',
-                'category' => 'optimization',
-                'title' => '进一步优化',
-                'description' => 'SEO表现良好，可以考虑进一步优化',
-                'action' => '添加更多内部链接，优化图片alt属性，丰富元描述'
-            );
-        }
-
-        // 整合AI分析建议
-        if (isset($ai_analysis['overall_assessment']['priority_improvements'])) {
-            foreach ($ai_analysis['overall_assessment']['priority_improvements'] as $improvement) {
-                $recommendations[] = array(
-                    'priority' => 'medium',
-                    'category' => 'ai_suggestion',
-                    'title' => 'AI建议',
-                    'description' => $improvement,
-                    'action' => $improvement
-                );
-            }
-        }
-
-        return $recommendations;
+                    'impact' => '恢复完整的AI分析功能'
+                )
+            ),
+            'ai_analysis' => array(),
+            'ai_meta_info' => array()
+        );
     }
 
     /**
-     * 清理内容
+     * 生成文章摘要
      */
-    private function clean_content($content) {
-        // 移除短代码
-        $content = strip_shortcodes($content);
-
-        // 移除HTML标签但保留基本结构
-        $content = preg_replace('/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/mi', '', $content);
-        $content = preg_replace('/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/mi', '', $content);
-
-        return $content;
-    }
-
-    /**
-     * 提取纯文本
-     */
-    private function extract_plain_text($content) {
+    private function generate_excerpt($content, $length = 160) {
         $text = strip_tags($content);
         $text = preg_replace('/\s+/', ' ', $text);
-        return trim($text);
-    }
 
-    /**
-     * 分析内容结构
-     */
-    private function analyze_content_structure($content) {
-        $headings = array(
-            'h1' => 0, 'h2' => 0, 'h3' => 0, 'h4' => 0, 'h5' => 0, 'h6' => 0
-        );
-
-        preg_match_all('/<h([1-6])[^>]*>/i', $content, $matches);
-        if (isset($matches[1])) {
-            foreach ($matches[1] as $level) {
-                $key = 'h' . $level;
-                if (isset($headings[$key])) {
-                    $headings[$key]++;
-                }
-            }
+        if (mb_strlen($text, 'UTF-8') > $length) {
+            $text = mb_substr($text, 0, $length, 'UTF-8') . '...';
         }
 
-        return array('headings' => $headings);
-    }
-
-    /**
-     * 分析链接
-     */
-    private function analyze_links($content) {
-        $internal_count = 0;
-        $external_count = 0;
-
-        preg_match_all('/<a[^>]+href=[\'"]([^\'"]+)[\'"][^>]*>/i', $content, $matches);
-        if (isset($matches[1])) {
-            $home_url = home_url();
-            foreach ($matches[1] as $url) {
-                if (strpos($url, $home_url) !== false || preg_match('/^\/[^\/]/', $url)) {
-                    $internal_count++;
-                } elseif (preg_match('/^https?:\/\//', $url)) {
-                    $external_count++;
-                }
-            }
-        }
-
-        return array(
-            'internal_count' => $internal_count,
-            'external_count' => $external_count
-        );
-    }
-
-    /**
-     * 分析图片
-     */
-    private function analyze_images($content) {
-        $images = array();
-        preg_match_all('/<img[^>]+>/i', $content, $img_tags);
-
-        if (isset($img_tags[0])) {
-            foreach ($img_tags[0] as $img_tag) {
-                $has_alt = preg_match('/alt=[\'"]([^\'"]*)[\'"]/i', $img_tag);
-                $images[] = array(
-                    'tag' => $img_tag,
-                    'has_alt' => (bool)$has_alt
-                );
-            }
-        }
-
-        return array('images' => $images);
-    }
-
-    /**
-     * 计算字数
-     */
-    private function count_words($text) {
-        // 移除多余的空格
-        $text = preg_replace('/\s+/', ' ', trim($text));
-
-        // 中文字符计数
-        $chinese_chars = mb_strlen(preg_replace('/[^\x{4e00}-\x{9fa5}]/u', '', $text));
-
-        // 英文单词计数
-        $english_words = str_word_count($text);
-
-        return $chinese_chars + $english_words;
+        return $text;
     }
 
     /**
@@ -811,5 +501,75 @@ PROMPT;
      */
     public function get_seo_statistics() {
         return $this->database->get_seo_statistics();
+    }
+
+    /**
+     * 检查JSON字符串是否完整
+     */
+    private function is_json_complete($json_string) {
+        // 检查花括号是否匹配
+        $open_count = substr_count($json_string, '{');
+        $close_count = substr_count($json_string, '}');
+
+        // 检查基本JSON结构
+        if ($open_count !== $close_count) {
+            return false;
+        }
+
+        // 尝试解析JSON
+        json_decode($json_string);
+        return json_last_error() === JSON_ERROR_NONE;
+    }
+
+    /**
+     * 修复不完整的JSON字符串
+     */
+    private function fix_incomplete_json($json_string) {
+        error_log("WordPress Toolkit: 开始修复不完整的JSON");
+
+        // 计算花括号差异
+        $open_count = substr_count($json_string, '{');
+        $close_count = substr_count($json_string, '}');
+        $brace_diff = $open_count - $close_count;
+
+        // 添加缺失的闭合花括号
+        if ($brace_diff > 0) {
+            $json_string .= str_repeat('}', $brace_diff);
+            error_log("WordPress Toolkit: 添加了 {$brace_diff} 个闭合花括号");
+        }
+
+        // 处理未闭合的字符串和常见JSON错误
+        // 移除控制字符和换行符，但保留中文
+        $json_string = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/', '', $json_string);
+
+        // 修复常见的JSON字符串问题
+        // 1. 转义未转义的换行符
+        $json_string = preg_replace('/(?<!\\\\)\\n/', '\\n', $json_string);
+        $json_string = preg_replace('/(?<!\\\\)\\r/', '\\r', $json_string);
+        $json_string = preg_replace('/(?<!\\\\)\\t/', '\\t', $json_string);
+
+        // 2. 修复未闭合的字符串 - 在字符串末尾添加引号
+        $json_string = preg_replace('/"([^"]*?)$/', '"$1"', $json_string);
+
+        // 3. 移除多余的逗号（花括号前或方括号前的逗号）
+        $json_string = preg_replace('/,\s*([}\]])/', '$1', $json_string);
+
+        // 4. 确保字符串值被正确引号包围
+        $json_string = preg_replace('/:\s*([^",\[\]{\s][^",\[\]{]*?)\s*([,}\]])/', ': "$1"$2', $json_string);
+
+        error_log("WordPress Toolkit: JSON修复完成，尝试解析");
+
+        // 最终验证
+        if ($this->is_json_complete($json_string)) {
+            error_log("WordPress Toolkit: JSON修复成功");
+            return $json_string;
+        } else {
+            // 更详细的失败诊断
+            json_decode($json_string);
+            $json_error = json_last_error_msg();
+            error_log("WordPress Toolkit: JSON修复失败 - 最终错误: " . $json_error);
+            error_log("WordPress Toolkit: 修复后的JSON内容: " . substr($json_string, -200));
+            return null;
+        }
     }
 }

@@ -61,6 +61,11 @@ class Tag_Optimization_Module {
      */
     public function load_admin_page() {
         if (is_admin()) {
+            // 加载AI设置辅助函数
+            if (file_exists(WORDPRESS_TOOLKIT_PLUGIN_PATH . 'modules/ai-settings/ai-settings-helper.php')) {
+                require_once WORDPRESS_TOOLKIT_PLUGIN_PATH . 'modules/ai-settings/ai-settings-helper.php';
+            }
+
             require_once dirname(__FILE__) . '/admin/admin-page.php';
             // Admin page class will auto-instantiate at the end of the file
         }
@@ -85,7 +90,7 @@ class Tag_Optimization_Module {
      * Register settings
      */
     public function register_settings() {
-        register_setting('wordpress_toolkit_tag_optimization', 'wordpress_toolkit_deepseek_api_key');
+        // DeepSeek API Key 设置已迁移到AI设置页面
         register_setting('wordpress_toolkit_tag_optimization', 'wordpress_toolkit_tag_optimization_settings');
 
         add_settings_section(
@@ -115,7 +120,7 @@ class Tag_Optimization_Module {
      * DeepSeek API Key callback
      */
     public function deepseek_api_key_callback() {
-        $api_key = get_option('wordpress_toolkit_deepseek_api_key', '');
+        $api_key = wordpress_toolkit_get_ai_settings('deepseek_api_key', '');
         echo '<input type="text" name="wordpress_toolkit_deepseek_api_key" value="' . esc_attr($api_key) . '" class="regular-text" placeholder="' . __('Enter your DeepSeek API Key', 'wordpress-toolkit') . '" />';
         echo '<p class="description">' . __('Used for AI-powered tag optimization.', 'wordpress-toolkit') . '</p>';
     }
