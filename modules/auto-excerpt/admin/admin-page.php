@@ -221,9 +221,27 @@ class Auto_Excerpt_Admin_Page {
                                     $has_excerpt = !empty(get_the_excerpt());
                                     $excerpt_length = mb_strlen(get_the_excerpt());
 
-                                    // 简化SEO分析，直接显示未分析状态
-                                    $seo_score = '-';
-                                    $score_class = '';
+                                    // 获取SEO分数
+                                    $seo_db = new Auto_Excerpt_SEO_Analyzer_Database();
+                                    $seo_score = $seo_db->get_seo_score($post_id);
+
+                                    if ($seo_score !== null) {
+                                        $score_class = '';
+                                        if ($seo_score >= 90) {
+                                            $score_class = 'excellent';
+                                        } elseif ($seo_score >= 80) {
+                                            $score_class = 'good';
+                                        } elseif ($seo_score >= 70) {
+                                            $score_class = 'average';
+                                        } elseif ($seo_score >= 60) {
+                                            $score_class = 'poor';
+                                        } else {
+                                            $score_class = 'bad';
+                                        }
+                                    } else {
+                                        $seo_score = '-';
+                                        $score_class = '';
+                                    }
                                     ?>
                                     <tr>
                                         <th scope="row" class="check-column">
@@ -250,9 +268,22 @@ class Auto_Excerpt_Admin_Page {
                                         </td>
                                         <td>
                                             <?php if ($seo_score !== '-'): ?>
-                                                <span class="seo-score-badge <?php echo $score_class; ?>">
-                                                    <?php echo $seo_score; ?>
-                                                </span>
+                                                <div class="seo-score-display">
+                                                    <span class="seo-score-badge <?php echo $score_class; ?>">
+                                                        <?php echo number_format($seo_score, 1); ?>
+                                                    </span>
+                                                    <div class="seo-score-bar">
+                                                        <div class="seo-score-fill" style="width: <?php echo $seo_score; ?>%; background: <?php
+                                                            echo $seo_score >= 90 ? '#22c55e' : (
+                                                                $seo_score >= 80 ? '#3b82f6' : (
+                                                                    $seo_score >= 70 ? '#f59e0b' : (
+                                                                        $seo_score >= 60 ? '#f97316' : '#ef4444'
+                                                                    )
+                                                                )
+                                                            );
+                                                        ?>;"></div>
+                                                    </div>
+                                                </div>
                                             <?php else: ?>
                                                 <span class="seo-score-badge none">
                                                     <?php _e('未分析', 'wordpress-toolkit'); ?>
@@ -271,6 +302,16 @@ class Auto_Excerpt_Admin_Page {
                                                 <span class="generate-tags">
                                                     <button type="button" class="button button-small generate-tags-btn" data-post-id="<?php echo $post_id; ?>" style="background: #ff6900; color: white; border: none; padding: 6px 12px; margin: 2px;">
                                                         🏷️ 生成标签
+                                                    </button>
+                                                </span>
+                                                <span class="ai-categorize">
+                                                    <button type="button" class="button button-small ai-categorize-btn" data-post-id="<?php echo $post_id; ?>" style="background: #22c55e; color: white; border: none; padding: 6px 12px; margin: 2px;">
+                                                        📁 AI分类描述
+                                                    </button>
+                                                </span>
+                                                <span class="ai-optimize-tags">
+                                                    <button type="button" class="button button-small ai-optimize-tags-btn" data-post-id="<?php echo $post_id; ?>" style="background: #8b5cf6; color: white; border: none; padding: 6px 12px; margin: 2px;">
+                                                        ✨ AI标签描述
                                                     </button>
                                                 </span>
                                                 <span class="seo-analyze">
@@ -515,6 +556,29 @@ class Auto_Excerpt_Admin_Page {
             color: #666;
         }
 
+        /* SEO分数显示增强样式 */
+        .seo-score-display {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .seo-score-bar {
+            width: 60px;
+            height: 8px;
+            background: #f1f5f9;
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .seo-score-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.3s ease;
+            min-width: 2px;
+        }
+
         /* SEO模态框样式 */
         .seo-modal {
             position: fixed;
@@ -676,6 +740,28 @@ class Auto_Excerpt_Admin_Page {
             background: #6d5aa0;
             border-color: #6d5aa0;
         }
+
+        .row-actions .ai-categorize-btn {
+            background: #22c55e;
+            color: #fff;
+            border-color: #22c55e;
+        }
+
+        .row-actions .ai-categorize-btn:hover {
+            background: #16a34a;
+            border-color: #16a34a;
+        }
+
+        .row-actions .ai-optimize-tags-btn {
+            background: #8b5cf6;
+            color: #fff;
+            border-color: #8b5cf6;
+        }
+
+        .row-actions .ai-optimize-tags-btn:hover {
+            background: #7c3aed;
+            border-color: #7c3aed;
+        }
         </style>
 
         <script>
@@ -828,6 +914,76 @@ class Auto_Excerpt_Admin_Page {
                     error: function() {
                         button.prop('disabled', false).text(originalText);
                         alert('生成失败，请重试');
+                    }
+                });
+            });
+
+            // AI分类按钮
+            $(document).on('click', '.ai-categorize-btn', function() {
+                var button = $(this);
+                var postId = button.data('post-id');
+                var originalText = button.text();
+
+                button.prop('disabled', true).text('生成分类描述中...');
+
+                $.ajax({
+                    url: ajaxurl,
+                    type: 'POST',
+                    data: {
+                        action: 'auto_excerpt_ai_categorize',
+                        nonce: '<?php echo wp_create_nonce('auto_excerpt_ai_categorize'); ?>',
+                        post_id: postId
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            button.text('已分类').addClass('success');
+                            alert('分类描述生成成功：' + response.data.message);
+                            setTimeout(function() {
+                                location.reload();
+                            }, 1500);
+                        } else {
+                            button.prop('disabled', false).text(originalText);
+                            alert('分类描述生成失败：' + response.data.message);
+                        }
+                    },
+                    error: function() {
+                        button.prop('disabled', false).text(originalText);
+                        alert('分类描述生成失败，请重试');
+                    }
+                });
+            });
+
+            // AI优化标签按钮
+            $(document).on('click', '.ai-optimize-tags-btn', function() {
+                var button = $(this);
+                var postId = button.data('post-id');
+                var originalText = button.text();
+
+                button.prop('disabled', true).text('生成标签描述中...');
+
+                $.ajax({
+                    url: ajaxurl,
+                    type: 'POST',
+                    data: {
+                        action: 'auto_excerpt_ai_optimize_tags',
+                        nonce: '<?php echo wp_create_nonce('auto_excerpt_ai_optimize_tags'); ?>',
+                        post_id: postId
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            button.text('已优化').addClass('success');
+                            alert('标签描述生成成功：' + response.data.message);
+                            setTimeout(function() {
+                                location.reload();
+                            }, 1500);
+                        } else {
+                            button.prop('disabled', false).text(originalText);
+                            alert('标签描述生成失败：' + response.data.message);
+                        }
+                    },
+                    error: function() {
+                        button.prop('disabled', false).text(originalText);
+                        alert('标签描述生成失败，请重试');
                     }
                 });
             });

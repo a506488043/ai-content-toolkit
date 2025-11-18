@@ -837,4 +837,16 @@ class Simple_FriendLink_Module {
      * 从RSS获取最新文章
      */
 
+    /**
+     * 管理页面
+     */
+    public function admin_page() {
+        // 包含管理页面文件
+        require_once plugin_dir_path(__FILE__) . 'admin.php';
+
+        // 创建管理页面实例并显示
+        $admin = new Simple_FriendLink_Admin();
+        $admin->unified_admin_page();
+    }
+
 }

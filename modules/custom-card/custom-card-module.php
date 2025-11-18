@@ -13,7 +13,12 @@ if (!defined('ABSPATH')) {
  * Custom Card 模块类
  */
 class Custom_Card_Module {
-    
+
+    /**
+     * 单例实例
+     */
+    private static $instance = null;
+
     /**
      * 模块版本
      */
@@ -25,9 +30,19 @@ class Custom_Card_Module {
     private $option_name = 'wordpress_toolkit_custom_card_options';
     
     /**
+     * 获取单例实例
+     */
+    public static function get_instance() {
+        if (null === self::$instance) {
+            self::$instance = new self();
+        }
+        return self::$instance;
+    }
+
+    /**
      * 构造函数
      */
-    public function __construct() {
+    private function __construct() {
         // 初始化钩子将在init()中设置
     }
     
@@ -79,6 +94,12 @@ class Custom_Card_Module {
         
         // 注册清除缓存AJAX处理钩子
         add_action('wp_ajax_clear_custom_card_cache', array($this, 'handle_ajax_clear_cache'));
+
+        // 注册删除卡片AJAX处理钩子
+        add_action('wp_ajax_delete_custom_card', array($this, 'handle_ajax_delete_card'));
+
+        // 注册切换卡片状态AJAX处理钩子
+        add_action('wp_ajax_toggle_custom_card_status', array($this, 'handle_ajax_toggle_status'));
         
         // 注册前端脚本和样式
         add_action('wp_enqueue_scripts', array($this, 'enqueue_scripts'));
@@ -275,7 +296,7 @@ class Custom_Card_Module {
     }
 
     /**
-     * 卡片列表页面 - 只显示卡片列表
+     * 卡片列表页面 - 使用新的管理页面
      */
     public function cards_list_page() {
         // 调试日志
@@ -283,8 +304,12 @@ class Custom_Card_Module {
             error_log('Custom Card Module: cards_list_page() called');
         }
 
-        // 包含卡片列表页面
-        include WORDPRESS_TOOLKIT_PLUGIN_PATH . 'modules/custom-card/admin/cards-list.php';
+        // 包含新的管理页面
+        include WORDPRESS_TOOLKIT_PLUGIN_PATH . 'modules/custom-card/admin/cards-admin-page.php';
+
+        // 显示管理页面
+        $admin_page = Custom_Cards_Admin_Page::get_instance();
+        $admin_page->admin_page();
     }
 
     /**
@@ -899,33 +924,168 @@ class Custom_Card_Module {
         if (!wp_verify_nonce($_POST['nonce'], 'clear_custom_card_cache')) {
             wp_send_json_error(array('message' => '安全验证失败'));
         }
-        
+
         try {
             // 清除所有卡片缓存
             global $wpdb;
-            
+
             // 清除transient缓存
             $cache_keys = $wpdb->get_col("SELECT option_name FROM {$wpdb->options} WHERE option_name LIKE '_transient_chf_card_%'");
             foreach ($cache_keys as $cache_key) {
                 $transient_name = str_replace('_transient_', '', $cache_key);
                 delete_transient($transient_name);
             }
-            
+
             // 清除缓存表（如果有）
             $cache_table = $wpdb->prefix . 'chf_card_cache';
             if ($wpdb->get_var("SHOW TABLES LIKE '$cache_table'") == $cache_table) {
                 $wpdb->query("TRUNCATE TABLE $cache_table");
             }
-            
+
             // 清除WordPress对象缓存
             wp_cache_flush();
-            
+
             wp_send_json_success(array('message' => '缓存已成功清除'));
         } catch (Exception $e) {
             wp_send_json_error(array('message' => '清除缓存时发生错误: ' . $e->getMessage()));
         }
     }
-    
+
+    /**
+     * 处理AJAX删除卡片
+     */
+    public function handle_ajax_delete_card() {
+        // 验证nonce
+        if (!wp_verify_nonce($_POST['nonce'], 'delete_custom_card')) {
+            wp_send_json_error(array('message' => '安全验证失败'));
+        }
+
+        // 获取卡片ID
+        $card_id = isset($_POST['card_id']) ? intval($_POST['card_id']) : 0;
+
+        if (empty($card_id)) {
+            wp_send_json_error(array('message' => '卡片ID不能为空'));
+        }
+
+        // 检查用户权限
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array('message' => '您没有权限删除卡片'));
+        }
+
+        global $wpdb;
+
+        try {
+            // 开始事务
+            $wpdb->query('START TRANSACTION');
+
+            $cards_table = $wpdb->prefix . 'chf_cards';
+            $clicks_table = $wpdb->prefix . 'chf_card_clicks';
+
+            // 检查卡片是否存在
+            $card = $wpdb->get_row($wpdb->prepare(
+                "SELECT id, url FROM $cards_table WHERE id = %d",
+                $card_id
+            ));
+
+            if (!$card) {
+                $wpdb->query('ROLLBACK');
+                wp_send_json_error(array('message' => '卡片不存在'));
+            }
+
+            // 删除相关的点击记录
+            $wpdb->query($wpdb->prepare(
+                "DELETE FROM $clicks_table WHERE card_id = %d",
+                $card_id
+            ));
+
+            // 删除卡片
+            $result = $wpdb->query($wpdb->prepare(
+                "DELETE FROM $cards_table WHERE id = %d",
+                $card_id
+            ));
+
+            if ($result === false) {
+                $wpdb->query('ROLLBACK');
+                wp_send_json_error(array('message' => '删除卡片失败'));
+            }
+
+            // 删除相关的缓存
+            $cache_key = 'chf_card_' . md5($card->url);
+            delete_transient($cache_key);
+
+            // 提交事务
+            $wpdb->query('COMMIT');
+
+            wp_send_json_success(array('message' => '卡片删除成功'));
+        } catch (Exception $e) {
+            $wpdb->query('ROLLBACK');
+            wp_send_json_error(array('message' => '删除卡片时发生错误: ' . $e->getMessage()));
+        }
+    }
+
+    /**
+     * 处理AJAX切换卡片状态
+     */
+    public function handle_ajax_toggle_status() {
+        // 验证nonce
+        if (!wp_verify_nonce($_POST['nonce'], 'toggle_custom_card_status')) {
+            wp_send_json_error(array('message' => '安全验证失败'));
+        }
+
+        // 获取卡片ID和新状态
+        $card_id = isset($_POST['card_id']) ? intval($_POST['card_id']) : 0;
+        $new_status = isset($_POST['new_status']) ? sanitize_text_field($_POST['new_status']) : '';
+
+        if (empty($card_id)) {
+            wp_send_json_error(array('message' => '卡片ID不能为空'));
+        }
+
+        if (!in_array($new_status, array('active', 'inactive'))) {
+            wp_send_json_error(array('message' => '无效的状态值'));
+        }
+
+        // 检查用户权限
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array('message' => '您没有权限修改卡片状态'));
+        }
+
+        global $wpdb;
+
+        try {
+            $cards_table = $wpdb->prefix . 'chf_cards';
+
+            // 检查卡片是否存在
+            $card = $wpdb->get_row($wpdb->prepare(
+                "SELECT id FROM $cards_table WHERE id = %d",
+                $card_id
+            ));
+
+            if (!$card) {
+                wp_send_json_error(array('message' => '卡片不存在'));
+            }
+
+            // 更新卡片状态
+            $result = $wpdb->update(
+                $cards_table,
+                array(
+                    'status' => $new_status,
+                    'updated_at' => current_time('mysql')
+                ),
+                array('id' => $card_id),
+                array('%s', '%s'),
+                array('%d')
+            );
+
+            if ($result === false) {
+                wp_send_json_error(array('message' => '更新卡片状态失败'));
+            }
+
+            wp_send_json_success(array('message' => '卡片状态更新成功'));
+        } catch (Exception $e) {
+            wp_send_json_error(array('message' => '切换卡片状态时发生错误: ' . $e->getMessage()));
+        }
+    }
+
     /**
      * 记录日志
      */

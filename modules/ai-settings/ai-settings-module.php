@@ -92,11 +92,6 @@ class WordPress_Toolkit_AI_Settings {
                 'label' => __('分类优化', 'wordpress-toolkit'),
                 'total' => wp_count_terms('category', array('hide_empty' => false)),
                 'ai_generated' => $this->count_ai_generated_terms('category')
-            ),
-            'tag_optimization' => array(
-                'label' => __('标签优化', 'wordpress-toolkit'),
-                'total' => wp_count_terms('post_tag', array('hide_empty' => false)),
-                'ai_generated' => $this->count_ai_generated_terms('post_tag')
             )
         );
         ?>

@@ -1,917 +1,697 @@
 <?php
 /**
- * Category Optimization Module
- * 分类目录优化模块
+ * Category Optimization Module - 分类优化模块
  *
- * @package WordPressToolkit
- * @subpackage CategoryOptimization
+ * 通过AI分析分类下的文章，为分类生成描述
+ *
  * @version 1.0.0
+ * @author WordPress Toolkit
  */
 
+// 防止直接访问
 if (!defined('ABSPATH')) {
     exit;
 }
 
 /**
- * Category_Optimization_Module Class
+ * Category Optimization Module 主类
  */
 class Category_Optimization_Module {
 
     /**
-     * Instance
+     * 单例实例
      */
-    private static $_instance = null;
+    private static $instance = null;
 
     /**
-     * DeepSeek API URL
+     * 模块设置
      */
-    private $deepseek_url = 'https://api.deepseek.com/v1/chat/completions';
+    private $settings = array();
 
     /**
-     * Get instance
+     * 数据库管理器实例
      */
-    public static function get_instance() {
-        if (is_null(self::$_instance)) {
-            self::$_instance = new self();
-        }
-        return self::$_instance;
-    }
+    private $db_manager = null;
 
     /**
-     * Constructor
+     * 缓存管理器实例
+     */
+    private $cache_manager = null;
+
+    /**
+     * 构造函数
      */
     private function __construct() {
-        add_action('admin_init', array($this, 'init'));
-        add_action('admin_enqueue_scripts', array($this, 'admin_enqueue_scripts'));
-        // Remove duplicate AJAX handlers - they are now in the admin page class
-        add_action('wp_ajax_get_category_stats', array($this, 'ajax_get_category_stats'));
-        add_action('wp_ajax_cleanup_duplicate_categories', array($this, 'ajax_cleanup_duplicate_categories'));
-        add_action('wp_ajax_export_category_optimization_report', array($this, 'ajax_export_category_optimization_report'));
-        add_action('wp_ajax_reset_category_optimization_stats', array($this, 'ajax_reset_category_optimization_stats'));
-
-        // Add settings
-        add_action('admin_init', array($this, 'register_settings'));
-
-        // 移除自定义字段，直接写入WordPress原生字段
-        // add_action('category_add_form_fields', array($this, 'add_category_fields'));
-        // add_action('category_edit_form_fields', array($this, 'edit_category_fields'));
-        // add_action('created_category', array($this, 'save_category_fields'));
-        // add_action('edited_category', array($this, 'save_category_fields'));
-
-        // Load admin page
-        add_action('init', array($this, 'load_admin_page'));
+        $this->db_manager = new WordPress_Toolkit_Database_Manager();
+        $this->cache_manager = new WordPress_Toolkit_Cache_Manager();
+        $this->load_settings();
+        $this->init_hooks();
     }
 
     /**
-     * Initialize module
+     * 加载设置
      */
-    public function init() {
-        $this->register_settings();
-    }
-
-    /**
-     * Load admin page class
-     */
-    public function load_admin_page() {
-        if (is_admin()) {
-            // 加载AI设置辅助函数
-            if (file_exists(WORDPRESS_TOOLKIT_PLUGIN_PATH . 'modules/ai-settings/ai-settings-helper.php')) {
-                require_once WORDPRESS_TOOLKIT_PLUGIN_PATH . 'modules/ai-settings/ai-settings-helper.php';
-            }
-
-            require_once dirname(__FILE__) . '/admin/admin-page.php';
-            // Admin page class will auto-instantiate at the end of the file
-        }
-    }
-
-    /**
-     * Enqueue admin scripts and styles
-     */
-    public function admin_enqueue_scripts($hook) {
-        // 禁用模块级别的脚本加载，只在admin page中加载以避免重复
-        return;
-    }
-
-    /**
-     * Enqueue frontend scripts and styles
-     */
-    public function enqueue_scripts() {
-        // Currently no frontend scripts needed for category optimization
-    }
-
-    
-    /**
-     * Add category fields
-     */
-    public function add_category_fields($taxonomy) {
-        ?>
-        <div class="form-field">
-            <label for="ai_generated_slug"><?php _e('AI Generated Slug', 'wordpress-toolkit'); ?></label>
-            <input type="text" name="ai_generated_slug" id="ai_generated_slug" value="" />
-            <p class="description"><?php _e('AI生成的分类别名', 'wordpress-toolkit'); ?></p>
-        </div>
-        <div class="form-field">
-            <label for="ai_generated_description"><?php _e('AI Generated Description', 'wordpress-toolkit'); ?></label>
-            <textarea name="ai_generated_description" id="ai_generated_description" rows="3"></textarea>
-            <p class="description"><?php _e('AI生成的分类描述', 'wordpress-toolkit'); ?></p>
-        </div>
-        <div class="form-field">
-            <label for="ai_optimization_status"><?php _e('AI Optimization Status', 'wordpress-toolkit'); ?></label>
-            <select name="ai_optimization_status" id="ai_optimization_status">
-                <option value="pending"><?php _e('Pending', 'wordpress-toolkit'); ?></option>
-                <option value="optimized"><?php _e('Optimized', 'wordpress-toolkit'); ?></option>
-                <option value="failed"><?php _e('Failed', 'wordpress-toolkit'); ?></option>
-            </select>
-            <p class="description"><?php _e('AI优化状态', 'wordpress-toolkit'); ?></p>
-        </div>
-        <?php
-    }
-
-    /**
-     * Edit category fields
-     */
-    public function edit_category_fields($term) {
-        $ai_generated_slug = get_term_meta($term->term_id, 'ai_generated_slug', true);
-        $ai_generated_description = get_term_meta($term->term_id, 'ai_generated_description', true);
-        $ai_optimization_status = get_term_meta($term->term_id, 'ai_optimization_status', true);
-
-        ?>
-        <tr class="form-field">
-            <th scope="row"><label for="ai_generated_slug"><?php _e('AI Generated Slug', 'wordpress-toolkit'); ?></label></th>
-            <td>
-                <input type="text" name="ai_generated_slug" id="ai_generated_slug" value="<?php echo esc_attr($ai_generated_slug); ?>" />
-                <p class="description"><?php _e('AI生成的分类别名', 'wordpress-toolkit'); ?></p>
-            </td>
-        </tr>
-        <tr class="form-field">
-            <th scope="row"><label for="ai_generated_description"><?php _e('AI Generated Description', 'wordpress-toolkit'); ?></label></th>
-            <td>
-                <textarea name="ai_generated_description" id="ai_generated_description" rows="3"><?php echo esc_textarea($ai_generated_description); ?></textarea>
-                <p class="description"><?php _e('AI生成的分类描述', 'wordpress-toolkit'); ?></p>
-            </td>
-        </tr>
-        <tr class="form-field">
-            <th scope="row"><label for="ai_optimization_status"><?php _e('AI Optimization Status', 'wordpress-toolkit'); ?></label></th>
-            <td>
-                <select name="ai_optimization_status" id="ai_optimization_status">
-                    <option value="pending" <?php selected($ai_optimization_status, 'pending'); ?>><?php _e('Pending', 'wordpress-toolkit'); ?></option>
-                    <option value="optimized" <?php selected($ai_optimization_status, 'optimized'); ?>><?php _e('Optimized', 'wordpress-toolkit'); ?></option>
-                    <option value="failed" <?php selected($ai_optimization_status, 'failed'); ?>><?php _e('Failed', 'wordpress-toolkit'); ?></option>
-                </select>
-                <p class="description"><?php _e('AI优化状态', 'wordpress-toolkit'); ?></p>
-            </td>
-        </tr>
-        <?php
-    }
-
-    /**
-     * Save category fields
-     */
-    public function save_category_fields($term_id) {
-        if (isset($_POST['ai_generated_slug'])) {
-            update_term_meta($term_id, 'ai_generated_slug', sanitize_text_field($_POST['ai_generated_slug']));
-        }
-        if (isset($_POST['ai_generated_description'])) {
-            update_term_meta($term_id, 'ai_generated_description', sanitize_textarea_field($_POST['ai_generated_description']));
-        }
-        if (isset($_POST['ai_optimization_status'])) {
-            update_term_meta($term_id, 'ai_optimization_status', sanitize_text_field($_POST['ai_optimization_status']));
-        }
-    }
-
-    /**
-     * Register settings
-     */
-    public function register_settings() {
-        // DeepSeek API Key 设置已迁移到AI设置页面
-        register_setting('wordpress_toolkit_category_optimization', 'wordpress_toolkit_category_optimization_settings');
-
-        add_settings_section(
-            'category_optimization_section',
-            __('Category Optimization Settings', 'wordpress-toolkit'),
-            array($this, 'settings_section_callback'),
-            'wordpress-toolkit-category-optimization'
+    private function load_settings() {
+        $default_settings = array(
+            'auto_generate' => true,
+            'description_length' => 100,
+            'analyze_articles_count' => 10,
+            'min_articles_count' => 3
         );
 
-        // AI设置已迁移到专门的AI设置页面
+        $saved_settings = get_option('wordpress_toolkit_category_optimization_settings', array());
+        $this->settings = wp_parse_args($saved_settings, $default_settings);
     }
 
     /**
-     * Settings section callback
+     * 获取单例实例
      */
-    public function settings_section_callback() {
-        echo '<p>' . __('Configure category optimization settings.', 'wordpress-toolkit') . '</p>';
+    public static function get_instance() {
+        if (null === self::$instance) {
+            self::$instance = new self();
+        }
+        return self::$instance;
     }
 
     /**
-     * DeepSeek API Key callback
+     * 初始化钩子
      */
-    public function deepseek_api_key_callback() {
-        // DeepSeek API Key callback 已迁移到AI设置页面
+    private function init_hooks() {
+        // WordPress后台脚本和样式（仅在管理页面加载）
+        add_action('admin_enqueue_scripts', array($this, 'admin_enqueue_scripts'));
+
+        // AJAX处理
+        add_action('wp_ajax_category_optimization_generate_description', array($this, 'ajax_generate_description'));
+        add_action('wp_ajax_category_optimization_batch_generate', array($this, 'ajax_batch_generate'));
+        add_action('wp_ajax_category_optimization_get_categories_list', array($this, 'ajax_get_categories_list'));
+        add_action('wp_ajax_category_optimization_get_statistics', array($this, 'ajax_get_statistics'));
+
+        // 前端脚本
+        add_action('wp_enqueue_scripts', array($this, 'enqueue_scripts'));
     }
 
-    
     /**
-     * Get categories list
+     * 激活模块
      */
-    public function ajax_get_categories_list() {
-        // 移除安全验证以简化操作
-        $page = isset($_POST['page']) ? intval($_POST['page']) : 1;
-        $per_page = isset($_POST['per_page']) ? intval($_POST['per_page']) : 20;
-        $search = isset($_POST['search']) ? sanitize_text_field($_POST['search']) : '';
-        $filter = isset($_POST['filter']) ? sanitize_text_field($_POST['filter']) : '';
-        $orderby = isset($_POST['orderby']) ? sanitize_text_field($_POST['orderby']) : 'name';
-        $order = isset($_POST['order']) ? sanitize_text_field($_POST['order']) : 'asc';
+    public function activate() {
+        error_log('Category Optimization: Starting module activation');
 
+        try {
+            // 创建默认设置（仅在不存在时）
+            if (!get_option('wordpress_toolkit_category_optimization_settings')) {
+                add_option('wordpress_toolkit_category_optimization_settings', $this->settings);
+                error_log('Category Optimization: Default settings created');
+            } else {
+                error_log('Category Optimization: Settings already exist, skipping creation');
+            }
+
+            error_log('Category Optimization: Module activated successfully');
+
+        } catch (Exception $e) {
+            error_log('Category Optimization: Activation error: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * 停用模块
+     */
+    public function deactivate() {
+        // 清理缓存
+        wp_cache_flush();
+        error_log('Category Optimization: Module deactivated');
+    }
+
+    /**
+     * 初始化模块
+     */
+    public function init() {
+        // 模块初始化逻辑
+    }
+
+    /**
+     * 加载管理后台脚本和样式
+     */
+    public function admin_enqueue_scripts($hook) {
+        // 只在相关页面加载统一脚本和样式
+        $valid_pages = [
+            'settings_page_wordpress-toolkit-category-optimization-settings',
+            'admin_page_wordpress-toolkit-category-optimization',
+            'toplevel_page_wordpress-toolkit'
+        ];
+
+        if (in_array($hook, $valid_pages)) {
+            // 使用统一的模块CSS
+            wp_enqueue_style(
+                'wordpress-toolkit-modules-admin',
+                WORDPRESS_TOOLKIT_PLUGIN_URL . 'assets/css/modules-admin.css',
+                array('wordpress-toolkit-admin'),
+                WORDPRESS_TOOLKIT_VERSION
+            );
+
+            // 加载统一的模块JavaScript
+            wp_enqueue_script(
+                'wordpress-toolkit-modules-admin',
+                WORDPRESS_TOOLKIT_PLUGIN_URL . 'assets/js/modules-admin.js',
+                array('jquery', 'wordpress-toolkit-core'),
+                '1.0.0',
+                true
+            );
+
+            // 传递配置到JavaScript
+            wp_localize_script('wordpress-toolkit-modules-admin', 'CategoryOptimizationConfig', array(
+                'ajaxUrl' => admin_url('admin-ajax.php'),
+                'nonce' => wp_create_nonce('category_optimization_batch'),
+                'strings' => array(
+                    'generating' => __('正在生成描述...', 'wordpress-toolkit'),
+                    'generated' => __('描述已生成', 'wordpress-toolkit'),
+                    'error' => __('生成失败，请重试', 'wordpress-toolkit'),
+                    'noApiKey' => __('请先配置DeepSeek API密钥', 'wordpress-toolkit'),
+                    'confirmApply' => __('是否要应用生成的描述？', 'wordpress-toolkit')
+                ),
+                'settings' => $this->settings
+            ));
+        }
+    }
+
+    /**
+     * 加载前端脚本和样式
+     */
+    public function enqueue_scripts() {
+        // 前端功能脚本（如果需要）
+    }
+
+    /**
+     * 获取设置
+     */
+    public function get_settings() {
+        return $this->settings;
+    }
+
+    /**
+     * 更新设置
+     */
+    public function update_settings($new_settings) {
+        $this->settings = wp_parse_args($new_settings, $this->settings);
+        update_option('wordpress_toolkit_category_optimization_settings', $this->settings);
+    }
+
+    /**
+     * 获取分类列表
+     */
+    public function get_categories_list($page = 1, $per_page = 20, $status = 'all') {
+        error_log("Category Optimization: get_categories_list called with page=$page, per_page=$per_page, status=$status");
+
+        // 获取所有分类
         $args = array(
             'taxonomy' => 'category',
             'hide_empty' => false,
             'number' => $per_page,
             'offset' => ($page - 1) * $per_page,
-            'search' => $search,
-            'orderby' => $orderby,
-            'order' => $order
+            'orderby' => 'count',
+            'order' => 'DESC'
         );
 
-        if ($filter) {
-            $args['meta_query'] = array(
-                array(
-                    'key' => 'ai_optimization_status',
-                    'value' => $filter,
-                    'compare' => '='
-                )
-            );
-        }
-
         $categories = get_terms($args);
-        $total_categories = wp_count_terms('category', array(
-            'hide_empty' => false,
-            'search' => $search
-        ));
+        $total_categories = wp_count_terms('category', array('hide_empty' => false));
 
-        $data = array();
+        $filtered_categories = array();
+
         foreach ($categories as $category) {
-            $post_count = $category->count;
-            $ai_generated_slug = get_term_meta($category->term_id, 'ai_generated_slug', true);
-            $ai_generated_description = get_term_meta($category->term_id, 'ai_generated_description', true);
-            $ai_optimization_status = get_term_meta($category->term_id, 'ai_optimization_status', true);
+            $has_description = !empty($category->description);
 
-            $data[] = array(
-                'id' => $category->term_id,
-                'name' => $category->name,
-                'slug' => $category->slug,
-                'description' => $category->description,
-                'post_count' => $post_count,
-                'ai_generated_slug' => $ai_generated_slug,
-                'ai_generated_description' => $ai_generated_description,
-                'ai_optimization_status' => $ai_optimization_status,
-                'edit_url' => get_edit_term_link($category->term_id, 'category'),
-                'view_url' => get_term_link($category)
-            );
-        }
-
-        // 修复除零错误：确保每页数量大于0
-        if ($per_page <= 0) {
-            $per_page = 20;
-        }
-
-        wp_send_json_success(array(
-            'data' => $data,
-            'total' => $total_categories,
-            'total_pages' => ceil($total_categories / $per_page),
-            'current_page' => $page
-        ));
-    }
-
-    /**
-     * Optimize single category
-     */
-    public function ajax_optimize_category() {
-        // 移除安全验证以简化操作
-        $category_id = isset($_POST['category_id']) ? intval($_POST['category_id']) : 0;
-        $optimize_type = isset($_POST['optimize_type']) ? sanitize_text_field($_POST['optimize_type']) : 'all';
-
-        if (!$category_id) {
-            wp_send_json_error(array('message' => __('Invalid category ID', 'wordpress-toolkit')));
-        }
-
-        $category = get_term($category_id, 'category');
-        if (!$category || is_wp_error($category)) {
-            wp_send_json_error(array('message' => __('Category not found', 'wordpress-toolkit')));
-        }
-
-        $result = array();
-
-        // Generate slug if needed
-        if ($optimize_type === 'all' || $optimize_type === 'slug') {
-            if (empty($category->slug) || $this->is_chinese($category->name)) {
-                $slug_result = $this->generate_category_slug($category_id);
-                if ($slug_result['success']) {
-                    $result['slug'] = $slug_result['data'];
-                } else {
-                    $result['slug_error'] = $slug_result['message'];
-                }
-            }
-        }
-
-        // Generate description if needed
-        if ($optimize_type === 'all' || $optimize_type === 'description') {
-            if (empty($category->description)) {
-                $desc_result = $this->generate_category_description($category_id);
-                if ($desc_result['success']) {
-                    $result['description'] = $desc_result['data'];
-                } else {
-                    $result['description_error'] = $desc_result['message'];
-                }
-            }
-        }
-
-        // Update optimization status
-        update_term_meta($category_id, 'ai_optimization_status', 'optimized');
-
-        wp_send_json_success(array(
-            'message' => __('Category optimized successfully', 'wordpress-toolkit'),
-            'result' => $result
-        ));
-    }
-
-    /**
-     * Bulk optimize categories
-     */
-    public function ajax_bulk_optimize_categories() {
-        // 移除安全验证以简化操作
-        $category_ids = isset($_POST['category_ids']) ? array_map('intval', (array) $_POST['category_ids']) : array();
-        $optimize_type = isset($_POST['optimize_type']) ? sanitize_text_field($_POST['optimize_type']) : 'all';
-
-        if (empty($category_ids)) {
-            wp_send_json_error(array('message' => __('No categories selected', 'wordpress-toolkit')));
-        }
-
-        $results = array();
-        $success_count = 0;
-        $error_count = 0;
-
-        foreach ($category_ids as $category_id) {
-            $category = get_term($category_id, 'category');
-            if (!$category || is_wp_error($category)) {
-                $results[$category_id] = array('success' => false, 'message' => __('Category not found', 'wordpress-toolkit'));
-                $error_count++;
+            // 根据状态筛选
+            if ($status === 'with_description' && !$has_description) {
+                continue;
+            } elseif ($status === 'without_description' && $has_description) {
                 continue;
             }
 
-            $category_result = array();
+            // 获取分类下的文章数量
+            $post_count = $category->count;
 
-            // Generate slug if needed
-            if ($optimize_type === 'all' || $optimize_type === 'slug') {
-                if (empty($category->slug) || $this->is_chinese($category->name)) {
-                    $slug_result = $this->generate_category_slug($category_id);
-                    if ($slug_result['success']) {
-                        $category_result['slug'] = $slug_result['data'];
-                    } else {
-                        $category_result['slug_error'] = $slug_result['message'];
-                    }
-                }
-            }
-
-            // Generate description if needed
-            if ($optimize_type === 'all' || $optimize_type === 'description') {
-                if (empty($category->description)) {
-                    $desc_result = $this->generate_category_description($category_id);
-                    if ($desc_result['success']) {
-                        $category_result['description'] = $desc_result['data'];
-                    } else {
-                        $category_result['description_error'] = $desc_result['message'];
-                    }
-                }
-            }
-
-            // Update optimization status
-            update_term_meta($category_id, 'ai_optimization_status', 'optimized');
-
-            $results[$category_id] = array('success' => true, 'result' => $category_result);
-            $success_count++;
+            $filtered_categories[] = array(
+                'ID' => $category->term_id,
+                'name' => $category->name,
+                'slug' => $category->slug,
+                'description' => $category->description,
+                'description_length' => mb_strlen($category->description),
+                'post_count' => $post_count,
+                'has_description' => $has_description,
+                'edit_url' => get_edit_term_link($category->term_id, 'category'),
+                'view_url' => get_term_link($category->term_id, 'category')
+            );
         }
 
-        wp_send_json_success(array(
-            'message' => sprintf(__('Bulk optimization completed. Success: %d, Errors: %d', 'wordpress-toolkit'), $success_count, $error_count),
-            'results' => $results,
-            'success_count' => $success_count,
-            'error_count' => $error_count
+        $total_filtered = count($filtered_categories);
+        $max_pages = ceil($total_categories / $per_page);
+
+        error_log("Category Optimization: Found $total_filtered categories matching status='$status'");
+
+        return array(
+            'categories' => $filtered_categories,
+            'total' => $total_categories,
+            'pages' => $max_pages,
+            'current_page' => $page,
+            'per_page' => $per_page
+        );
+    }
+
+    /**
+     * 获取统计信息
+     */
+    public function get_statistics() {
+        error_log("Category Optimization: get_statistics called");
+
+        $total_categories = wp_count_terms('category', array('hide_empty' => false));
+
+        // 获取有描述和无描述的分类数量
+        $categories_with_description = get_terms(array(
+            'taxonomy' => 'category',
+            'hide_empty' => false
         ));
+
+        $categories_with_description_count = 0;
+        if (!is_wp_error($categories_with_description)) {
+            foreach ($categories_with_description as $category) {
+                if (!empty($category->description)) {
+                    $categories_with_description_count++;
+                }
+            }
+        }
+
+        $categories_without_description_count = $total_categories - $categories_with_description_count;
+        $coverage_rate = $total_categories > 0 ? round(($categories_with_description_count / $total_categories) * 100, 2) : 0;
+
+        error_log("Category Optimization: Stats - Total: $total_categories, With: $categories_with_description_count, Without: $categories_without_description_count");
+
+        return array(
+            'total_categories' => $total_categories,
+            'categories_with_description' => $categories_with_description_count,
+            'categories_without_description' => $categories_without_description_count,
+            'coverage_rate' => $coverage_rate
+        );
     }
 
     /**
-     * Generate category slug
+     * 使用AI为分类生成描述
      */
-    public function ajax_generate_category_slug() {
-        // 移除安全验证以简化操作
-        $category_id = isset($_POST['category_id']) ? intval($_POST['category_id']) : 0;
-
-        if (!$category_id) {
-            wp_send_json_error(array('message' => __('Invalid category ID', 'wordpress-toolkit')));
+    public function generate_category_description($category_id) {
+        // 检查AI功能是否可用
+        if (!function_exists('wordpress_toolkit_is_ai_available') || !wordpress_toolkit_is_ai_available()) {
+            return array('success' => false, 'message' => __('AI功能未配置，请先配置AI服务', 'wordpress-toolkit'));
         }
 
-        $result = $this->generate_category_slug($category_id);
+        try {
+            $category = get_term($category_id, 'category');
+            if (!$category) {
+                return array('success' => false, 'message' => __('分类不存在', 'wordpress-toolkit'));
+            }
 
-        if ($result['success']) {
-            wp_send_json_success(array(
-                'message' => __('Slug generated successfully', 'wordpress-toolkit'),
-                'slug' => $result['data']
+            // 获取使用该分类的文章
+            $posts = get_posts(array(
+                'post_type' => 'post',
+                'post_status' => 'publish',
+                'posts_per_page' => $this->settings['analyze_articles_count'],
+                'category' => $category->term_id,
+                'orderby' => 'date',
+                'order' => 'DESC'
             ));
-        } else {
-            wp_send_json_error(array('message' => $result['message']));
+
+            if (empty($posts)) {
+                return array('success' => false, 'message' => __('该分类下没有文章', 'wordpress-toolkit'));
+            }
+
+            // 分析文章内容
+            $articles_content = '';
+            $keywords = array();
+
+            foreach ($posts as $post) {
+                $articles_content .= "文章标题：{$post->post_title}\n";
+                $articles_content .= "文章内容：" . mb_substr(strip_tags($post->post_content), 0, 300) . "\n\n";
+
+                // 提取关键词
+                $content = $post->post_title . ' ' . $post->post_content;
+                $words = preg_split('/[\s，。！？；：""\'\'（）【】]/u', $content);
+                foreach ($words as $word) {
+                    $word = trim($word);
+                    if (mb_strlen($word) >= 2 && mb_strlen($word) <= 6 && !preg_match('/[0-9]/', $word)) {
+                        if (isset($keywords[$word])) {
+                            $keywords[$word]++;
+                        } else {
+                            $keywords[$word] = 1;
+                        }
+                    }
+                }
+            }
+
+            // 获取高频关键词（排除分类本身）
+            unset($keywords[$category->name]);
+            arsort($keywords);
+            $top_keywords = array_slice(array_keys($keywords), 0, 8);
+            $keywords_text = implode('、', $top_keywords);
+
+            // 构建AI提示词
+            $prompt = "请为以下分类生成一个简洁准确的描述：
+
+分类名称：{$category->name}
+
+使用该分类的文章主要内容：
+{$articles_content}
+
+相关关键词：{$keywords_text}
+
+请返回一个1-2句话的分类描述，要求：
+1. 准确概括该分类的用途和含义
+2. 语言简洁明了，适合用户理解
+3. 30-60字之间
+4. 只返回描述内容，不要包含其他解释";
+
+            // 调用AI服务
+            $response = wordpress_toolkit_call_deepseek_api(
+                $prompt,
+                array(
+                    'max_tokens' => 100,
+                    'temperature' => 0.3
+                )
+            );
+
+            if (!is_wp_error($response) && !empty($response)) {
+                $description = trim($response);
+
+                // 清理描述
+                $description = preg_replace('/[""\'\']/', '', $description);
+                $description = preg_replace('/[\r\n]+/', ' ', $description);
+                $description = trim($description);
+
+                if (!empty($description)) {
+                    return array(
+                        'success' => true,
+                        'message' => sprintf(__('成功为分类"%s"生成描述', 'wordpress-toolkit'), $category->name),
+                        'description' => $description,
+                        'category_id' => $category_id,
+                        'category_name' => $category->name
+                    );
+                } else {
+                    return array('success' => false, 'message' => __('AI未能生成有效描述', 'wordpress-toolkit'));
+                }
+
+            } else {
+                return array('success' => false, 'message' => __('AI服务响应异常', 'wordpress-toolkit'));
+            }
+
+        } catch (Exception $e) {
+            error_log("Category Optimization: AI category description error: " . $e->getMessage());
+            return array('error' => __('AI生成分类描述失败：', 'wordpress-toolkit') . $e->getMessage());
         }
     }
 
     /**
-     * Generate category description
+     * 应用分类描述
      */
-    public function ajax_generate_category_description() {
-        // 移除安全验证以简化操作
-        $category_id = isset($_POST['category_id']) ? intval($_POST['category_id']) : 0;
-
-        if (!$category_id) {
-            wp_send_json_error(array('message' => __('Invalid category ID', 'wordpress-toolkit')));
-        }
-
-        $result = $this->generate_category_description($category_id);
-
-        if ($result['success']) {
-            wp_send_json_success(array(
-                'message' => __('Description generated successfully', 'wordpress-toolkit'),
-                'description' => $result['data']
-            ));
-        } else {
-            wp_send_json_error(array('message' => $result['message']));
-        }
-    }
-
-    /**
-     * Generate category SEO
-     */
-    public function ajax_generate_category_seo() {
-        // 移除安全验证以简化操作
-        $category_id = isset($_POST['category_id']) ? intval($_POST['category_id']) : 0;
-
-        if (!$category_id) {
-            wp_send_json_error(array('message' => __('Invalid category ID', 'wordpress-toolkit')));
+    public function apply_category_description($category_id, $description) {
+        if (!$category_id || empty($description)) {
+            return array('success' => false, 'message' => __('参数无效', 'wordpress-toolkit'));
         }
 
         $category = get_term($category_id, 'category');
-        if (!$category || is_wp_error($category)) {
-            wp_send_json_error(array('message' => __('Category not found', 'wordpress-toolkit')));
+        if (!$category) {
+            return array('success' => false, 'message' => __('分类不存在', 'wordpress-toolkit'));
         }
 
-        // Get posts in this category
-        $posts = get_posts(array(
-            'category' => $category_id,
-            'numberposts' => 10,
-            'post_status' => 'publish'
-        ));
-
-        if (empty($posts)) {
-            wp_send_json_error(array('message' => __('No posts found in this category', 'wordpress-toolkit')));
-        }
-
-        // Generate SEO content
-        $seo_content = $this->generate_seo_content($category, $posts);
-
-        if ($seo_content) {
-            update_term_meta($category_id, 'ai_generated_seo', $seo_content);
-            wp_send_json_success(array(
-                'message' => __('SEO content generated successfully', 'wordpress-toolkit'),
-                'seo_content' => $seo_content
+        try {
+            // 更新分类描述
+            wp_update_term($category_id, 'category', array(
+                'description' => $description
             ));
-        } else {
-            wp_send_json_error(array('message' => __('Failed to generate SEO content', 'wordpress-toolkit')));
+
+            return array(
+                'success' => true,
+                'message' => __('分类描述更新成功', 'wordpress-toolkit'),
+                'category_id' => $category_id,
+                'category_name' => $category->name
+            );
+
+        } catch (Exception $e) {
+            error_log("Category Optimization: Apply category description error: " . $e->getMessage());
+            return array('success' => false, 'message' => __('分类描述更新失败：', 'wordpress-toolkit') . $e->getMessage());
         }
     }
 
     /**
-     * Get category stats
+     * 批量生成分类描述
      */
-    public function ajax_get_category_stats() {
-        // 移除安全验证以简化操作
-        $stats = array(
-            'total_categories' => wp_count_terms('category', array('hide_empty' => false)),
-            'optimized_categories' => get_terms(array(
+    public function batch_generate_descriptions() {
+        error_log('Category Optimization: Starting batch description generation');
+
+        // 检查是否启用AI生成
+        if (!wordpress_toolkit_is_ai_available()) {
+            return array(
+                'success' => false,
+                'message' => __('AI生成功能未启用或未配置API密钥', 'wordpress-toolkit')
+            );
+        }
+
+        try {
+            $max_execution_time = ini_get('max_execution_time');
+            // 增加执行时间限制到600秒（10分钟），如果允许的话
+            if ($max_execution_time < 600) {
+                @set_time_limit(600);
+                $max_execution_time = 600;
+            }
+            $start_time = time();
+            $processed_count = 0;
+            $success_count = 0;
+            $error_count = 0;
+
+            // 获取所有无描述的分类
+            $categories = get_terms(array(
                 'taxonomy' => 'category',
-                'hide_empty' => false,
-                'meta_query' => array(
-                    array(
-                        'key' => 'ai_optimization_status',
-                        'value' => 'optimized',
-                        'compare' => '='
-                    )
-                ),
-                'fields' => 'count'
-            )),
-            'pending_categories' => get_terms(array(
-                'taxonomy' => 'category',
-                'hide_empty' => false,
-                'meta_query' => array(
-                    array(
-                        'key' => 'ai_optimization_status',
-                        'value' => 'pending',
-                        'compare' => '='
-                    )
-                ),
-                'fields' => 'count'
-            )),
-            'categories_with_ai_slug' => get_terms(array(
-                'taxonomy' => 'category',
-                'hide_empty' => false,
-                'meta_query' => array(
-                    array(
-                        'key' => 'ai_generated_slug',
-                        'compare' => 'EXISTS'
-                    )
-                ),
-                'fields' => 'count'
-            )),
-            'categories_with_ai_description' => get_terms(array(
-                'taxonomy' => 'category',
-                'hide_empty' => false,
-                'meta_query' => array(
-                    array(
-                        'key' => 'ai_generated_description',
-                        'compare' => 'EXISTS'
-                    )
-                ),
-                'fields' => 'count'
-            ))
+                'hide_empty' => false
+            ));
+
+            // 过滤出无描述的分类
+            $categories_without_description = array();
+            foreach ($categories as $category) {
+                if (empty($category->description)) {
+                    $categories_without_description[] = $category;
+                }
+            }
+            $categories = $categories_without_description;
+
+            if (is_wp_error($categories)) {
+                return array(
+                    'success' => false,
+                    'message' => __('获取分类列表失败：', 'wordpress-toolkit') . $categories->get_error_message()
+                );
+            }
+
+            // 过滤掉文章数量太少的分类
+            $valid_categories = array();
+            foreach ($categories as $category) {
+                if ($category->count >= $this->settings['min_articles_count']) {
+                    $valid_categories[] = $category;
+                }
+            }
+
+            if (empty($valid_categories)) {
+                return array(
+                    'success' => true,
+                    'message' => __('没有符合条件的分类需要处理', 'wordpress-toolkit'),
+                    'processed_count' => 0,
+                    'success_count' => 0,
+                    'error_count' => 0
+                );
+            }
+
+            foreach ($valid_categories as $category) {
+                if ((time() - $start_time) >= ($max_execution_time - 10)) {
+                    break; // 避免超时
+                }
+
+                $processed_count++;
+
+                try {
+                    // 生成描述
+                    $result = $this->generate_category_description($category->term_id);
+
+                    if ($result && $result['success']) {
+                        // 应用描述
+                        $apply_result = $this->apply_category_description($category->term_id, $result['description']);
+
+                        if ($apply_result && $apply_result['success']) {
+                            $success_count++;
+                            error_log("Category Optimization: Generated description for category ID: {$category->term_id}");
+                        } else {
+                            $error_count++;
+                            error_log("Category Optimization: Failed to apply description for category ID: {$category->term_id}");
+                        }
+                    } else {
+                        $error_count++;
+                        error_log("Category Optimization: No description generated for category ID: {$category->term_id}");
+                    }
+                } catch (Exception $e) {
+                    $error_count++;
+                    error_log("Category Optimization: Error processing category ID {$category->term_id}: " . $e->getMessage());
+                }
+            }
+
+            return array(
+                'success' => true,
+                'processed_count' => $processed_count,
+                'success_count' => $success_count,
+                'error_count' => $error_count,
+                'message' => sprintf(
+                    __('批量生成分类描述完成！处理：%d个，成功：%d个，失败：%d个', 'wordpress-toolkit'),
+                    $processed_count,
+                    $success_count,
+                    $error_count
+                )
+            );
+
+        } catch (Exception $e) {
+            error_log('Category Optimization: Batch description generation error: ' . $e->getMessage());
+            return array(
+                'success' => false,
+                'message' => __('批量生成分类描述失败：', 'wordpress-toolkit') . $e->getMessage()
+            );
+        }
+    }
+
+    /**
+     * AJAX处理生成分类描述
+     */
+    public function ajax_generate_description() {
+        // 使用统一的安全验证
+        if (!WordPress_Toolkit_Security_Validator::verify_admin_ajax('category_optimization_nonce')) {
+            return;
+        }
+
+        // 清理输入数据
+        $sanitized_data = WordPress_Toolkit_Security_Validator::sanitize_post_data([
+            'category_id' => 'int'
+        ]);
+        $category_id = $sanitized_data['category_id'];
+
+        // 验证必填字段
+        $validation = WordPress_Toolkit_Security_Validator::validate_required_fields(
+            ['category_id' => $category_id],
+            ['category_id']
         );
 
-        wp_send_json_success($stats);
-    }
-
-    /**
-     * Cleanup duplicate categories
-     */
-    public function ajax_cleanup_duplicate_categories() {
-        // 移除安全验证以简化操作
-        $categories = get_terms(array(
-            'taxonomy' => 'category',
-            'hide_empty' => false,
-            'fields' => 'all'
-        ));
-
-        $duplicates = array();
-        $processed = array();
-
-        foreach ($categories as $category) {
-            $slug_key = sanitize_title($category->name);
-
-            if (isset($processed[$slug_key])) {
-                $duplicates[] = array(
-                    'original' => $processed[$slug_key],
-                    'duplicate' => $category
-                );
-            } else {
-                $processed[$slug_key] = $category;
-            }
+        if (!$validation['valid']) {
+            wp_send_json_error(array('message' => $validation['errors'][0]));
+            return;
         }
 
-        $cleaned_count = 0;
-        foreach ($duplicates as $duplicate) {
-            wp_delete_term($duplicate['duplicate']->term_id, 'category');
-            $cleaned_count++;
-        }
+        try {
+            error_log("Category Optimization: Processing single category ID: {$category_id}");
 
-        wp_send_json_success(array(
-            'message' => sprintf(__('Cleaned up %d duplicate categories', 'wordpress-toolkit'), $cleaned_count),
-            'duplicates_found' => count($duplicates),
-            'cleaned_count' => $cleaned_count
-        ));
-    }
+            // 生成描述
+            $result = $this->generate_category_description($category_id);
 
-    /**
-     * Export category optimization report
-     */
-    public function ajax_export_category_optimization_report() {
-        // 移除安全验证以简化操作
-        $categories = get_terms(array(
-            'taxonomy' => 'category',
-            'hide_empty' => false,
-            'orderby' => 'name',
-            'order' => 'asc'
-        ));
+            if ($result['success']) {
+                // 自动应用生成的描述
+                $apply_result = $this->apply_category_description($category_id, $result['description']);
 
-        $report = array();
-        foreach ($categories as $category) {
-            $ai_generated_slug = get_term_meta($category->term_id, 'ai_generated_slug', true);
-            $ai_generated_description = get_term_meta($category->term_id, 'ai_generated_description', true);
-            $ai_optimization_status = get_term_meta($category->term_id, 'ai_optimization_status', true);
-
-            $report[] = array(
-                'ID' => $category->term_id,
-                'Name' => $category->name,
-                'Slug' => $category->slug,
-                'Description' => $category->description,
-                'Post Count' => $category->count,
-                'AI Generated Slug' => $ai_generated_slug,
-                'AI Generated Description' => $ai_generated_description,
-                'Optimization Status' => $ai_optimization_status,
-                'Edit URL' => get_edit_term_link($category->term_id, 'category'),
-                'View URL' => get_term_link($category)
-            );
-        }
-
-        wp_send_json_success(array(
-            'message' => __('Report generated successfully', 'wordpress-toolkit'),
-            'report' => $report,
-            'total_categories' => count($categories)
-        ));
-    }
-
-    /**
-     * Reset category optimization stats
-     */
-    public function ajax_reset_category_optimization_stats() {
-        // 移除安全验证以简化操作
-        $categories = get_terms(array(
-            'taxonomy' => 'category',
-            'hide_empty' => false,
-            'fields' => 'ids'
-        ));
-
-        foreach ($categories as $category_id) {
-            delete_term_meta($category_id, 'ai_optimization_status');
-            delete_term_meta($category_id, 'ai_generated_slug');
-            delete_term_meta($category_id, 'ai_generated_description');
-            delete_term_meta($category_id, 'ai_generated_seo');
-        }
-
-        wp_send_json_success(array(
-            'message' => __('Category optimization stats reset successfully', 'wordpress-toolkit'),
-            'reset_count' => count($categories)
-        ));
-    }
-
-    /**
-     * Generate category slug
-     */
-    private function generate_category_slug($category_id) {
-        $category = get_term($category_id, 'category');
-        if (!$category || is_wp_error($category)) {
-            return array('success' => false, 'message' => __('Category not found', 'wordpress-toolkit'));
-        }
-
-        $category_name = $category->name;
-
-        // If category name is in Chinese, translate to English
-        if ($this->is_chinese($category_name)) {
-            $translated_name = $this->translate_to_english($category_name);
-            if ($translated_name) {
-                $slug = sanitize_title($translated_name);
-            } else {
-                $slug = sanitize_title($category_name);
-            }
-        } else {
-            $slug = sanitize_title($category_name);
-        }
-
-        // Check if slug already exists
-        $existing_category = get_term_by('slug', $slug, 'category');
-        if ($existing_category && $existing_category->term_id != $category_id) {
-            // Add suffix to make it unique
-            $suffix = 2;
-            while ($existing_category) {
-                $new_slug = $slug . '-' . $suffix;
-                $existing_category = get_term_by('slug', $new_slug, 'category');
-                if (!$existing_category || $existing_category->term_id == $category_id) {
-                    $slug = $new_slug;
-                    break;
+                if ($apply_result['success']) {
+                    wp_send_json_success(array(
+                        'category_id' => $category_id,
+                        'category_name' => $result['category_name'],
+                        'description' => $result['description'],
+                        'message' => $apply_result['message']
+                    ));
+                } else {
+                    wp_send_json_error(array('message' => $apply_result['message']));
                 }
-                $suffix++;
+            } else {
+                wp_send_json_error(array('message' => $result['message']));
             }
-        }
 
-        // Update category slug
-        wp_update_term($category_id, 'category', array('slug' => $slug));
-        update_term_meta($category_id, 'ai_generated_slug', $slug);
-
-        return array('success' => true, 'data' => $slug);
-    }
-
-    /**
-     * Generate category description
-     */
-    private function generate_category_description($category_id) {
-        $category = get_term($category_id, 'category');
-        if (!$category || is_wp_error($category)) {
-            return array('success' => false, 'message' => __('Category not found', 'wordpress-toolkit'));
-        }
-
-        // Get posts in this category
-        $posts = get_posts(array(
-            'category' => $category_id,
-            'numberposts' => 10,
-            'post_status' => 'publish'
-        ));
-
-        if (empty($posts)) {
-            return array('success' => false, 'message' => __('No posts found in this category', 'wordpress-toolkit'));
-        }
-
-        // Generate description using AI
-        $description = $this->generate_category_description_ai($category, $posts);
-
-        if ($description) {
-            // Update category description
-            wp_update_term($category_id, 'category', array('description' => $description));
-            update_term_meta($category_id, 'ai_generated_description', $description);
-
-            return array('success' => true, 'data' => $description);
-        } else {
-            return array('success' => false, 'message' => __('Failed to generate description', 'wordpress-toolkit'));
+        } catch (Exception $e) {
+            error_log("Category Optimization: Single category generation error for ID {$category_id}: " . $e->getMessage());
+            wp_send_json_error(array('message' => __('生成失败：', 'wordpress-toolkit') . $e->getMessage()));
         }
     }
 
     /**
-     * Generate category description using AI
+     * AJAX处理批量生成
      */
-    private function generate_category_description_ai($category, $posts) {
-        $api_key = wordpress_toolkit_get_ai_settings('deepseek_api_key', '');
-        if (empty($api_key)) {
-            return false;
+    public function ajax_batch_generate() {
+        // 使用统一的安全验证
+        if (!WordPress_Toolkit_Security_Validator::verify_admin_ajax('category_optimization_batch')) {
+            return;
         }
 
-        // Prepare post titles and excerpts
-        $post_info = array();
-        foreach ($posts as $post) {
-            $post_info[] = array(
-                'title' => $post->post_title,
-                'excerpt' => $post->post_excerpt ?: substr($post->post_content, 0, 200)
-            );
-        }
+        try {
+            error_log('Category Optimization: Starting batch generation AJAX request');
+            $result = $this->batch_generate_descriptions();
 
-        $prompt = "请根据以下分类信息和该分类下的文章，生成一个简洁、吸引人的分类描述：\n\n";
-        $prompt .= "分类名称：" . $category->name . "\n\n";
-        $prompt .= "该分类下的文章信息：\n";
-
-        foreach ($post_info as $info) {
-            $prompt .= "- 《" . $info['title'] . "》：" . $info['excerpt'] . "\n";
-        }
-
-        $prompt .= "\n要求：\n";
-        $prompt .= "1. 描述长度控制在100-150字之间\n";
-        $prompt .= "2. 突出该分类的核心主题和价值\n";
-        $prompt .= "3. 语言要生动、吸引人\n";
-        $prompt .= "4. 适合网站分类页面使用\n\n";
-        $prompt .= "请只返回描述内容，不要包含其他说明文字。";
-
-        $response = wp_remote_post($this->deepseek_url, array(
-            'headers' => array(
-                'Content-Type' => 'application/json',
-                'Authorization' => 'Bearer ' . $api_key
-            ),
-            'body' => json_encode(array(
-                'model' => 'deepseek-chat',
-                'messages' => array(
-                    array('role' => 'user', 'content' => $prompt)
-                ),
-                'max_tokens' => 500,
-                'temperature' => 0.7
-            )),
-            'timeout' => 30
-        ));
-
-        if (is_wp_error($response)) {
-            return false;
-        }
-
-        $body = wp_remote_retrieve_body($response);
-        $data = json_decode($body, true);
-
-        if (isset($data['choices'][0]['message']['content'])) {
-            return trim($data['choices'][0]['message']['content']);
-        }
-
-        return false;
-    }
-
-    /**
-     * Generate SEO content
-     */
-    private function generate_seo_content($category, $posts) {
-        $api_key = wordpress_toolkit_get_ai_settings('deepseek_api_key', '');
-        if (empty($api_key)) {
-            return false;
-        }
-
-        // Prepare post titles and excerpts
-        $post_info = array();
-        foreach ($posts as $post) {
-            $post_info[] = array(
-                'title' => $post->post_title,
-                'excerpt' => $post->post_excerpt ?: substr($post->post_content, 0, 200)
-            );
-        }
-
-        $prompt = "请根据以下分类信息和该分类下的文章，生成SEO优化的内容：\n\n";
-        $prompt .= "分类名称：" . $category->name . "\n\n";
-        $prompt .= "该分类下的文章信息：\n";
-
-        foreach ($post_info as $info) {
-            $prompt .= "- 《" . $info['title'] . "》：" . $info['excerpt'] . "\n";
-        }
-
-        $prompt .= "\n请生成以下SEO内容：\n";
-        $prompt .= "1. SEO标题（50-60字符）\n";
-        $prompt .= "2. Meta描述（150-160字符）\n";
-        $prompt .= "3. 关键词列表（5-10个关键词）\n\n";
-        $prompt .= "请以JSON格式返回：\n";
-        $prompt .= "{\n";
-        $prompt .= "  \"seo_title\": \"SEO标题\",\n";
-        $prompt .= "  \"meta_description\": \"Meta描述\",\n";
-        $prompt .= "  \"keywords\": [\"关键词1\", \"关键词2\", ...]\n";
-        $prompt .= "}";
-
-        $response = wp_remote_post($this->deepseek_url, array(
-            'headers' => array(
-                'Content-Type' => 'application/json',
-                'Authorization' => 'Bearer ' . $api_key
-            ),
-            'body' => json_encode(array(
-                'model' => 'deepseek-chat',
-                'messages' => array(
-                    array('role' => 'user', 'content' => $prompt)
-                ),
-                'max_tokens' => 500,
-                'temperature' => 0.7
-            )),
-            'timeout' => 30
-        ));
-
-        if (is_wp_error($response)) {
-            return false;
-        }
-
-        $body = wp_remote_retrieve_body($response);
-        $data = json_decode($body, true);
-
-        if (isset($data['choices'][0]['message']['content'])) {
-            $content = trim($data['choices'][0]['message']['content']);
-            $seo_data = json_decode($content, true);
-
-            if ($seo_data) {
-                return $seo_data;
+            if ($result['success']) {
+                wp_send_json_success($result);
+            } else {
+                wp_send_json_error(array('message' => $result['message']));
             }
-        }
 
-        return false;
+        } catch (Exception $e) {
+            error_log('Category Optimization: Batch generation AJAX error: ' . $e->getMessage());
+            wp_send_json_error(array('message' => __('批量生成失败：', 'wordpress-toolkit') . $e->getMessage()));
+        }
     }
 
     /**
-     * Check if string contains Chinese characters
+     * AJAX获取分类列表
      */
-    private function is_chinese($string) {
-        return preg_match('/[\x{4e00}-\x{9fa5}]/u', $string);
+    public function ajax_get_categories_list() {
+        // 使用统一的安全验证
+        if (!WordPress_Toolkit_Security_Validator::verify_admin_ajax('category_optimization_nonce')) {
+            return;
+        }
+
+        try {
+            $page = isset($_POST['page']) ? intval($_POST['page']) : 1;
+            $per_page = isset($_POST['per_page']) ? intval($_POST['per_page']) : 20;
+            $status = isset($_POST['status']) ? sanitize_text_field($_POST['status']) : 'all';
+
+            $categories_list = $this->get_categories_list($page, $per_page, $status);
+
+            wp_send_json_success($categories_list);
+
+        } catch (Exception $e) {
+            error_log('Category Optimization: Get categories list AJAX error: ' . $e->getMessage());
+            wp_send_json_error(array('message' => __('获取分类列表失败：', 'wordpress-toolkit') . $e->getMessage()));
+        }
     }
 
     /**
-     * Translate Chinese to English
+     * AJAX获取统计信息
      */
-    private function translate_to_english($chinese_text) {
-        $api_key = wordpress_toolkit_get_ai_settings('deepseek_api_key', '');
-        if (empty($api_key)) {
-            return false;
+    public function ajax_get_statistics() {
+        // 使用统一的安全验证
+        if (!WordPress_Toolkit_Security_Validator::verify_admin_ajax('category_optimization_nonce')) {
+            return;
         }
 
-        $prompt = "请将以下中文翻译成英文，只返回翻译结果，不要包含其他说明：\n";
-        $prompt .= $chinese_text;
+        try {
+            $statistics = $this->get_statistics();
+            wp_send_json_success($statistics);
 
-        $response = wp_remote_post($this->deepseek_url, array(
-            'headers' => array(
-                'Content-Type' => 'application/json',
-                'Authorization' => 'Bearer ' . $api_key
-            ),
-            'body' => json_encode(array(
-                'model' => 'deepseek-chat',
-                'messages' => array(
-                    array('role' => 'user', 'content' => $prompt)
-                ),
-                'max_tokens' => 100,
-                'temperature' => 0.3
-            )),
-            'timeout' => 30
-        ));
-
-        if (is_wp_error($response)) {
-            return false;
+        } catch (Exception $e) {
+            error_log('Category Optimization: Get statistics AJAX error: ' . $e->getMessage());
+            wp_send_json_error(array('message' => __('获取统计信息失败：', 'wordpress-toolkit') . $e->getMessage()));
         }
+    }
 
-        $body = wp_remote_retrieve_body($response);
-        $data = json_decode($body, true);
-
-        if (isset($data['choices'][0]['message']['content'])) {
-            return trim($data['choices'][0]['message']['content']);
-        }
-
-        return false;
+    /**
+     * 显示管理页面
+     */
+    public function admin_page() {
+        // 加载管理页面模板
+        require_once WORDPRESS_TOOLKIT_PLUGIN_PATH . 'modules/category-optimization/admin/admin-page.php';
+        $admin_page = Category_Optimization_Admin_Page::get_instance();
+        $admin_page->admin_page();
     }
 }
 
-// Initialize the module
-Category_Optimization_Module::get_instance();
+// 注册插件激活和停用钩子
+register_activation_hook(__FILE__, array('Category_Optimization_Module', 'activate'));
+register_deactivation_hook(__FILE__, array('Category_Optimization_Module', 'deactivate'));

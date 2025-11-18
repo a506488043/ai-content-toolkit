@@ -8,18 +8,17 @@ if (!defined('ABSPATH')) {
 }
 
 class TimeCapsule_Database {
-    
-    private $wpdb;
+
+    private $db_manager;
     private $table_items;
     private $table_categories;
-    
+
     public function __construct() {
-        global $wpdb;
-        $this->wpdb = $wpdb;
-        $this->table_items = $wpdb->prefix . 'time_capsule_items';
-        $this->table_categories = $wpdb->prefix . 'time_capsule_categories';
+        $this->db_manager = new WordPress_Toolkit_Database_Manager();
+        $this->table_items = 'time_capsule_items';
+        $this->table_categories = 'time_capsule_categories';
     }
-    
+
     /**
      * 验证表名是否在允许的白名单中
      */
@@ -32,6 +31,13 @@ class TimeCapsule_Database {
     }
 
     /**
+     * 获取完整的表名
+     */
+    private function get_table_name($table) {
+        return $this->db_manager->get_table_name($table);
+    }
+
+    /**
      * 更新数据库表结构
      */
     public function update_tables() {
@@ -39,10 +45,10 @@ class TimeCapsule_Database {
         require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 
         // 检查是否需要添加证书资质相关字段
-        $table_name = $this->table_items;
+        $table_name = $this->get_table_name($this->table_items);
 
         // 验证表名安全性
-        if (!$this->validate_table_name($table_name)) {
+        if (!$this->validate_table_name($this->table_items)) {
             wt_log_error('Invalid table name in update_tables', 'time-capsule');
             return false;
         }
@@ -116,11 +122,11 @@ class TimeCapsule_Database {
     public function create_tables() {
         global $wpdb;
         require_once ABSPATH . 'wp-admin/includes/upgrade.php';
-        
+
         $charset_collate = $wpdb->get_charset_collate();
-        
+
         // 创建物品表
-        $table_items_sql = "CREATE TABLE IF NOT EXISTS {$this->table_items} (
+        $table_items_sql = "CREATE TABLE IF NOT EXISTS {$this->get_table_name($this->table_items)} (
             id bigint(20) NOT NULL AUTO_INCREMENT,
             user_id bigint(20) NOT NULL,
             name varchar(255) NOT NULL,
@@ -164,9 +170,9 @@ class TimeCapsule_Database {
             KEY renewal_date (renewal_date),
             KEY certificate_status (certificate_status)
         ) $charset_collate;";
-        
+
         // 创建类别表
-        $table_categories_sql = "CREATE TABLE IF NOT EXISTS {$this->table_categories} (
+        $table_categories_sql = "CREATE TABLE IF NOT EXISTS {$this->get_table_name($this->table_categories)} (
             id bigint(20) NOT NULL AUTO_INCREMENT,
             name varchar(100) NOT NULL,
             display_name varchar(100) NOT NULL,
@@ -181,25 +187,25 @@ class TimeCapsule_Database {
             KEY is_active (is_active),
             KEY sort_order (sort_order)
         ) $charset_collate;";
-        
+
         dbDelta($table_items_sql);
         dbDelta($table_categories_sql);
 
         // 更新表结构以添加新字段
         $this->update_tables();
-        
+
         // 检查表是否创建成功
-        $items_table_exists = $wpdb->get_var("SHOW TABLES LIKE '{$this->table_items}'") === $this->table_items;
-        $categories_table_exists = $wpdb->get_var("SHOW TABLES LIKE '{$this->table_categories}'") === $this->table_categories;
-        
+        $items_table_exists = $wpdb->get_var("SHOW TABLES LIKE '{$this->get_table_name($this->table_items)}'") === $this->get_table_name($this->table_items);
+        $categories_table_exists = $wpdb->get_var("SHOW TABLES LIKE '{$this->get_table_name($this->table_categories)}'") === $this->get_table_name($this->table_categories);
+
         if (!$items_table_exists || !$categories_table_exists) {
-            wt_log_database_error('Failed to create database tables', 'time-capsule-db', $this->wpdb->last_error);
+            wt_log_database_error('Failed to create database tables', 'time-capsule-db', $wpdb->last_error);
             return false;
         }
-        
+
         return true;
     }
-    
+
     /**
      * 获取物品列表
      */
@@ -219,44 +225,62 @@ class TimeCapsule_Database {
 
         $where = array();
         if ($args['user_id'] !== null && $args['user_id'] > 0) {
-            $where[] = $this->wpdb->prepare("user_id = %d", $args['user_id']);
+            $where['user_id'] = $args['user_id'];
         }
 
         if (!empty($args['category'])) {
-            $where[] = $this->wpdb->prepare("category = %s", $args['category']);
+            $where['category'] = $args['category'];
         }
 
         if (!empty($args['status'])) {
-            $where[] = $this->wpdb->prepare("status = %s", $args['status']);
+            $where['status'] = $args['status'];
         }
 
+        // 搜索条件需要特殊处理
         if (!empty($args['search'])) {
-            $search = '%' . $this->wpdb->esc_like($args['search']) . '%';
-            $where[] = $this->wpdb->prepare("(name LIKE %s OR description LIKE %s OR brand LIKE %s)", $search, $search, $search);
+            // 使用自定义SQL处理搜索
+            global $wpdb;
+            $search = '%' . $wpdb->esc_like($args['search']) . '%';
+            $table_name = $this->get_table_name($this->table_items);
+
+            $where_clause = '';
+            if (!empty($where)) {
+                $where_clause = 'WHERE ' . $this->build_where_clause($where);
+            }
+
+            $search_where = "(name LIKE %s OR description LIKE %s OR brand LIKE %s)";
+            if ($where_clause) {
+                $search_where = $where_clause . ' AND ' . $search_where;
+            } else {
+                $search_where = 'WHERE ' . $search_where;
+            }
+
+            $orderby = sanitize_sql_orderby($args['orderby'] . ' ' . $args['order']);
+            if (!$orderby) {
+                $orderby = 'created_at DESC';
+            }
+
+            $limit = '';
+            if ($args['limit'] > 0) {
+                $limit = $wpdb->prepare("LIMIT %d OFFSET %d", $args['limit'], $args['offset']);
+            }
+
+            $sql = "SELECT * FROM {$table_name} {$search_where} ORDER BY {$orderby} {$limit}";
+            $sql = $wpdb->prepare($sql, $search, $search, $search);
+
+            return $wpdb->get_results($sql);
         }
 
-        // 移除了保修状态筛选逻辑
-        
-        $where_clause = '';
-        if (!empty($where)) {
-            $where_clause = 'WHERE ' . implode(' AND ', $where);
-        }
-
-        $orderby = sanitize_sql_orderby($args['orderby'] . ' ' . $args['order']);
-        if (!$orderby) {
-            $orderby = 'created_at DESC';
-        }
-
-        $limit = '';
-        if ($args['limit'] > 0) {
-            $limit = $this->wpdb->prepare("LIMIT %d OFFSET %d", $args['limit'], $args['offset']);
-        }
-
-        $sql = "SELECT * FROM {$this->table_items} {$where_clause} ORDER BY {$orderby} {$limit}";
-        
-        return $this->wpdb->get_results($sql);
+        return $this->db_manager->get_results(
+            $this->table_items,
+            $where,
+            '*',
+            $args['orderby'] . ' ' . $args['order'],
+            $args['limit'],
+            $args['offset']
+        );
     }
-    
+
     /**
      * 获取单个物品
      */
@@ -265,42 +289,23 @@ class TimeCapsule_Database {
             $user_id = get_current_user_id();
         }
 
+        $where = ['id' => $id];
         if ($user_id !== null) {
-            return $this->wpdb->get_row(
-                $this->wpdb->prepare(
-                    "SELECT * FROM {$this->table_items} WHERE id = %d AND user_id = %d",
-                    $id,
-                    $user_id
-                )
-            );
-        } else {
-            // 管理员可以查看所有物品
-            return $this->wpdb->get_row(
-                $this->wpdb->prepare(
-                    "SELECT * FROM {$this->table_items} WHERE id = %d",
-                    $id
-                )
-            );
+            $where['user_id'] = $user_id;
         }
+
+        return $this->db_manager->get_results($this->table_items, $where, '*', 'id DESC', 1)[0] ?? null;
     }
-    
+
     /**
      * 插入物品
      */
     public function insert_item($data) {
         $data['user_id'] = get_current_user_id();
-        $data['created_at'] = current_time('mysql');
-        $data['updated_at'] = current_time('mysql');
-        
-        $result = $this->wpdb->insert($this->table_items, $data);
-        
-        if ($result === false) {
-            return false;
-        }
-        
-        return $this->wpdb->insert_id;
+
+        return $this->db_manager->insert($this->table_items, $data);
     }
-    
+
     /**
      * 更新物品
      */
@@ -309,20 +314,14 @@ class TimeCapsule_Database {
             $user_id = get_current_user_id();
         }
 
-        $data['updated_at'] = current_time('mysql');
-
-        $where = array('id' => $id);
+        $where = ['id' => $id];
         if ($user_id !== null) {
             $where['user_id'] = $user_id;
         }
 
-        return $this->wpdb->update(
-            $this->table_items,
-            $data,
-            $where
-        );
+        return $this->db_manager->update($this->table_items, $data, $where);
     }
-    
+
     /**
      * 删除物品
      */
@@ -338,7 +337,7 @@ class TimeCapsule_Database {
             return false;
         }
 
-        $where = array('id' => $id);
+        $where = ['id' => $id];
         if ($user_id !== null) {
             $where['user_id'] = $user_id;
         }
@@ -350,48 +349,37 @@ class TimeCapsule_Database {
         }
 
         // 执行删除
-        $result = $this->wpdb->delete(
-            $this->table_items,
-            $where,
-            array('%d', '%d')
-        );
+        $result = $this->db_manager->delete($this->table_items, $where);
 
         // 记录删除操作日志
         if ($result !== false) {
             wt_log_info('Item deleted', 'time-capsule-db', array('item_id' => $id, 'user_id' => $user_id));
         } else {
-            wt_log_database_error('Failed to delete item', 'time-capsule-db', $this->wpdb->last_error);
+            wt_log_database_error('Failed to delete item', 'time-capsule-db', $this->db_manager->get_last_error());
         }
 
         return $result;
     }
-    
+
     /**
      * 获取类别列表
      */
     public function get_categories($active_only = true) {
-        $where = '';
+        $where = [];
         if ($active_only) {
-            $where = 'WHERE is_active = 1';
+            $where['is_active'] = 1;
         }
-        
-        return $this->wpdb->get_results(
-            "SELECT * FROM {$this->table_categories} {$where} ORDER BY sort_order ASC"
-        );
+
+        return $this->db_manager->get_results($this->table_categories, $where, '*', 'sort_order ASC');
     }
-    
+
     /**
      * 获取单个类别
      */
     public function get_category($name) {
-        return $this->wpdb->get_row(
-            $this->wpdb->prepare(
-                "SELECT * FROM {$this->table_categories} WHERE name = %s",
-                $name
-            )
-        );
+        return $this->db_manager->get_by_field($this->table_categories, 'name', $name);
     }
-    
+
     /**
      * 获取物品统计
      */
@@ -403,45 +391,36 @@ class TimeCapsule_Database {
         $stats = array();
 
         // 总物品数
+        $where = ['status' => 'active'];
         if ($user_id !== null) {
-            $stats['total_items'] = $this->wpdb->get_var(
-                $this->wpdb->prepare(
-                    "SELECT COUNT(*) FROM {$this->table_items} WHERE user_id = %d AND status = 'active'",
-                    $user_id
-                )
-            );
+            $where['user_id'] = $user_id;
+        }
+        $stats['total_items'] = $this->db_manager->count($this->table_items, $where);
+
+        // 按类别统计
+        global $wpdb;
+        $table_name = $this->get_table_name($this->table_items);
+
+        if ($user_id !== null) {
+            $category_stats = $wpdb->get_results($wpdb->prepare(
+                "SELECT category, COUNT(*) as count FROM {$table_name} WHERE user_id = %d AND status = 'active' GROUP BY category",
+                $user_id
+            ));
         } else {
             // 管理员查看所有物品
-            $stats['total_items'] = $this->wpdb->get_var(
-                "SELECT COUNT(*) FROM {$this->table_items} WHERE status = 'active'"
+            $category_stats = $wpdb->get_results(
+                "SELECT category, COUNT(*) as count FROM {$table_name} WHERE status = 'active' GROUP BY category"
             );
         }
 
-        // 按类别统计
-        if ($user_id !== null) {
-            $category_stats = $this->wpdb->get_results(
-                $this->wpdb->prepare(
-                    "SELECT category, COUNT(*) as count FROM {$this->table_items} WHERE user_id = %d AND status = 'active' GROUP BY category",
-                    $user_id
-                )
-            );
-        } else {
-            // 管理员查看所有物品
-            $category_stats = $this->wpdb->get_results(
-                "SELECT category, COUNT(*) as count FROM {$this->table_items} WHERE status = 'active' GROUP BY category"
-            );
-        }
-        
         $stats['by_category'] = array();
         foreach ($category_stats as $stat) {
             $stats['by_category'][$stat->category] = $stat->count;
         }
-        
-        // 移除了即将过保统计
-        
+
         return $stats;
     }
-    
+
     /**
      * 计算年龄
      */
@@ -458,40 +437,26 @@ class TimeCapsule_Database {
 
         return $age_years;
     }
-    
+
     /**
      * 插入类别
      */
     public function insert_category($data) {
-        $data['created_at'] = current_time('mysql');
-
-        $result = $this->wpdb->insert($this->table_categories, $data);
-
-        if ($result === false) {
-            return false;
-        }
-
-        return $this->wpdb->insert_id;
+        return $this->db_manager->insert($this->table_categories, $data);
     }
 
     /**
      * 更新类别
      */
     public function update_category($name, $data) {
-        $where = array('name' => $name);
-
-        $result = $this->wpdb->update($this->table_categories, $data, $where);
-
-        return $result !== false;
+        return $this->db_manager->update($this->table_categories, $data, ['name' => $name]);
     }
 
     /**
      * 删除类别
      */
     public function delete_category($name) {
-        $result = $this->wpdb->delete($this->table_categories, array('name' => $name));
-
-        return $result !== false;
+        return $this->db_manager->delete($this->table_categories, ['name' => $name]);
     }
 
     /**
@@ -506,9 +471,10 @@ class TimeCapsule_Database {
         $tables_to_drop = array($this->table_items, $this->table_categories);
         foreach ($tables_to_drop as $table) {
             if ($this->validate_table_name($table)) {
-                $result = $wpdb->query("DROP TABLE IF EXISTS {$table}");
+                $table_name = $this->get_table_name($table);
+                $result = $wpdb->query("DROP TABLE IF EXISTS {$table_name}");
                 if ($result === false) {
-                    wt_log_error("Failed to drop table {$table}: " . $wpdb->last_error, 'time-capsule-db');
+                    wt_log_error("Failed to drop table {$table_name}: " . $wpdb->last_error, 'time-capsule-db');
                     return false;
                 }
             } else {
@@ -537,5 +503,20 @@ class TimeCapsule_Database {
     public function force_reset_tables() {
         return $this->reset_tables();
     }
-}
 
+    /**
+     * 构建WHERE子句（用于搜索）
+     */
+    private function build_where_clause($where) {
+        if (empty($where)) {
+            return '';
+        }
+
+        $conditions = [];
+        foreach ($where as $field => $value) {
+            $conditions[] = "{$field} = '{$value}'";
+        }
+
+        return implode(' AND ', $conditions);
+    }
+}

@@ -172,6 +172,21 @@ class Auto_Excerpt_SEO_Analyzer_Database {
     }
 
     /**
+     * 获取文章SEO分数
+     */
+    public function get_seo_score($post_id) {
+        global $wpdb;
+
+        $table_name = $this->db_manager->get_table_name($this->table_seo_analysis);
+        $score = $wpdb->get_var($wpdb->prepare(
+            "SELECT overall_score FROM {$table_name} WHERE post_id = %d AND analysis_type = %s LIMIT 1",
+            $post_id, 'seo'
+        ));
+
+        return $score ? floatval($score) : null;
+    }
+
+    /**
      * 获取所有SEO分析记录
      */
     public function get_all_seo_analyses($limit = 50, $offset = 0, $order_by = 'updated_at', $order = 'DESC') {

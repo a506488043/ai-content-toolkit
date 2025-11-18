@@ -212,106 +212,6 @@
     background: var(--tc-warning-color);
 }
 
-/* Category/Tag Optimization 模块样式 */
-.category-optimization-admin,
-.tag-optimization-admin {
-    margin: 20px 0;
-}
-
-.category-optimization-admin .stats-panel,
-.tag-optimization-admin .stats-panel {
-    background: linear-gradient(135deg, #48c774, #00d1b2);
-    color: white;
-    border-radius: var(--tc-radius-xl);
-    padding: var(--tc-spacing-2xl);
-    margin-bottom: var(--tc-spacing-2xl);
-    box-shadow: var(--tc-shadow-lg);
-}
-
-.category-optimization-admin .compact-stats,
-.tag-optimization-admin .compact-stats {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: var(--tc-spacing-lg);
-}
-
-.category-optimization-admin .compact-stat,
-.tag-optimization-admin .compact-stat {
-    text-align: center;
-    padding: var(--tc-spacing-lg);
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: var(--tc-radius-lg);
-    backdrop-filter: blur(10px);
-}
-
-.category-optimization-admin .compact-stat .stat-number,
-.tag-optimization-admin .compact-stat .stat-number {
-    font-size: var(--tc-font-size-3xl);
-    font-weight: var(--tc-font-weight-bold);
-    margin-bottom: var(--tc-spacing-xs);
-}
-
-.category-optimization-admin .compact-stat .stat-label,
-.tag-optimization-admin .compact-stat .stat-label {
-    font-size: var(--tc-font-size-xs);
-    opacity: 0.9;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.category-optimization-admin .items-grid,
-.tag-optimization-admin .items-grid {
-    display: grid;
-    gap: var(--tc-spacing-lg);
-}
-
-.category-optimization-admin .item-card,
-.tag-optimization-admin .item-card {
-    background: var(--tc-bg-primary);
-    border: 1px solid var(--tc-border-secondary);
-    border-radius: var(--tc-radius-lg);
-    padding: var(--tc-spacing-xl);
-    transition: var(--tc-transition-normal);
-}
-
-.category-optimization-admin .item-card:hover,
-.tag-optimization-admin .item-card:hover {
-    box-shadow: var(--tc-shadow-md);
-    border-color: var(--tc-primary-color);
-}
-
-.category-optimization-admin .item-header,
-.tag-optimization-admin .item-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: var(--tc-spacing-lg);
-}
-
-.category-optimization-admin .item-title,
-.tag-optimization-admin .item-title {
-    font-size: var(--tc-font-size-lg);
-    font-weight: var(--tc-font-weight-semibold);
-    color: var(--tc-text-primary);
-    margin: 0;
-}
-
-.category-optimization-admin .item-description,
-.tag-optimization-admin .item-description {
-    color: var(--tc-text-secondary);
-    line-height: 1.6;
-    margin-bottom: var(--tc-spacing-lg);
-    min-height: 60px;
-}
-
-.category-optimization-admin .item-meta,
-.tag-optimization-admin .item-meta {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: var(--tc-font-size-sm);
-    color: var(--tc-text-muted);
-}
 
 /* CookieGuard 模块样式 */
 .cookieguard-admin {
@@ -477,11 +377,7 @@
         align-items: stretch;
     }
 
-    .category-optimization-admin .compact-stats,
-    .tag-optimization-admin .compact-stats {
-        grid-template-columns: repeat(2, 1fr);
-    }
-
+  
     .auto-excerpt-admin .article-title,
     .auto-excerpt-admin .excerpt-text {
         max-width: none;
@@ -497,11 +393,7 @@
         grid-template-columns: 1fr;
     }
 
-    .category-optimization-admin .compact-stats,
-    .tag-optimization-admin .compact-stats {
-        grid-template-columns: 1fr;
-    }
-
+    
     .toolkit-form-table th,
     .toolkit-form-table td {
         display: block;

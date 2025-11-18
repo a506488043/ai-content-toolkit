@@ -67,7 +67,10 @@ class WordPress_Toolkit {
     private $simple_friendlink = null;
     private $simple_friendlink_admin = null;
     private $auto_excerpt = null;
-    
+    private $tag_optimization = null;
+    private $category_optimization = null;
+    private $website_optimization = null;
+        
     /**
      * 获取单例实例
      */
@@ -110,7 +113,7 @@ class WordPress_Toolkit {
     private function load_modules() {
         // 加载Custom Card模块
         require_once WORDPRESS_TOOLKIT_PLUGIN_PATH . 'modules/custom-card/custom-card-module.php';
-        $this->custom_card = new Custom_Card_Module();
+        $this->custom_card = Custom_Card_Module::get_instance();
         
         // 加载Age Calculator模块
         require_once WORDPRESS_TOOLKIT_PLUGIN_PATH . 'modules/age-calculator/age-calculator-module.php';
@@ -140,13 +143,29 @@ class WordPress_Toolkit {
         require_once WORDPRESS_TOOLKIT_PLUGIN_PATH . 'modules/auto-excerpt/auto-excerpt-module.php';
         $this->auto_excerpt = Auto_Excerpt_Module::get_instance();
 
+        // 加载Tag Optimization模块
+        require_once WORDPRESS_TOOLKIT_PLUGIN_PATH . 'modules/tag-optimization/tag-optimization-module.php';
+        $this->tag_optimization = Tag_Optimization_Module::get_instance();
+
+        // 加载Tag Optimization管理页面
+        require_once WORDPRESS_TOOLKIT_PLUGIN_PATH . 'modules/tag-optimization/admin/admin-page.php';
+        Tag_Optimization_Admin_Page::get_instance();
+
         // 加载Category Optimization模块
         require_once WORDPRESS_TOOLKIT_PLUGIN_PATH . 'modules/category-optimization/category-optimization-module.php';
         $this->category_optimization = Category_Optimization_Module::get_instance();
 
-        // 加载Tag Optimization模块
-        require_once WORDPRESS_TOOLKIT_PLUGIN_PATH . 'modules/tag-optimization/tag-optimization-module.php';
-        $this->tag_optimization = Tag_Optimization_Module::get_instance();
+        // 加载Category Optimization管理页面
+        require_once WORDPRESS_TOOLKIT_PLUGIN_PATH . 'modules/category-optimization/admin/admin-page.php';
+        Category_Optimization_Admin_Page::get_instance();
+
+        // 加载Website Optimization模块
+        require_once WORDPRESS_TOOLKIT_PLUGIN_PATH . 'modules/website-optimization/website-optimization-module.php';
+        $this->website_optimization = Website_Optimization_Module::get_instance();
+
+        // 加载Website Optimization管理页面
+        require_once WORDPRESS_TOOLKIT_PLUGIN_PATH . 'modules/website-optimization/admin/admin-page.php';
+        Website_Optimization_Admin_Page::get_instance();
 
         // Auto Excerpt 管理功能已整合到设置页面，无需额外加载
 
@@ -170,7 +189,8 @@ class WordPress_Toolkit {
         if ($this->cookieguard) $this->cookieguard->activate();
         if ($this->simple_friendlink) $this->simple_friendlink->activate();
         if ($this->auto_excerpt) $this->auto_excerpt->activate();
-        
+        if ($this->website_optimization) $this->website_optimization->activate();
+                
         // 设置插件激活时间
         add_option('wordpress_toolkit_activated_time', current_time('timestamp'));
     }
@@ -186,7 +206,8 @@ class WordPress_Toolkit {
         if ($this->cookieguard) $this->cookieguard->deactivate();
         if ($this->simple_friendlink) $this->simple_friendlink->deactivate();
         if ($this->auto_excerpt) $this->auto_excerpt->deactivate();
-    }
+        if ($this->website_optimization) $this->website_optimization->deactivate();
+            }
     
     /**
      * 初始化
@@ -202,7 +223,8 @@ class WordPress_Toolkit {
         if ($this->cookieguard) $this->cookieguard->init();
         if ($this->simple_friendlink) $this->simple_friendlink->init();
         if ($this->auto_excerpt) $this->auto_excerpt->init();
-    }
+        if ($this->website_optimization) $this->website_optimization->init();
+            }
     
     /**
      * 添加管理菜单 - 重新组织结构
@@ -269,7 +291,41 @@ class WordPress_Toolkit {
             );
         }
 
-        // 分类优化菜单已由模块自动注册
+        // 标签优化（仅管理员可见）
+        if (current_user_can('manage_options')) {
+            add_submenu_page(
+                'wordpress-toolkit',
+                __('标签优化', 'wordpress-toolkit'),
+                __('标签优化', 'wordpress-toolkit'),
+                'manage_options',
+                'wordpress-toolkit-tag-optimization',
+                array($this, 'tag_optimization_admin_page')
+            );
+        }
+
+        // 分类优化（仅管理员可见）
+        if (current_user_can('manage_options')) {
+            add_submenu_page(
+                'wordpress-toolkit',
+                __('分类优化', 'wordpress-toolkit'),
+                __('分类优化', 'wordpress-toolkit'),
+                'manage_options',
+                'wordpress-toolkit-category-optimization',
+                array($this, 'category_optimization_admin_page')
+            );
+        }
+
+        // 网站优化（仅管理员可见）
+        if (current_user_can('manage_options')) {
+            add_submenu_page(
+                'wordpress-toolkit',
+                __('网站优化', 'wordpress-toolkit'),
+                __('网站优化', 'wordpress-toolkit'),
+                'manage_options',
+                'wordpress-toolkit-website-optimization',
+                array($this, 'website_optimization_admin_page')
+            );
+        }
 
 
         // ======================
@@ -411,8 +467,8 @@ class WordPress_Toolkit {
         if ($this->time_capsule) $this->time_capsule->admin_enqueue_scripts($hook);
         if ($this->cookieguard) $this->cookieguard->admin_enqueue_scripts($hook);
         if ($this->auto_excerpt) $this->auto_excerpt->admin_enqueue_scripts($hook);
-        if ($this->category_optimization) $this->category_optimization->admin_enqueue_scripts($hook);
-        // Simple_FriendLink_Module 不需要特殊的管理页面资源加载
+        if ($this->website_optimization) $this->website_optimization->admin_enqueue_scripts($hook);
+            // Simple_FriendLink_Module 不需要特殊的管理页面资源加载
     }
     
     /**
@@ -426,9 +482,46 @@ class WordPress_Toolkit {
         if ($this->cookieguard) $this->cookieguard->enqueue_scripts();
         if ($this->simple_friendlink) $this->simple_friendlink->enqueue_scripts();
         if ($this->auto_excerpt) $this->auto_excerpt->enqueue_scripts();
-        if ($this->category_optimization) $this->category_optimization->enqueue_scripts();
+        if ($this->website_optimization) $this->website_optimization->enqueue_scripts();
+          }
+
+    /**
+     * 工具箱关于页面
+     */
+    public function toolbox_about_page() {
+        ?>
+        <div class="wrap">
+            <h1><?php _e('WordPress Toolkit', 'wordpress-toolkit'); ?></h1>
+
+            <div class="notice notice-info">
+                <p><strong><?php _e('欢迎使用 WordPress Toolkit！', 'wordpress-toolkit'); ?></strong></p>
+                <p><?php _e('这是一个功能强大的WordPress综合工具包，集成了多个实用模块。', 'wordpress-toolkit'); ?></p>
+            </div>
+
+            <div class="card">
+                <h2><?php _e('可用模块', 'wordpress-toolkit'); ?></h2>
+                <p><?php _e('请从左侧菜单选择相应模块进行管理。', 'wordpress-toolkit'); ?></p>
+
+                <ul>
+                    <li><strong><?php _e('网站卡片', 'wordpress-toolkit'); ?></strong> - <?php _e('自动抓取网站元数据并生成美观卡片', 'wordpress-toolkit'); ?></li>
+                    <li><strong><?php _e('年龄计算器', 'wordpress-toolkit'); ?></strong> - <?php _e('精确计算年龄，支持闰年优化', 'wordpress-toolkit'); ?></li>
+                    <li><strong><?php _e('物品管理', 'wordpress-toolkit'); ?></strong> - <?php _e('记录和管理个人物品购买信息', 'wordpress-toolkit'); ?></li>
+                    <li><strong><?php _e('友情链接', 'wordpress-toolkit'); ?></strong> - <?php _e('完整的友情链接管理和展示系统', 'wordpress-toolkit'); ?></li>
+                    <li><strong><?php _e('文章优化', 'wordpress-toolkit'); ?></strong> - <?php _e('智能文章摘要生成和SEO分析', 'wordpress-toolkit'); ?></li>
+                    <li><strong><?php _e('分类优化', 'wordpress-toolkit'); ?></strong> - <?php _e('AI智能分类描述生成', 'wordpress-toolkit'); ?></li>
+                                    </ul>
+            </div>
+
+            <div class="card">
+                <h2><?php _e('快速链接', 'wordpress-toolkit'); ?></h2>
+                <p>
+                    <a href="<?php echo admin_url('admin.php?page=wordpress-toolkit-auto-excerpt'); ?>" class="button button-primary"><?php _e('文章优化', 'wordpress-toolkit'); ?></a>
+                  </p>
+            </div>
+        </div>
+        <?php
     }
-    
+
     /**
      * 主管理页面 - 安全版本（简化版）
      */
@@ -3117,6 +3210,188 @@ class WordPress_Toolkit {
         </script>
         <?php
         } // End of if ($this->auto_excerpt)
+    }
+
+    /**
+     * 标签优化管理页面 - 工具箱菜单中
+     */
+    public function tag_optimization_admin_page() {
+        // 验证用户权限
+        if (!current_user_can('manage_options')) {
+            wp_die(__('权限不足', 'wordpress-toolkit'));
+        }
+
+        // 验证nonce（防止CSRF攻击）
+        if (isset($_POST['action']) && !wp_verify_nonce($_POST['_wpnonce'], 'wordpress_toolkit_tag_optimization')) {
+            wp_die(__('安全验证失败', 'wordpress-toolkit'));
+        }
+
+        // 显示管理页面
+        if ($this->tag_optimization) {
+            $this->tag_optimization->admin_page();
+        } else {
+            echo '<div class="wrap"><h1>' . __('标签优化', 'wordpress-toolkit') . '</h1>';
+            echo '<div class="error"><p>' . __('标签优化模块未正确加载', 'wordpress-toolkit') . '</p></div></div>';
+        }
+    }
+
+    /**
+     * 分类优化管理页面 - 工具箱菜单中
+     */
+    public function category_optimization_admin_page() {
+        // 验证用户权限
+        if (!current_user_can('manage_options')) {
+            wp_die(__('权限不足', 'wordpress-toolkit'));
+        }
+
+        // 验证nonce（防止CSRF攻击）
+        if (isset($_POST['action']) && !wp_verify_nonce($_POST['_wpnonce'], 'wordpress_toolkit_category_optimization')) {
+            wp_die(__('安全验证失败', 'wordpress-toolkit'));
+        }
+
+        // 显示管理页面
+        if ($this->category_optimization) {
+            $this->category_optimization->admin_page();
+        } else {
+            echo '<div class="wrap"><h1>' . __('分类优化', 'wordpress-toolkit') . '</h1>';
+            echo '<div class="error"><p>' . __('分类优化模块未正确加载', 'wordpress-toolkit') . '</p></div></div>';
+        }
+    }
+
+    /**
+     * 网站优化管理页面 - 工具箱菜单中
+     */
+    public function website_optimization_admin_page() {
+        // 验证用户权限
+        if (!current_user_can('manage_options')) {
+            wp_die(__('权限不足', 'wordpress-toolkit'));
+        }
+
+        // 验证nonce（防止CSRF攻击）
+        if (isset($_POST['action']) && !wp_verify_nonce($_POST['_wpnonce'], 'wordpress_toolkit_website_optimization')) {
+            wp_die(__('安全验证失败', 'wordpress-toolkit'));
+        }
+
+        // 显示管理页面
+        if ($this->website_optimization) {
+            $this->website_optimization->admin_page();
+        } else {
+            echo '<div class="wrap"><h1>' . __('网站优化', 'wordpress-toolkit') . '</h1>';
+            echo '<div class="error"><p>' . __('网站优化模块未正确加载', 'wordpress-toolkit') . '</p></div></div>';
+        }
+    }
+
+    /**
+     * 网站卡片列表页面
+     */
+    public function custom_cards_list_page() {
+        if (!current_user_can('manage_options')) {
+            wp_die(__('权限不足', 'wordpress-toolkit'));
+        }
+
+        if ($this->custom_card) {
+            // 调用新的卡片列表页面
+            $this->custom_card->cards_list_page();
+        } else {
+            echo '<div class="wrap"><h1>' . __('网站卡片', 'wordpress-toolkit') . '</h1>';
+            echo '<div class="error"><p>' . __('网站卡片模块未正确加载', 'wordpress-toolkit') . '</p></div></div>';
+        }
+    }
+
+    /**
+     * 物品管理页面
+     */
+    public function time_capsule_admin_page() {
+        if (!current_user_can('read')) {
+            wp_die(__('权限不足', 'wordpress-toolkit'));
+        }
+
+        if ($this->time_capsule) {
+            $this->time_capsule->admin_page();
+        } else {
+            echo '<div class="wrap"><h1>' . __('物品管理', 'wordpress-toolkit') . '</h1>';
+            echo '<div class="error"><p>' . __('物品管理模块未正确加载', 'wordpress-toolkit') . '</p></div></div>';
+        }
+    }
+
+    /**
+     * 友情链接页面
+     */
+    public function friendlinks_admin_page() {
+        if (!current_user_can('manage_options')) {
+            wp_die(__('权限不足', 'wordpress-toolkit'));
+        }
+
+        if ($this->simple_friendlink) {
+            $this->simple_friendlink->admin_page();
+        } else {
+            echo '<div class="wrap"><h1>' . __('友情链接', 'wordpress-toolkit') . '</h1>';
+            echo '<div class="error"><p>' . __('友情链接模块未正确加载', 'wordpress-toolkit') . '</p></div></div>';
+        }
+    }
+
+    /**
+     * 工具箱设置主页面
+     */
+    public function toolkit_settings_main_page() {
+        if (!current_user_can('manage_options')) {
+            wp_die(__('权限不足', 'wordpress-toolkit'));
+        }
+        ?>
+        <div class="wrap">
+            <h1><?php _e('工具箱设置', 'wordpress-toolkit'); ?></h1>
+
+            <div class="notice notice-info">
+                <p><strong><?php _e('欢迎使用 WordPress Toolkit 设置！', 'wordpress-toolkit'); ?></strong></p>
+                <p><?php _e('请从左侧子菜单选择具体模块进行设置。', 'wordpress-toolkit'); ?></p>
+            </div>
+
+            <div class="card">
+                <h2><?php _e('快速设置', 'wordpress-toolkit'); ?></h2>
+                <p>
+                    <a href="<?php echo admin_url('admin.php?page=wordpress-toolkit-custom-card-settings'); ?>" class="button"><?php _e('网站卡片', 'wordpress-toolkit'); ?></a>
+                    <a href="<?php echo admin_url('admin.php?page=wordpress-toolkit-age-calculator-settings'); ?>" class="button"><?php _e('年龄计算器', 'wordpress-toolkit'); ?></a>
+                    <a href="<?php echo admin_url('admin.php?page=wordpress-toolkit-cookieguard-settings'); ?>" class="button"><?php _e('Cookie同意', 'wordpress-toolkit'); ?></a>
+                    <a href="<?php echo admin_url('admin.php?page=wordpress-toolkit-simple-friendlink-settings'); ?>" class="button"><?php _e('友情链接', 'wordpress-toolkit'); ?></a>
+                    <a href="<?php echo admin_url('admin.php?page=wordpress-toolkit-auto-excerpt-settings'); ?>" class="button"><?php _e('文章优化', 'wordpress-toolkit'); ?></a>
+                </p>
+            </div>
+
+            <div class="card">
+                <h2><?php _e('系统信息', 'wordpress-toolkit'); ?></h2>
+                <table class="widefat">
+                    <tr>
+                        <td><strong><?php _e('插件版本', 'wordpress-toolkit'); ?></strong></td>
+                        <td><?php echo WORDPRESS_TOOLKIT_VERSION; ?></td>
+                    </tr>
+                    <tr>
+                        <td><strong><?php _e('WordPress版本', 'wordpress-toolkit'); ?></strong></td>
+                        <td><?php echo get_bloginfo('version'); ?></td>
+                    </tr>
+                    <tr>
+                        <td><strong><?php _e('PHP版本', 'wordpress-toolkit'); ?></strong></td>
+                        <td><?php echo PHP_VERSION; ?></td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+        <?php
+    }
+
+    /**
+     * 文章优化设置页面
+     */
+    public function auto_excerpt_settings_page() {
+        if (!current_user_can('manage_options')) {
+            wp_die(__('权限不足', 'wordpress-toolkit'));
+        }
+
+        if ($this->auto_excerpt) {
+            $this->auto_excerpt->settings_page();
+        } else {
+            echo '<div class="wrap"><h1>' . __('文章优化设置', 'wordpress-toolkit') . '</h1>';
+            echo '<div class="error"><p>' . __('文章优化模块未正确加载', 'wordpress-toolkit') . '</p></div></div>';
+        }
     }
 
     /**
