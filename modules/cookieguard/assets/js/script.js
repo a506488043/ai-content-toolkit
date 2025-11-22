@@ -12,7 +12,7 @@
         
         // 配置选项
         config: {
-            cookieName: 'wordpress_toolkit_cookieguard_consent',
+            cookieName: 'wordpress_ai_toolkit_cookieguard_consent',
             animationDuration: 600,
             hideDelay: 300,
             autoFocusDelay: 800
@@ -151,7 +151,7 @@
             const $notice = $('#cookieguard-notice');
             if ($notice.length === 0) return;
             
-            if (typeof wordpress_toolkit_cookie_consent_ajax !== 'undefined' && wordpress_toolkit_cookie_consent_ajax.debug_mode) {
+            if (typeof wordpress_ai_toolkit_cookie_consent_ajax !== 'undefined' && wordpress_ai_toolkit_cookie_consent_ajax.debug_mode) {
             }
             
             if (animated) {
@@ -180,7 +180,7 @@
             const self = this;
             const $notice = $('#cookieguard-notice');
             
-            if (typeof wordpress_toolkit_cookie_consent_ajax !== 'undefined' && wordpress_toolkit_cookie_consent_ajax.debug_mode) {
+            if (typeof wordpress_ai_toolkit_cookie_consent_ajax !== 'undefined' && wordpress_ai_toolkit_cookie_consent_ajax.debug_mode) {
             }
             
             // 添加加载状态（在隐藏弹框之前）
@@ -199,22 +199,22 @@
             
             // 发送AJAX请求，成功后设置Cookie
             $.ajax({
-                url: wordpress_toolkit_cookie_consent_ajax.ajax_url,
+                url: wordpress_ai_toolkit_cookie_consent_ajax.ajax_url,
                 type: 'POST',
                 data: {
-                    action: 'wordpress_toolkit_cookie_consent',
+                    action: 'wordpress_ai_toolkit_cookie_consent',
                     consent: consent,
-                    nonce: wordpress_toolkit_cookie_consent_ajax.nonce
+                    nonce: wordpress_ai_toolkit_cookie_consent_ajax.nonce
                 },
                 timeout: 10000, // 10秒超时
                 success: function(response) {
-                    if (typeof wordpress_toolkit_cookie_consent_ajax !== 'undefined' && wordpress_toolkit_cookie_consent_ajax.debug_mode) {
+                    if (typeof wordpress_ai_toolkit_cookie_consent_ajax !== 'undefined' && wordpress_ai_toolkit_cookie_consent_ajax.debug_mode) {
                     }
                     
                     if (response.success) {
                         // 服务器确认成功后才设置本地Cookie
                         self.setCookie(self.config.cookieName, consent, 365);
-                        if (typeof wordpress_toolkit_cookie_consent_ajax !== 'undefined' && wordpress_toolkit_cookie_consent_ajax.debug_mode) {
+                        if (typeof wordpress_ai_toolkit_cookie_consent_ajax !== 'undefined' && wordpress_ai_toolkit_cookie_consent_ajax.debug_mode) {
                         }
                         
                         // 显示成功反馈（在隐藏弹框之前）
@@ -263,7 +263,7 @@
                     });
                     
                     // 如果AJAX失败，但Cookie已设置，不需要显示错误
-                    if (typeof wordpress_toolkit_cookie_consent_ajax !== 'undefined' && wordpress_toolkit_cookie_consent_ajax.debug_mode) {
+                    if (typeof wordpress_ai_toolkit_cookie_consent_ajax !== 'undefined' && wordpress_ai_toolkit_cookie_consent_ajax.debug_mode) {
                     }
                 },
                 complete: function() {
@@ -303,7 +303,7 @@
         // 加载接受的脚本
         loadAcceptedScripts: function() {
             // 这里可以加载用户接受Cookie后需要执行的脚本
-            if (typeof wordpress_toolkit_cookie_consent_ajax !== 'undefined' && wordpress_toolkit_cookie_consent_ajax.debug_mode) {
+            if (typeof wordpress_ai_toolkit_cookie_consent_ajax !== 'undefined' && wordpress_ai_toolkit_cookie_consent_ajax.debug_mode) {
             }
             
             // 触发自定义事件
@@ -316,7 +316,7 @@
             date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
             const expires = '; expires=' + date.toUTCString();
             document.cookie = name + '=' + encodeURIComponent(value) + expires + '; path=/; SameSite=Lax';
-            if (typeof wordpress_toolkit_cookie_consent_ajax !== 'undefined' && wordpress_toolkit_cookie_consent_ajax.debug_mode) {
+            if (typeof wordpress_ai_toolkit_cookie_consent_ajax !== 'undefined' && wordpress_ai_toolkit_cookie_consent_ajax.debug_mode) {
             }
         },
         
@@ -331,12 +331,12 @@
                 }
                 if (c.indexOf(nameEQ) === 0) {
                     const value = decodeURIComponent(c.substring(nameEQ.length, c.length));
-                    if (typeof wordpress_toolkit_cookie_consent_ajax !== 'undefined' && wordpress_toolkit_cookie_consent_ajax.debug_mode) {
+                    if (typeof wordpress_ai_toolkit_cookie_consent_ajax !== 'undefined' && wordpress_ai_toolkit_cookie_consent_ajax.debug_mode) {
                     }
                     return value;
                 }
             }
-            if (typeof wordpress_toolkit_cookie_consent_ajax !== 'undefined' && wordpress_toolkit_cookie_consent_ajax.debug_mode) {
+            if (typeof wordpress_ai_toolkit_cookie_consent_ajax !== 'undefined' && wordpress_ai_toolkit_cookie_consent_ajax.debug_mode) {
             }
             return null;
         },
@@ -344,7 +344,7 @@
         // 删除Cookie
         deleteCookie: function(name) {
             document.cookie = name + '=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-            if (typeof wordpress_toolkit_cookie_consent_ajax !== 'undefined' && wordpress_toolkit_cookie_consent_ajax.debug_mode) {
+            if (typeof wordpress_ai_toolkit_cookie_consent_ajax !== 'undefined' && wordpress_ai_toolkit_cookie_consent_ajax.debug_mode) {
             }
         }
     };

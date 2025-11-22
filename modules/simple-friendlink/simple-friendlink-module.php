@@ -65,7 +65,7 @@ class Simple_FriendLink_Module {
      * 添加页面模板
      */
     public function add_page_template($templates) {
-        $templates['simple-friendlink.php'] = __('友情链接页面', 'wordpress-toolkit');
+        $templates['simple-friendlink.php'] = __('友情链接页面', 'wordpress-ai-toolkit');
         return $templates;
     }
 
@@ -75,7 +75,7 @@ class Simple_FriendLink_Module {
     public function load_page_template($template) {
         global $post;
         if ($post && get_post_meta($post->ID, '_wp_page_template', true) == 'simple-friendlink.php') {
-            return WORDPRESS_TOOLKIT_PLUGIN_PATH . 'modules/simple-friendlink/templates/page-simple-friendlink.php';
+            return AI_CONTENT_TOOLKIT_PLUGIN_PATH . 'modules/simple-friendlink/templates/page-simple-friendlink.php';
         }
         return $template;
     }
@@ -102,16 +102,16 @@ class Simple_FriendLink_Module {
 
         wp_enqueue_style(
             'simple-friendlink-style',
-            WORDPRESS_TOOLKIT_PLUGIN_URL . 'modules/simple-friendlink/assets/css/simple-friendlink.css',
+            AI_CONTENT_TOOLKIT_PLUGIN_URL . 'modules/simple-friendlink/assets/css/simple-friendlink.css',
             array(),
-            WORDPRESS_TOOLKIT_VERSION
+            AI_CONTENT_TOOLKIT_VERSION
         );
 
         wp_enqueue_script(
             'simple-friendlink-script',
-            WORDPRESS_TOOLKIT_PLUGIN_URL . 'modules/simple-friendlink/assets/js/simple-friendlink.js',
+            AI_CONTENT_TOOLKIT_PLUGIN_URL . 'modules/simple-friendlink/assets/js/simple-friendlink.js',
             array('jquery'),
-            WORDPRESS_TOOLKIT_VERSION,
+            AI_CONTENT_TOOLKIT_VERSION,
             true
         );
 
@@ -119,9 +119,9 @@ class Simple_FriendLink_Module {
             'ajaxUrl' => admin_url('admin-ajax.php'),
             'nonce' => wp_create_nonce('simple_friendlink_nonce'),
             'strings' => array(
-                'submitSuccess' => __('提交成功！', 'wordpress-toolkit'),
-                'submitError' => __('提交失败，请重试。', 'wordpress-toolkit'),
-                'loading' => __('提交中...', 'wordpress-toolkit')
+                'submitSuccess' => __('提交成功！', 'wordpress-ai-toolkit'),
+                'submitError' => __('提交失败，请重试。', 'wordpress-ai-toolkit'),
+                'loading' => __('提交中...', 'wordpress-ai-toolkit')
             )
         ));
     }
@@ -132,7 +132,7 @@ class Simple_FriendLink_Module {
     public function handle_form_submission() {
         // 验证nonce
         if (!isset($_POST['friendlink_nonce']) || !wp_verify_nonce($_POST['friendlink_nonce'], 'simple_friendlink_submit')) {
-            wp_die(__('安全验证失败', 'wordpress-toolkit'));
+            wp_die(__('安全验证失败', 'wordpress-ai-toolkit'));
         }
 
         // 权限检查
@@ -140,7 +140,7 @@ class Simple_FriendLink_Module {
         $require_login = $settings['require_login'] ?? true;
 
         if ($require_login && !is_user_logged_in()) {
-            wp_die(__('请登录后提交友情链接', 'wordpress-toolkit'));
+            wp_die(__('请登录后提交友情链接', 'wordpress-ai-toolkit'));
         }
 
         // 获取表单数据
@@ -151,12 +151,12 @@ class Simple_FriendLink_Module {
 
         // 验证必填字段
         if (empty($name) || empty($url)) {
-            wp_die(__('网站名称和地址为必填项', 'wordpress-toolkit'));
+            wp_die(__('网站名称和地址为必填项', 'wordpress-ai-toolkit'));
         }
 
         // 验证URL格式
         if (!filter_var($url, FILTER_VALIDATE_URL)) {
-            wp_die(__('请输入有效的网站地址', 'wordpress-toolkit'));
+            wp_die(__('请输入有效的网站地址', 'wordpress-ai-toolkit'));
         }
 
         // 检查链接是否已存在
@@ -168,7 +168,7 @@ class Simple_FriendLink_Module {
         ));
 
         if ($existing_link) {
-            wp_die(__('该网站已存在于友情链接中', 'wordpress-toolkit'));
+            wp_die(__('该网站已存在于友情链接中', 'wordpress-ai-toolkit'));
         }
 
         // 获取设置
@@ -208,7 +208,7 @@ class Simple_FriendLink_Module {
                 });
             }
         } else {
-            $error_message = __('提交失败，请重试。', 'wordpress-toolkit');
+            $error_message = __('提交失败，请重试。', 'wordpress-ai-toolkit');
             wp_die($error_message);
         }
     }
@@ -219,12 +219,12 @@ class Simple_FriendLink_Module {
     public function ajax_add_link() {
         // 验证nonce
         if (!wp_verify_nonce($_POST['nonce'], 'simple_friendlink_nonce')) {
-            wp_die(__('安全验证失败', 'wordpress-toolkit'));
+            wp_die(__('安全验证失败', 'wordpress-ai-toolkit'));
         }
 
         // 权限检查
         if (!is_user_logged_in()) {
-            wp_send_json_error(array('message' => __('请登录后提交友情链接', 'wordpress-toolkit')));
+            wp_send_json_error(array('message' => __('请登录后提交友情链接', 'wordpress-ai-toolkit')));
         }
 
         // 获取表单数据
@@ -235,12 +235,12 @@ class Simple_FriendLink_Module {
 
         // 验证必填字段
         if (empty($name) || empty($url)) {
-            wp_send_json_error(array('message' => __('网站名称和地址为必填项', 'wordpress-toolkit')));
+            wp_send_json_error(array('message' => __('网站名称和地址为必填项', 'wordpress-ai-toolkit')));
         }
 
         // 验证URL格式
         if (!filter_var($url, FILTER_VALIDATE_URL)) {
-            wp_send_json_error(array('message' => __('请输入有效的网站地址', 'wordpress-toolkit')));
+            wp_send_json_error(array('message' => __('请输入有效的网站地址', 'wordpress-ai-toolkit')));
         }
 
         // 检查链接是否已存在
@@ -252,7 +252,7 @@ class Simple_FriendLink_Module {
         ));
 
         if ($existing_link) {
-            wp_send_json_error(array('message' => __('该网站已存在于友情链接中', 'wordpress-toolkit')));
+            wp_send_json_error(array('message' => __('该网站已存在于友情链接中', 'wordpress-ai-toolkit')));
         }
 
         // 获取设置
@@ -287,12 +287,12 @@ class Simple_FriendLink_Module {
 
         if ($link_id) {
             if ($admin_approval) {
-                wp_send_json_success(array('message' => __('友情链接提交成功！等待管理员审核。', 'wordpress-toolkit')));
+                wp_send_json_success(array('message' => __('友情链接提交成功！等待管理员审核。', 'wordpress-ai-toolkit')));
             } else {
-                wp_send_json_success(array('message' => __('友情链接添加成功！', 'wordpress-toolkit')));
+                wp_send_json_success(array('message' => __('友情链接添加成功！', 'wordpress-ai-toolkit')));
             }
         } else {
-            $error_message = __('提交失败，请重试。', 'wordpress-toolkit');
+            $error_message = __('提交失败，请重试。', 'wordpress-ai-toolkit');
             wp_send_json_error(array('message' => $error_message));
         }
     }
@@ -303,12 +303,12 @@ class Simple_FriendLink_Module {
     public function ajax_get_rss() {
         // 验证nonce
         if (!wp_verify_nonce($_POST['nonce'], 'simple_friendlink_nonce')) {
-            wp_send_json_error(array('message' => __('安全验证失败', 'wordpress-toolkit')));
+            wp_send_json_error(array('message' => __('安全验证失败', 'wordpress-ai-toolkit')));
         }
 
         $url = esc_url_raw($_POST['url']);
         if (empty($url)) {
-            wp_send_json_error(array('message' => __('URL不能为空', 'wordpress-toolkit')));
+            wp_send_json_error(array('message' => __('URL不能为空', 'wordpress-ai-toolkit')));
         }
 
         $result = array(
@@ -320,7 +320,7 @@ class Simple_FriendLink_Module {
         if ($result['latest_post'] || $result['site_info']) {
             wp_send_json_success($result);
         } else {
-            wp_send_json_error(array('message' => __('无法获取信息', 'wordpress-toolkit')));
+            wp_send_json_error(array('message' => __('无法获取信息', 'wordpress-ai-toolkit')));
         }
     }
 
@@ -330,11 +330,11 @@ class Simple_FriendLink_Module {
     public function ajax_refresh_cache() {
         // 验证权限和nonce
         if (!current_user_can('manage_options')) {
-            wp_send_json_error(array('message' => __('权限不足', 'wordpress-toolkit')));
+            wp_send_json_error(array('message' => __('权限不足', 'wordpress-ai-toolkit')));
         }
 
         if (!wp_verify_nonce($_POST['nonce'], 'friendlink_refresh_cache')) {
-            wp_send_json_error(array('message' => __('安全验证失败', 'wordpress-toolkit')));
+            wp_send_json_error(array('message' => __('安全验证失败', 'wordpress-ai-toolkit')));
         }
 
         // 清理所有缓存
@@ -365,7 +365,7 @@ class Simple_FriendLink_Module {
         }
 
         wp_send_json_success(array(
-            'message' => __('缓存刷新完成', 'wordpress-toolkit'),
+            'message' => __('缓存刷新完成', 'wordpress-ai-toolkit'),
             'total_links' => $updated_count,
             'success_operations' => $success_count
         ));
@@ -587,7 +587,7 @@ class Simple_FriendLink_Module {
         }
 
         // 记录日志
-        error_log('FriendLink Cache Updated: ' . count($links) . ' links processed');
+
     }
 
     /**

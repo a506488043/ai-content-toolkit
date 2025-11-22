@@ -61,6 +61,6 @@ $component_vars = array(
     'is_admin' => $is_admin
 );
 extract($component_vars);
-include_once WORDPRESS_TOOLKIT_PLUGIN_PATH . 'modules/time-capsule/templates/items-table-component.php';
+include_once AI_CONTENT_TOOLKIT_PLUGIN_PATH . 'modules/time-capsule/templates/items-table-component.php';
 ?>
 

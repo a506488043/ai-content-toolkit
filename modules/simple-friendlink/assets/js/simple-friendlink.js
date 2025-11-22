@@ -32,7 +32,7 @@ jQuery(document).ready(function($) {
 
         // 验证必填字段
         if (!formData.link_name || !formData.link_url) {
-            showFormMessage(__('网站名称和地址为必填项', 'wordpress-toolkit'), 'error');
+            showFormMessage(__('网站名称和地址为必填项', 'wordpress-ai-toolkit'), 'error');
             $submitBtn.prop('disabled', false);
             $loadingIndicator.hide();
             return;
@@ -40,7 +40,7 @@ jQuery(document).ready(function($) {
 
         // 验证URL格式
         if (!isValidUrl(formData.link_url)) {
-            showFormMessage(__('请输入有效的网站地址', 'wordpress-toolkit'), 'error');
+            showFormMessage(__('请输入有效的网站地址', 'wordpress-ai-toolkit'), 'error');
             $submitBtn.prop('disabled', false);
             $loadingIndicator.hide();
             return;

@@ -59,7 +59,7 @@ class Tag_Optimization_Module {
             'min_articles_count' => 3
         );
 
-        $saved_settings = get_option('wordpress_toolkit_tag_optimization_settings', array());
+        $saved_settings = get_option('wordpress_ai_toolkit_tag_optimization_settings', array());
         $this->settings = wp_parse_args($saved_settings, $default_settings);
     }
 
@@ -94,21 +94,21 @@ class Tag_Optimization_Module {
      * 激活模块
      */
     public function activate() {
-        error_log('Tag Optimization: Starting module activation');
+
 
         try {
             // 创建默认设置（仅在不存在时）
-            if (!get_option('wordpress_toolkit_tag_optimization_settings')) {
-                add_option('wordpress_toolkit_tag_optimization_settings', $this->settings);
-                error_log('Tag Optimization: Default settings created');
+            if (!get_option('wordpress_ai_toolkit_tag_optimization_settings')) {
+                add_option('wordpress_ai_toolkit_tag_optimization_settings', $this->settings);
+
             } else {
-                error_log('Tag Optimization: Settings already exist, skipping creation');
+
             }
 
-            error_log('Tag Optimization: Module activated successfully');
+
 
         } catch (Exception $e) {
-            error_log('Tag Optimization: Activation error: ' . $e->getMessage());
+
         }
     }
 
@@ -118,7 +118,7 @@ class Tag_Optimization_Module {
     public function deactivate() {
         // 清理缓存
         wp_cache_flush();
-        error_log('Tag Optimization: Module deactivated');
+
     }
 
     /**
@@ -134,42 +134,28 @@ class Tag_Optimization_Module {
     public function admin_enqueue_scripts($hook) {
         // 只在相关页面加载统一脚本和样式
         $valid_pages = [
-            'settings_page_wordpress-toolkit-tag-optimization-settings',
-            'admin_page_wordpress-toolkit-tag-optimization',
-            'toplevel_page_wordpress-toolkit'
+            'settings_page_wordpress-ai-toolkit-tag-optimization-settings',
+            'admin_page_wordpress-ai-toolkit-tag-optimization',
+            'toplevel_page_wordpress-ai-toolkit'
         ];
 
         if (in_array($hook, $valid_pages)) {
             // 使用统一的模块CSS
             wp_enqueue_style(
-                'wordpress-toolkit-modules-admin',
-                WORDPRESS_TOOLKIT_PLUGIN_URL . 'assets/css/modules-admin.css',
-                array('wordpress-toolkit-admin'),
-                WORDPRESS_TOOLKIT_VERSION
+                'wordpress-ai-toolkit-modules-admin',
+                AI_CONTENT_TOOLKIT_PLUGIN_URL . 'assets/css/modules-admin.css',
+                array('wordpress-ai-toolkit-admin'),
+                AI_CONTENT_TOOLKIT_VERSION
             );
 
             // 加载统一的模块JavaScript
             wp_enqueue_script(
-                'wordpress-toolkit-modules-admin',
-                WORDPRESS_TOOLKIT_PLUGIN_URL . 'assets/js/modules-admin.js',
-                array('jquery', 'wordpress-toolkit-core'),
-                '1.0.0',
+                'wordpress-ai-toolkit-modules-admin',
+                AI_CONTENT_TOOLKIT_PLUGIN_URL . 'assets/js/modules-admin.js',
+                array('jquery', 'toolkit-core'),
+                AI_CONTENT_TOOLKIT_VERSION . '.' . time(), // 添加时间戳强制刷新缓存
                 true
             );
-
-            // 传递配置到JavaScript
-            wp_localize_script('wordpress-toolkit-modules-admin', 'TagOptimizationConfig', array(
-                'ajaxUrl' => admin_url('admin-ajax.php'),
-                'nonce' => wp_create_nonce('tag_optimization_batch'),
-                'strings' => array(
-                    'generating' => __('正在生成描述...', 'wordpress-toolkit'),
-                    'generated' => __('描述已生成', 'wordpress-toolkit'),
-                    'error' => __('生成失败，请重试', 'wordpress-toolkit'),
-                    'noApiKey' => __('请先配置DeepSeek API密钥', 'wordpress-toolkit'),
-                    'confirmApply' => __('是否要应用生成的描述？', 'wordpress-toolkit')
-                ),
-                'settings' => $this->settings
-            ));
         }
     }
 
@@ -192,14 +178,14 @@ class Tag_Optimization_Module {
      */
     public function update_settings($new_settings) {
         $this->settings = wp_parse_args($new_settings, $this->settings);
-        update_option('wordpress_toolkit_tag_optimization_settings', $this->settings);
+        update_option('wordpress_ai_toolkit_tag_optimization_settings', $this->settings);
     }
 
     /**
      * 获取标签列表
      */
     public function get_tags_list($page = 1, $per_page = 20, $status = 'all') {
-        error_log("Tag Optimization: get_tags_list called with page=$page, per_page=$per_page, status=$status");
+
 
         // 获取所有标签
         $args = array(
@@ -245,7 +231,7 @@ class Tag_Optimization_Module {
         $total_filtered = count($filtered_tags);
         $max_pages = ceil($total_tags / $per_page);
 
-        error_log("Tag Optimization: Found $total_filtered tags matching status='$status'");
+
 
         return array(
             'tags' => $filtered_tags,
@@ -260,7 +246,7 @@ class Tag_Optimization_Module {
      * 获取统计信息
      */
     public function get_statistics() {
-        error_log("Tag Optimization: get_statistics called");
+
 
         $total_tags = wp_count_terms('post_tag', array('hide_empty' => false));
 
@@ -281,7 +267,7 @@ class Tag_Optimization_Module {
         $tags_without_description_count = $total_tags - $tags_with_description_count;
         $coverage_rate = $total_tags > 0 ? round(($tags_with_description_count / $total_tags) * 100, 2) : 0;
 
-        error_log("Tag Optimization: Stats - Total: $total_tags, With: $tags_with_description_count, Without: $tags_without_description_count");
+
 
         return array(
             'total_tags' => $total_tags,
@@ -296,14 +282,14 @@ class Tag_Optimization_Module {
      */
     public function generate_tag_description($tag_id) {
         // 检查AI功能是否可用
-        if (!function_exists('wordpress_toolkit_is_ai_available') || !wordpress_toolkit_is_ai_available()) {
-            return array('success' => false, 'message' => __('AI功能未配置，请先配置AI服务', 'wordpress-toolkit'));
+        if (!function_exists('wordpress_ai_toolkit_is_ai_available') || !wordpress_ai_toolkit_is_ai_available()) {
+            return array('success' => false, 'message' => __('AI功能未配置，请先配置AI服务', 'wordpress-ai-toolkit'));
         }
 
         try {
             $tag = get_term($tag_id, 'post_tag');
             if (!$tag) {
-                return array('success' => false, 'message' => __('标签不存在', 'wordpress-toolkit'));
+                return array('success' => false, 'message' => __('标签不存在', 'wordpress-ai-toolkit'));
             }
 
             // 获取使用该标签的文章
@@ -317,7 +303,7 @@ class Tag_Optimization_Module {
             ));
 
             if (empty($posts)) {
-                return array('success' => false, 'message' => __('该标签下没有文章', 'wordpress-toolkit'));
+                return array('success' => false, 'message' => __('该标签下没有文章', 'wordpress-ai-toolkit'));
             }
 
             // 分析文章内容
@@ -329,7 +315,7 @@ class Tag_Optimization_Module {
                 $articles_content .= "文章内容：" . mb_substr(strip_tags($post->post_content), 0, 300) . "\n\n";
 
                 // 提取关键词
-                $content = $post->post_title . ' ' . $post->post_content;
+                $content = ($post->post_title ?? '') . ' ' . ($post->post_content ?? '');
                 $words = preg_split('/[\s，。！？；：""\'\'（）【】]/u', $content);
                 foreach ($words as $word) {
                     $word = trim($word);
@@ -349,8 +335,16 @@ class Tag_Optimization_Module {
             $top_keywords = array_slice(array_keys($keywords), 0, 8);
             $keywords_text = implode('、', $top_keywords);
 
-            // 构建AI提示词
-            $prompt = "请为以下标签生成一个简洁准确的描述：
+            // 构建AI提示词 - 使用动态提示词设置
+            if (function_exists('wordpress_ai_toolkit_get_prompt')) {
+                $prompt = wordpress_ai_toolkit_get_prompt('tag_optimization', array(
+                    'tag_name' => $tag->name,
+                    'tag_content' => $articles_content,
+                    'keywords' => $keywords_text
+                ));
+            } else {
+                // 降级到默认提示词
+                $prompt = "请为以下标签生成一个简洁准确的描述：
 
 标签名称：{$tag->name}
 
@@ -364,9 +358,10 @@ class Tag_Optimization_Module {
 2. 语言简洁明了，适合用户理解
 3. 30-60字之间
 4. 只返回描述内容，不要包含其他解释";
+            }
 
             // 调用AI服务
-            $response = wordpress_toolkit_call_deepseek_api(
+            $response = wordpress_ai_toolkit_call_ai_api(
                 $prompt,
                 array(
                     'max_tokens' => 100,
@@ -385,22 +380,22 @@ class Tag_Optimization_Module {
                 if (!empty($description)) {
                     return array(
                         'success' => true,
-                        'message' => sprintf(__('成功为标签"%s"生成描述', 'wordpress-toolkit'), $tag->name),
+                        'message' => sprintf(__('成功为标签"%s"生成描述', 'wordpress-ai-toolkit'), $tag->name),
                         'description' => $description,
                         'tag_id' => $tag_id,
                         'tag_name' => $tag->name
                     );
                 } else {
-                    return array('success' => false, 'message' => __('AI未能生成有效描述', 'wordpress-toolkit'));
+                    return array('success' => false, 'message' => __('AI未能生成有效描述', 'wordpress-ai-toolkit'));
                 }
 
             } else {
-                return array('success' => false, 'message' => __('AI服务响应异常', 'wordpress-toolkit'));
+                return array('success' => false, 'message' => __('AI服务响应异常', 'wordpress-ai-toolkit'));
             }
 
         } catch (Exception $e) {
-            error_log("Tag Optimization: AI tag description error: " . $e->getMessage());
-            return array('error' => __('AI生成标签描述失败：', 'wordpress-toolkit') . $e->getMessage());
+
+            return array('error' => __('AI生成标签描述失败：', 'wordpress-ai-toolkit') . $e->getMessage());
         }
     }
 
@@ -409,12 +404,12 @@ class Tag_Optimization_Module {
      */
     public function apply_tag_description($tag_id, $description) {
         if (!$tag_id || empty($description)) {
-            return array('success' => false, 'message' => __('参数无效', 'wordpress-toolkit'));
+            return array('success' => false, 'message' => __('参数无效', 'wordpress-ai-toolkit'));
         }
 
         $tag = get_term($tag_id, 'post_tag');
         if (!$tag) {
-            return array('success' => false, 'message' => __('标签不存在', 'wordpress-toolkit'));
+            return array('success' => false, 'message' => __('标签不存在', 'wordpress-ai-toolkit'));
         }
 
         try {
@@ -425,14 +420,14 @@ class Tag_Optimization_Module {
 
             return array(
                 'success' => true,
-                'message' => __('标签描述更新成功', 'wordpress-toolkit'),
+                'message' => __('标签描述更新成功', 'wordpress-ai-toolkit'),
                 'tag_id' => $tag_id,
                 'tag_name' => $tag->name
             );
 
         } catch (Exception $e) {
-            error_log("Tag Optimization: Apply tag description error: " . $e->getMessage());
-            return array('success' => false, 'message' => __('标签描述更新失败：', 'wordpress-toolkit') . $e->getMessage());
+
+            return array('success' => false, 'message' => __('标签描述更新失败：', 'wordpress-ai-toolkit') . $e->getMessage());
         }
     }
 
@@ -440,13 +435,13 @@ class Tag_Optimization_Module {
      * 批量生成标签描述
      */
     public function batch_generate_descriptions() {
-        error_log('Tag Optimization: Starting batch description generation');
+
 
         // 检查是否启用AI生成
-        if (!wordpress_toolkit_is_ai_available()) {
+        if (!wordpress_ai_toolkit_is_ai_available()) {
             return array(
                 'success' => false,
-                'message' => __('AI生成功能未启用或未配置API密钥', 'wordpress-toolkit')
+                'message' => __('AI生成功能未启用或未配置API密钥', 'wordpress-ai-toolkit')
             );
         }
 
@@ -480,7 +475,7 @@ class Tag_Optimization_Module {
             if (is_wp_error($tags)) {
                 return array(
                     'success' => false,
-                    'message' => __('获取标签列表失败：', 'wordpress-toolkit') . $tags->get_error_message()
+                    'message' => __('获取标签列表失败：', 'wordpress-ai-toolkit') . $tags->get_error_message()
                 );
             }
 
@@ -495,7 +490,7 @@ class Tag_Optimization_Module {
             if (empty($valid_tags)) {
                 return array(
                     'success' => true,
-                    'message' => __('没有符合条件的标签需要处理', 'wordpress-toolkit'),
+                    'message' => __('没有符合条件的标签需要处理', 'wordpress-ai-toolkit'),
                     'processed_count' => 0,
                     'success_count' => 0,
                     'error_count' => 0
@@ -519,18 +514,18 @@ class Tag_Optimization_Module {
 
                         if ($apply_result && $apply_result['success']) {
                             $success_count++;
-                            error_log("Tag Optimization: Generated description for tag ID: {$tag->term_id}");
+
                         } else {
                             $error_count++;
-                            error_log("Tag Optimization: Failed to apply description for tag ID: {$tag->term_id}");
+
                         }
                     } else {
                         $error_count++;
-                        error_log("Tag Optimization: No description generated for tag ID: {$tag->term_id}");
+
                     }
                 } catch (Exception $e) {
                     $error_count++;
-                    error_log("Tag Optimization: Error processing tag ID {$tag->term_id}: " . $e->getMessage());
+
                 }
             }
 
@@ -540,7 +535,7 @@ class Tag_Optimization_Module {
                 'success_count' => $success_count,
                 'error_count' => $error_count,
                 'message' => sprintf(
-                    __('批量生成标签描述完成！处理：%d个，成功：%d个，失败：%d个', 'wordpress-toolkit'),
+                    __('批量生成标签描述完成！处理：%d个，成功：%d个，失败：%d个', 'wordpress-ai-toolkit'),
                     $processed_count,
                     $success_count,
                     $error_count
@@ -548,10 +543,10 @@ class Tag_Optimization_Module {
             );
 
         } catch (Exception $e) {
-            error_log('Tag Optimization: Batch description generation error: ' . $e->getMessage());
+
             return array(
                 'success' => false,
-                'message' => __('批量生成标签描述失败：', 'wordpress-toolkit') . $e->getMessage()
+                'message' => __('批量生成标签描述失败：', 'wordpress-ai-toolkit') . $e->getMessage()
             );
         }
     }
@@ -560,8 +555,9 @@ class Tag_Optimization_Module {
      * AJAX处理生成标签描述
      */
     public function ajax_generate_description() {
-        // 使用统一的安全验证
-        if (!WordPress_Toolkit_Security_Validator::verify_admin_ajax('tag_optimization_nonce')) {
+        // 验证nonce
+        if (!wp_verify_nonce($_POST['nonce'], 'tag_optimization_nonce')) {
+            wp_send_json_error(array('message' => '安全验证失败'));
             return;
         }
 
@@ -583,7 +579,7 @@ class Tag_Optimization_Module {
         }
 
         try {
-            error_log("Tag Optimization: Processing single tag ID: {$tag_id}");
+
 
             // 生成描述
             $result = $this->generate_tag_description($tag_id);
@@ -607,8 +603,8 @@ class Tag_Optimization_Module {
             }
 
         } catch (Exception $e) {
-            error_log("Tag Optimization: Single tag generation error for ID {$tag_id}: " . $e->getMessage());
-            wp_send_json_error(array('message' => __('生成失败：', 'wordpress-toolkit') . $e->getMessage()));
+
+            wp_send_json_error(array('message' => __('生成失败：', 'wordpress-ai-toolkit') . $e->getMessage()));
         }
     }
 
@@ -616,13 +612,14 @@ class Tag_Optimization_Module {
      * AJAX处理批量生成
      */
     public function ajax_batch_generate() {
-        // 使用统一的安全验证
-        if (!WordPress_Toolkit_Security_Validator::verify_admin_ajax('tag_optimization_batch')) {
+        // 验证nonce
+        if (!wp_verify_nonce($_POST['nonce'], 'tag_optimization_batch')) {
+            wp_send_json_error(array('message' => '安全验证失败'));
             return;
         }
 
         try {
-            error_log('Tag Optimization: Starting batch generation AJAX request');
+
             $result = $this->batch_generate_descriptions();
 
             if ($result['success']) {
@@ -632,8 +629,8 @@ class Tag_Optimization_Module {
             }
 
         } catch (Exception $e) {
-            error_log('Tag Optimization: Batch generation AJAX error: ' . $e->getMessage());
-            wp_send_json_error(array('message' => __('批量生成失败：', 'wordpress-toolkit') . $e->getMessage()));
+
+            wp_send_json_error(array('message' => __('批量生成失败：', 'wordpress-ai-toolkit') . $e->getMessage()));
         }
     }
 
@@ -641,8 +638,9 @@ class Tag_Optimization_Module {
      * AJAX获取标签列表
      */
     public function ajax_get_tags_list() {
-        // 使用统一的安全验证
-        if (!WordPress_Toolkit_Security_Validator::verify_admin_ajax('tag_optimization_nonce')) {
+        // 验证nonce
+        if (!wp_verify_nonce($_POST['nonce'], 'tag_optimization_nonce')) {
+            wp_send_json_error(array('message' => '安全验证失败'));
             return;
         }
 
@@ -656,8 +654,8 @@ class Tag_Optimization_Module {
             wp_send_json_success($tags_list);
 
         } catch (Exception $e) {
-            error_log('Tag Optimization: Get tags list AJAX error: ' . $e->getMessage());
-            wp_send_json_error(array('message' => __('获取标签列表失败：', 'wordpress-toolkit') . $e->getMessage()));
+
+            wp_send_json_error(array('message' => __('获取标签列表失败：', 'wordpress-ai-toolkit') . $e->getMessage()));
         }
     }
 
@@ -665,8 +663,9 @@ class Tag_Optimization_Module {
      * AJAX获取统计信息
      */
     public function ajax_get_statistics() {
-        // 使用统一的安全验证
-        if (!WordPress_Toolkit_Security_Validator::verify_admin_ajax('tag_optimization_nonce')) {
+        // 验证nonce
+        if (!wp_verify_nonce($_POST['nonce'], 'tag_optimization_nonce')) {
+            wp_send_json_error(array('message' => '安全验证失败'));
             return;
         }
 
@@ -675,8 +674,8 @@ class Tag_Optimization_Module {
             wp_send_json_success($statistics);
 
         } catch (Exception $e) {
-            error_log('Tag Optimization: Get statistics AJAX error: ' . $e->getMessage());
-            wp_send_json_error(array('message' => __('获取统计信息失败：', 'wordpress-toolkit') . $e->getMessage()));
+
+            wp_send_json_error(array('message' => __('获取统计信息失败：', 'wordpress-ai-toolkit') . $e->getMessage()));
         }
     }
 
@@ -685,7 +684,7 @@ class Tag_Optimization_Module {
      */
     public function admin_page() {
         // 加载管理页面模板
-        require_once WORDPRESS_TOOLKIT_PLUGIN_PATH . 'modules/tag-optimization/admin/admin-page.php';
+        require_once AI_CONTENT_TOOLKIT_PLUGIN_PATH . 'modules/tag-optimization/admin/admin-page.php';
         $admin_page = Tag_Optimization_Admin_Page::get_instance();
         $admin_page->admin_page();
     }

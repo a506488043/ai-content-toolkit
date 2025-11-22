@@ -56,7 +56,7 @@ get_header(); ?>
                         <div class="tc-filter-actions">
                             <button class="tc-filter-reset active" data-category="">全部</button>
                             <?php if (is_user_logged_in()): ?>
-                            <a href="<?php echo esc_url(admin_url('admin.php?page=wordpress-toolkit-time-capsule&tab=items')); ?>"
+                            <a href="<?php echo esc_url(admin_url('admin.php?page=wordpress-ai-toolkit-time-capsule&tab=items')); ?>"
                                class="tc-admin-manage-btn" title="后台管理">
                                 管理
                             </a>
@@ -110,7 +110,7 @@ get_header(); ?>
                             <div class="tc-empty-icon">📦</div>
                             <h3>暂无物品记录</h3>
                             <p>您还没有添加任何物品记录。</p>
-                            <a href="<?php echo admin_url('admin.php?page=wordpress-toolkit-time-capsule&tab=add'); ?>" class="tc-btn tc-btn-primary">添加第一个物品</a>
+                            <a href="<?php echo admin_url('admin.php?page=wordpress-ai-toolkit-time-capsule&tab=add'); ?>" class="tc-btn tc-btn-primary">添加第一个物品</a>
                         </div>
                     <?php else: ?>
                         <div class="tc-items-grid" id="tc-items-container">

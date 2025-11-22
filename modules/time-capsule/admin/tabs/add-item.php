@@ -9,30 +9,30 @@ if (!defined('ABSPATH')) {
 
 // 加载依赖类
 if (!class_exists('TimeCapsule_Item')) {
-    require_once WORDPRESS_TOOLKIT_PLUGIN_PATH . 'modules/time-capsule/includes/class-item.php';
+    require_once AI_CONTENT_TOOLKIT_PLUGIN_PATH . 'modules/time-capsule/includes/class-item.php';
 }
 if (!class_exists('TimeCapsule_Category')) {
-    require_once WORDPRESS_TOOLKIT_PLUGIN_PATH . 'modules/time-capsule/includes/class-category.php';
+    require_once AI_CONTENT_TOOLKIT_PLUGIN_PATH . 'modules/time-capsule/includes/class-category.php';
 }
 if (!class_exists('TimeCapsule_Database')) {
-    require_once WORDPRESS_TOOLKIT_PLUGIN_PATH . 'modules/time-capsule/includes/class-database.php';
+    require_once AI_CONTENT_TOOLKIT_PLUGIN_PATH . 'modules/time-capsule/includes/class-database.php';
 }
 // 加载通用函数
 if (!function_exists('tc_calculate_item_age')) {
-    require_once WORDPRESS_TOOLKIT_PLUGIN_PATH . 'modules/time-capsule/includes/functions.php';
+    require_once AI_CONTENT_TOOLKIT_PLUGIN_PATH . 'modules/time-capsule/includes/functions.php';
 }
 
 // 加载后台管理JavaScript
 wp_enqueue_script(
-    'wordpress-toolkit-time-capsule-admin',
-    WORDPRESS_TOOLKIT_PLUGIN_URL . 'modules/time-capsule/assets/js/admin.js',
+    'wordpress-ai-toolkit-time-capsule-admin',
+    AI_CONTENT_TOOLKIT_PLUGIN_URL . 'modules/time-capsule/assets/js/admin.js',
     array('jquery'),
     TIME_CAPSULE_VERSION,
     true
 );
 
 // 传递必要的变量到JavaScript
-wp_localize_script('wordpress-toolkit-time-capsule-admin', 'TimeCapsuleAdmin', array(
+wp_localize_script('wordpress-ai-toolkit-time-capsule-admin', 'TimeCapsuleAdmin', array(
     'ajaxUrl' => admin_url('admin-ajax.php'),
     'nonce' => wp_create_nonce('time_capsule_nonce'),
     'strings' => array(
@@ -65,7 +65,7 @@ $page_title = $is_edit ? __('编辑物品', 'time-capsule') : __('添加物品',
     <div class="tc-form-header">
         <h2><?php echo esc_html($page_title); ?></h2>
         <?php if ($is_edit): ?>
-            <a href="<?php echo admin_url('admin.php?page=wordpress-toolkit-time-capsule&tab=add'); ?>"
+            <a href="<?php echo admin_url('admin.php?page=wordpress-ai-toolkit-time-capsule&tab=add'); ?>"
                class="button"><?php _e('添加新物品', 'time-capsule'); ?></a>
         <?php endif; ?>
     </div>
@@ -324,7 +324,7 @@ $page_title = $is_edit ? __('编辑物品', 'time-capsule') : __('添加物品',
                 <?php echo $is_edit ? __('更新物品', 'time-capsule') : __('添加物品', 'time-capsule'); ?>
             </button>
 
-            <a href="<?php echo admin_url('admin.php?page=wordpress-toolkit-time-capsule&tab=items'); ?>"
+            <a href="<?php echo admin_url('admin.php?page=wordpress-ai-toolkit-time-capsule&tab=items'); ?>"
                class="button"><?php _e('返回列表', 'time-capsule'); ?></a>
 
             <?php if ($is_edit): ?>

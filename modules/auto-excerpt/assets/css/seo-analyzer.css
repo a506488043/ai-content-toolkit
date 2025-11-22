@@ -680,7 +680,7 @@
 }
 
 /* WordPress通知样式兼容 */
-.wordpress-toolkit-notice {
+.wordpress-ai-toolkit-notice {
     position: fixed;
     top: 32px;
     right: 20px;
@@ -688,7 +688,7 @@
     max-width: 400px;
 }
 
-.wordpress-toolkit-notice .notice {
+.wordpress-ai-toolkit-notice .notice {
     margin: 0;
     padding: 12px;
     border-radius: 4px;

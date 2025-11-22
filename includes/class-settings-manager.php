@@ -39,7 +39,7 @@ class WordPress_Toolkit_Settings_Manager extends WordPress_Toolkit_Module_Base {
     protected function get_default_settings() {
         return array(
             'enabled' => true,
-            'version' => WORDPRESS_TOOLKIT_VERSION,
+            'version' => AI_CONTENT_TOOLKIT_VERSION,
             'last_updated' => current_time('mysql')
         );
     }
@@ -173,7 +173,7 @@ class WordPress_Toolkit_Settings_Manager extends WordPress_Toolkit_Module_Base {
                 default:
                     // 允许子类扩展验证规则
                     $validated[$key] = apply_filters(
-                        'wordpress_toolkit_validate_setting_' . $key,
+                        'wordpress_ai_toolkit_validate_setting_' . $key,
                         $value,
                         $this->option_key
                     );
@@ -224,7 +224,7 @@ class WordPress_Toolkit_Settings_Manager extends WordPress_Toolkit_Module_Base {
                 $new_settings[$setting_key] = $validated_value;
             } else {
                 $errors[] = sprintf(
-                    __('字段 %s 的值无效', 'wordpress-toolkit'),
+                    __('字段 %s 的值无效', 'wordpress-ai-toolkit'),
                     esc_html($field_name)
                 );
             }
@@ -240,11 +240,11 @@ class WordPress_Toolkit_Settings_Manager extends WordPress_Toolkit_Module_Base {
         $result = $this->update_settings($new_settings);
 
         if ($result) {
-            $this->send_ajax_response(true, __('设置保存成功', 'wordpress-toolkit'), array(
+            $this->send_ajax_response(true, __('设置保存成功', 'wordpress-ai-toolkit'), array(
                 'updated_settings' => $new_settings
             ));
         } else {
-            $this->send_ajax_response(false, __('设置保存失败', 'wordpress-toolkit'));
+            $this->send_ajax_response(false, __('设置保存失败', 'wordpress-ai-toolkit'));
         }
     }
 
@@ -307,7 +307,7 @@ class WordPress_Toolkit_Settings_Manager extends WordPress_Toolkit_Module_Base {
 
                 default:
                     // 允许自定义字段类型
-                    $html .= apply_filters('wordpress_toolkit_render_field_' . $type, '', $field_name, $field_config, $value);
+                    $html .= apply_filters('wordpress_ai_toolkit_render_field_' . $type, '', $field_name, $field_config, $value);
                     break;
             }
 
@@ -333,7 +333,7 @@ class WordPress_Toolkit_Settings_Manager extends WordPress_Toolkit_Module_Base {
 
         return array(
             'plugin' => 'WordPress Toolkit',
-            'version' => WORDPRESS_TOOLKIT_VERSION,
+            'version' => AI_CONTENT_TOOLKIT_VERSION,
             'export_time' => current_time('mysql'),
             'settings' => $settings
         );

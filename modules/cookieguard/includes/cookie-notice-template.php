@@ -9,7 +9,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-$options = get_option('wordpress_toolkit_cookieguard_options');
+$options = get_option('wordpress_ai_toolkit_cookieguard_options');
 
 // 获取配置选项，提供默认值
 $position = isset($options['position']) ? $options['position'] : 'bottom';

@@ -71,7 +71,7 @@
         // 迁移CSS类名
         migrateCSSClasses: function() {
             var migrations = {
-                'wordpress-toolkit-admin-section': 'tc-card',
+                'wordpress-ai-toolkit-admin-section': 'tc-card',
                 'gdpr-admin-wrap': 'tc-admin-container',
                 'gdpr-admin-header': 'tc-flex tc-flex-between tc-flex-center',
                 'gdpr-form-section': 'tc-mb-2xl',
@@ -117,7 +117,8 @@
                     (options.data.action.indexOf('wordpress_toolkit') === 0 ||
                      options.data.action.indexOf('time_capsule') === 0 ||
                      options.data.action.indexOf('custom_card') === 0 ||
-                     options.data.action.indexOf('age_calculator') === 0)) {
+                     options.data.action.indexOf('age_calculator') === 0 ||
+                     options.data.action.indexOf('auto_excerpt') === 0)) {
 
                     // 确保使用正确的AJAX URL
                     if (!options.url) {
@@ -128,6 +129,13 @@
                     if (options.data && !options.data.nonce && ToolkitCore.config.nonce) {
                         options.data.nonce = ToolkitCore.config.nonce;
                     }
+
+                    // 调试：输出AJAX请求信息
+                    console.log('=== MIGRATION DEBUG: AJAX Request ===');
+                    console.log('Action:', options.data.action);
+                    console.log('URL:', options.url);
+                    console.log('Data:', options.data);
+                    console.log('Nonce:', options.data.nonce);
                 }
                 return originalAjax.call(this, options);
             };

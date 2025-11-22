@@ -17,7 +17,7 @@ if (isset($_POST['submit_friendlink']) && class_exists('Simple_FriendLink_Module
 }
 
 // 加载简单的友情链接样式
-wp_enqueue_style('simple-friendlink-style', WORDPRESS_TOOLKIT_PLUGIN_URL . 'modules/simple-friendlink/assets/css/simple-friendlink.css', array(), WORDPRESS_TOOLKIT_VERSION);
+wp_enqueue_style('simple-friendlink-style', AI_CONTENT_TOOLKIT_PLUGIN_URL . 'modules/simple-friendlink/assets/css/simple-friendlink.css', array(), AI_CONTENT_TOOLKIT_VERSION);
 
 get_header(); ?>
 

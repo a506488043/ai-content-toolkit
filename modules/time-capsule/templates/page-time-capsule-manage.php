@@ -6,7 +6,7 @@
 
 // 定义常量（如果未定义）
 if (!defined('TIME_CAPSULE_PLUGIN_URL')) {
-    define('TIME_CAPSULE_PLUGIN_URL', WORDPRESS_TOOLKIT_PLUGIN_URL . 'modules/time-capsule/');
+    define('TIME_CAPSULE_PLUGIN_URL', AI_CONTENT_TOOLKIT_PLUGIN_URL . 'modules/time-capsule/');
 }
 if (!defined('TIME_CAPSULE_VERSION')) {
     define('TIME_CAPSULE_VERSION', '1.0.3');
@@ -48,9 +48,9 @@ get_header(); ?>
                 }
 
                 // 加载必要的类文件
-                require_once WORDPRESS_TOOLKIT_PLUGIN_PATH . 'modules/time-capsule/includes/class-database.php';
-                require_once WORDPRESS_TOOLKIT_PLUGIN_PATH . 'modules/time-capsule/includes/class-item.php';
-                require_once WORDPRESS_TOOLKIT_PLUGIN_PATH . 'modules/time-capsule/includes/class-category.php';
+                require_once AI_CONTENT_TOOLKIT_PLUGIN_PATH . 'modules/time-capsule/includes/class-database.php';
+                require_once AI_CONTENT_TOOLKIT_PLUGIN_PATH . 'modules/time-capsule/includes/class-item.php';
+                require_once AI_CONTENT_TOOLKIT_PLUGIN_PATH . 'modules/time-capsule/includes/class-category.php';
 
                 // 获取用户数据
                 $item_manager = new TimeCapsule_Item();

@@ -46,35 +46,35 @@ class Website_Optimization_Admin_Page {
     public function render_page($site_info, $stats, $settings) {
         ?>
         <div class="wrap">
-            <h1><?php _e('网站SEO优化', 'wordpress-toolkit'); ?></h1>
+            <h1><?php _e('网站SEO优化', 'wordpress-ai-toolkit'); ?></h1>
 
             <!-- 统计信息面板 -->
             <div class="postbox" style="margin-top: 15px; margin-bottom: 10px;">
                 <div class="inside" style="padding: 12px 15px;">
                     <div style="display: flex; align-items: center; gap: 30px; padding: 0; flex-wrap: wrap; justify-content: space-between;">
                         <div>
-                            <strong><?php _e('网站标题', 'wordpress-toolkit'); ?></strong>
+                            <strong><?php _e('网站标题', 'wordpress-ai-toolkit'); ?></strong>
                             <div style="margin-top: 5px;">
                                 <span class="dashicons dashicons-admin-site" style="color: #0073aa;"></span>
                                 <?php echo esc_html($site_info['site_title']); ?>
                             </div>
                         </div>
                         <div>
-                            <strong><?php _e('文章总数', 'wordpress-toolkit'); ?></strong>
+                            <strong><?php _e('文章总数', 'wordpress-ai-toolkit'); ?></strong>
                             <div style="margin-top: 5px;">
                                 <span class="dashicons dashicons-post" style="color: #0073aa;"></span>
                                 <?php echo number_format($site_info['total_posts']); ?>
                             </div>
                         </div>
                         <div>
-                            <strong><?php _e('页面总数', 'wordpress-toolkit'); ?></strong>
+                            <strong><?php _e('页面总数', 'wordpress-ai-toolkit'); ?></strong>
                             <div style="margin-top: 5px;">
                                 <span class="dashicons dashicons-admin-page" style="color: #0073aa;"></span>
                                 <?php echo number_format($site_info['total_pages']); ?>
                             </div>
                         </div>
                         <div>
-                            <strong><?php _e('最后分析', 'wordpress-toolkit'); ?></strong>
+                            <strong><?php _e('最后分析', 'wordpress-ai-toolkit'); ?></strong>
                             <div style="margin-top: 5px;">
                                 <span class="dashicons dashicons-calendar" style="color: #0073aa;"></span>
                                 <?php echo esc_html($site_info['last_analysis_date']); ?>
@@ -91,7 +91,7 @@ class Website_Optimization_Admin_Page {
                         <!-- 左侧：操作按钮 -->
                         <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
                             <button type="button" id="analyze-website-seo" class="button button-primary">
-                                <?php _e('分析网站SEO', 'wordpress-toolkit'); ?>
+                                <?php _e('分析网站SEO', 'wordpress-ai-toolkit'); ?>
                             </button>
                             <span class="spinner" id="analysis-spinner" style="display: none; margin-left: 5px;"></span>
                         </div>
@@ -100,7 +100,7 @@ class Website_Optimization_Admin_Page {
                     <!-- 分析进度 -->
                     <div id="analysis-progress" style="display: none; margin: 15px 0;">
                         <div class="progress-container">
-                            <h4 id="progress-title"><?php _e('分析中...', 'wordpress-toolkit'); ?></h4>
+                            <h4 id="progress-title"><?php _e('分析中...', 'wordpress-ai-toolkit'); ?></h4>
                             <div class="progress-bar-container">
                                 <div class="progress-bar">
                                     <div class="progress-fill" id="progress-fill"></div>
@@ -108,10 +108,10 @@ class Website_Optimization_Admin_Page {
                                 <span class="progress-text" id="progress-text">0%</span>
                             </div>
                             <div class="progress-details" id="progress-details">
-                                <span><?php _e('当前分析：', 'wordpress-toolkit'); ?><span id="current-analysis"><?php _e('准备中...', 'wordpress-toolkit'); ?></span></span>
-                                <span><?php _e('已分析：', 'wordpress-toolkit'); ?><span id="processed-count">0</span> / <span id="total-count">0</span></span>
-                                <span><?php _e('成功：', 'wordpress-toolkit'); ?><span id="success-count">0</span></span>
-                                <span><?php _e('失败：', 'wordpress-toolkit'); ?><span id="error-count">0</span></span>
+                                <span><?php _e('当前分析：', 'wordpress-ai-toolkit'); ?><span id="current-analysis"><?php _e('准备中...', 'wordpress-ai-toolkit'); ?></span></span>
+                                <span><?php _e('已分析：', 'wordpress-ai-toolkit'); ?><span id="processed-count">0</span> / <span id="total-count">0</span></span>
+                                <span><?php _e('成功：', 'wordpress-ai-toolkit'); ?><span id="success-count">0</span></span>
+                                <span><?php _e('失败：', 'wordpress-ai-toolkit'); ?><span id="error-count">0</span></span>
                             </div>
                         </div>
                     </div>
@@ -121,38 +121,34 @@ class Website_Optimization_Admin_Page {
 
                     <!-- SEO分析报告区域 -->
                     <div id="seo-analysis-report" style="margin-top: 20px; display: none;">
-                        <h3><?php _e('SEO分析报告', 'wordpress-toolkit'); ?></h3>
+                        <h3><?php _e('SEO分析报告', 'wordpress-ai-toolkit'); ?></h3>
 
                         <!-- 标题SEO报告 -->
                         <div class="seo-report-section" id="title-report-section" style="display: none;">
-                            <h4><?php _e('标题SEO分析', 'wordpress-toolkit'); ?></h4>
+                            <h4><?php _e('标题SEO分析', 'wordpress-ai-toolkit'); ?></h4>
                             <div class="report-content">
                                 <div class="report-item">
-                                    <strong><?php _e('当前标题：', 'wordpress-toolkit'); ?></strong>
+                                    <strong><?php _e('当前标题：', 'wordpress-ai-toolkit'); ?></strong>
                                     <span id="current-title"></span>
                                 </div>
                                 <div class="report-item">
-                                    <strong><?php _e('标题长度：', 'wordpress-toolkit'); ?></strong>
-                                    <span id="title-length"></span> <?php _e('字符', 'wordpress-toolkit'); ?>
+                                    <strong><?php _e('标题长度：', 'wordpress-ai-toolkit'); ?></strong>
+                                    <span id="title-length"></span> <?php _e('字符', 'wordpress-ai-toolkit'); ?>
                                 </div>
                                 <div class="analysis-results">
-                                    <h5><?php _e('分析结果：', 'wordpress-toolkit'); ?></h5>
+                                    <h5><?php _e('分析结果：', 'wordpress-ai-toolkit'); ?></h5>
                                     <ul id="title-analysis"></ul>
                                 </div>
                                 <div class="recommendations">
-                                    <h5><?php _e('优化建议：', 'wordpress-toolkit'); ?></h5>
+                                    <h5><?php _e('优化建议：', 'wordpress-ai-toolkit'); ?></h5>
                                     <ul id="title-recommendations"></ul>
                                 </div>
-                                <div class="implementation-steps" id="title-implementation-section" style="display: none;">
-                                    <h5><?php _e('📝 具体实施步骤：', 'wordpress-toolkit'); ?></h5>
-                                    <ul id="title-implementation-steps"></ul>
-                                </div>
                                 <div class="suggestions" id="title-suggestions-section" style="display: none;">
-                                    <h5><?php _e('具体标题建议：', 'wordpress-toolkit'); ?></h5>
+                                    <h5><?php _e('具体标题建议：', 'wordpress-ai-toolkit'); ?></h5>
                                     <ul id="title-suggestions"></ul>
                                 </div>
                                 <div class="ai-suggestions" id="ai-title-suggestions-section" style="display: none;">
-                                    <h5><?php _e('🤖 AI智能标题建议：', 'wordpress-toolkit'); ?></h5>
+                                    <h5><?php _e('🤖 AI智能标题建议：', 'wordpress-ai-toolkit'); ?></h5>
                                     <ul id="ai-title-suggestions"></ul>
                                 </div>
                             </div>
@@ -160,34 +156,30 @@ class Website_Optimization_Admin_Page {
 
                         <!-- 描述SEO报告 -->
                         <div class="seo-report-section" id="description-report-section" style="display: none;">
-                            <h4><?php _e('描述SEO分析', 'wordpress-toolkit'); ?></h4>
+                            <h4><?php _e('描述SEO分析', 'wordpress-ai-toolkit'); ?></h4>
                             <div class="report-content">
                                 <div class="report-item">
-                                    <strong><?php _e('当前描述：', 'wordpress-toolkit'); ?></strong>
+                                    <strong><?php _e('当前描述：', 'wordpress-ai-toolkit'); ?></strong>
                                     <span id="current-description"></span>
                                 </div>
                                 <div class="report-item">
-                                    <strong><?php _e('描述长度：', 'wordpress-toolkit'); ?></strong>
-                                    <span id="description-length"></span> <?php _e('字符', 'wordpress-toolkit'); ?>
+                                    <strong><?php _e('描述长度：', 'wordpress-ai-toolkit'); ?></strong>
+                                    <span id="description-length"></span> <?php _e('字符', 'wordpress-ai-toolkit'); ?>
                                 </div>
                                 <div class="analysis-results">
-                                    <h5><?php _e('分析结果：', 'wordpress-toolkit'); ?></h5>
+                                    <h5><?php _e('分析结果：', 'wordpress-ai-toolkit'); ?></h5>
                                     <ul id="description-analysis"></ul>
                                 </div>
                                 <div class="recommendations">
-                                    <h5><?php _e('优化建议：', 'wordpress-toolkit'); ?></h5>
+                                    <h5><?php _e('优化建议：', 'wordpress-ai-toolkit'); ?></h5>
                                     <ul id="description-recommendations"></ul>
                                 </div>
-                                <div class="implementation-steps" id="description-implementation-section" style="display: none;">
-                                    <h5><?php _e('📝 具体实施步骤：', 'wordpress-toolkit'); ?></h5>
-                                    <ul id="description-implementation-steps"></ul>
-                                </div>
                                 <div class="suggestions" id="description-suggestions-section" style="display: none;">
-                                    <h5><?php _e('具体描述建议：', 'wordpress-toolkit'); ?></h5>
+                                    <h5><?php _e('具体描述建议：', 'wordpress-ai-toolkit'); ?></h5>
                                     <ul id="description-suggestions"></ul>
                                 </div>
                                 <div class="ai-suggestions" id="ai-description-suggestions-section" style="display: none;">
-                                    <h5><?php _e('🤖 AI智能描述建议：', 'wordpress-toolkit'); ?></h5>
+                                    <h5><?php _e('🤖 AI智能描述建议：', 'wordpress-ai-toolkit'); ?></h5>
                                     <ul id="ai-description-suggestions"></ul>
                                 </div>
                             </div>
@@ -195,38 +187,34 @@ class Website_Optimization_Admin_Page {
 
                         <!-- 关键字SEO报告 -->
                         <div class="seo-report-section" id="keyword-report-section" style="display: none;">
-                            <h4><?php _e('关键字SEO分析', 'wordpress-toolkit'); ?></h4>
+                            <h4><?php _e('关键字SEO分析', 'wordpress-ai-toolkit'); ?></h4>
                             <div class="report-content">
                                 <div class="report-item">
-                                    <strong><?php _e('当前关键字：', 'wordpress-toolkit'); ?></strong>
+                                    <strong><?php _e('当前关键字：', 'wordpress-ai-toolkit'); ?></strong>
                                     <span id="current-keywords"></span>
                                 </div>
                                 <div class="report-item">
-                                    <strong><?php _e('关键字数量：', 'wordpress-toolkit'); ?></strong>
-                                    <span id="keyword-count"></span> <?php _e('个', 'wordpress-toolkit'); ?>
+                                    <strong><?php _e('关键字数量：', 'wordpress-ai-toolkit'); ?></strong>
+                                    <span id="keyword-count"></span> <?php _e('个', 'wordpress-ai-toolkit'); ?>
                                 </div>
                                 <div class="analysis-results">
-                                    <h5><?php _e('分析结果：', 'wordpress-toolkit'); ?></h5>
+                                    <h5><?php _e('分析结果：', 'wordpress-ai-toolkit'); ?></h5>
                                     <ul id="keyword-analysis"></ul>
                                 </div>
                                 <div class="recommendations">
-                                    <h5><?php _e('优化建议：', 'wordpress-toolkit'); ?></h5>
+                                    <h5><?php _e('优化建议：', 'wordpress-ai-toolkit'); ?></h5>
                                     <ul id="keyword-recommendations"></ul>
                                 </div>
-                                <div class="implementation-steps" id="keyword-implementation-section" style="display: none;">
-                                    <h5><?php _e('📝 具体实施步骤：', 'wordpress-toolkit'); ?></h5>
-                                    <ul id="keyword-implementation-steps"></ul>
-                                </div>
                                 <div class="suggestions" id="keyword-suggestions-section" style="display: none;">
-                                    <h5><?php _e('具体关键字建议：', 'wordpress-toolkit'); ?></h5>
+                                    <h5><?php _e('具体关键字建议：', 'wordpress-ai-toolkit'); ?></h5>
                                     <ul id="keyword-suggestions"></ul>
                                 </div>
                                 <div class="ai-suggestions" id="ai-keyword-suggestions-section" style="display: none;">
-                                    <h5><?php _e('🤖 AI智能关键字建议：', 'wordpress-toolkit'); ?></h5>
+                                    <h5><?php _e('🤖 AI智能关键字建议：', 'wordpress-ai-toolkit'); ?></h5>
                                     <ul id="ai-keyword-suggestions"></ul>
                                 </div>
                                 <div class="ai-suggestions" id="ai-longtail-suggestions-section" style="display: none;">
-                                    <h5><?php _e('🤖 AI智能长尾关键字建议：', 'wordpress-toolkit'); ?></h5>
+                                    <h5><?php _e('🤖 AI智能长尾关键字建议：', 'wordpress-ai-toolkit'); ?></h5>
                                     <ul id="ai-longtail-suggestions"></ul>
                                 </div>
                             </div>
@@ -234,7 +222,7 @@ class Website_Optimization_Admin_Page {
 
                         <!-- 总体优化建议 -->
                         <div class="seo-report-section" id="overall-recommendations-section" style="display: none;">
-                            <h4><?php _e('总体优化建议', 'wordpress-toolkit'); ?></h4>
+                            <h4><?php _e('总体优化建议', 'wordpress-ai-toolkit'); ?></h4>
                             <div class="report-content">
                                 <ul id="overall-recommendations"></ul>
                             </div>
@@ -310,36 +298,6 @@ class Website_Optimization_Admin_Page {
             margin-bottom: 8px;
             line-height: 1.4;
             font-weight: 500;
-        }
-
-        .implementation-steps {
-            margin-top: 20px;
-            background: #f8f9fa;
-            border: 1px solid #e9ecef;
-            border-radius: 6px;
-            padding: 15px;
-        }
-
-        .implementation-steps h5 {
-            margin: 0 0 10px 0;
-            color: #28a745;
-            font-size: 14px;
-            font-weight: 600;
-        }
-
-        .implementation-steps ul {
-            margin: 0;
-            padding-left: 20px;
-        }
-
-        .implementation-steps li {
-            color: #495057;
-            margin-bottom: 10px;
-            line-height: 1.5;
-            background: #fff;
-            padding: 8px 12px;
-            border-radius: 4px;
-            border-left: 3px solid #28a745;
         }
 
         /* 进度条样式 */
@@ -458,7 +416,7 @@ class Website_Optimization_Admin_Page {
                 $button.prop('disabled', true);
 
                 // 初始化进度显示
-                updateProgress('<?php _e('分析网站SEO', 'wordpress-toolkit'); ?>', 0, 0, 0, 0, '<?php _e('正在准备分析...', 'wordpress-toolkit'); ?>', 5);
+                updateProgress('<?php _e('分析网站SEO', 'wordpress-ai-toolkit'); ?>', 0, 0, 0, 0, '<?php _e('正在准备分析...', 'wordpress-ai-toolkit'); ?>', 5);
 
                 // 发送AJAX请求
                 $.ajax({
@@ -470,20 +428,20 @@ class Website_Optimization_Admin_Page {
                         timestamp: Date.now()
                     },
                     beforeSend: function() {
-                        updateProgress('<?php _e('分析网站SEO', 'wordpress-toolkit'); ?>', 10, 0, 0, 0, '<?php _e('正在发送请求到服务器...', 'wordpress-toolkit'); ?>', 5);
+                        updateProgress('<?php _e('分析网站SEO', 'wordpress-ai-toolkit'); ?>', 10, 0, 0, 0, '<?php _e('正在发送请求到服务器...', 'wordpress-ai-toolkit'); ?>', 5);
                     },
                     success: function(response) {
                         if (response.success) {
                             var data = response.data;
-                            updateProgress('<?php _e('分析网站SEO', 'wordpress-toolkit'); ?>', 100, 5, 5, 0, '<?php _e('分析完成', 'wordpress-toolkit'); ?>', 5);
+                            updateProgress('<?php _e('分析网站SEO', 'wordpress-ai-toolkit'); ?>', 100, 5, 5, 0, '<?php _e('分析完成', 'wordpress-ai-toolkit'); ?>', 5);
 
                             // 显示SEO分析报告
                             displaySEOAnalysisReport(data.seo_report);
 
                             // 显示成功消息
                             var message = '<div class="notice notice-success is-dismissible"><p>' +
-                                '<strong><?php _e('网站SEO分析完成！', 'wordpress-toolkit'); ?></strong><br>' +
-                                '<?php _e('分析时间：', 'wordpress-toolkit'); ?>' + data.analysis_date +
+                                '<strong><?php _e('网站SEO分析完成！', 'wordpress-ai-toolkit'); ?></strong><br>' +
+                                '<?php _e('分析时间：', 'wordpress-ai-toolkit'); ?>' + data.analysis_date +
                                 '</p></div>';
                             $result.html(message).show();
 
@@ -493,8 +451,8 @@ class Website_Optimization_Admin_Page {
                             }, 5000);
 
                         } else {
-                            updateProgress('<?php _e('分析网站SEO', 'wordpress-toolkit'); ?>', 100, 0, 0, 0, '<?php _e('分析失败：', 'wordpress-toolkit'); ?>' + response.data.message, 5);
-                            $result.html('<div class="notice notice-error"><p><strong><?php _e('SEO分析失败：', 'wordpress-toolkit'); ?></strong><br>' + response.data.message + '</p></div>').show();
+                            updateProgress('<?php _e('分析网站SEO', 'wordpress-ai-toolkit'); ?>', 100, 0, 0, 0, '<?php _e('分析失败：', 'wordpress-ai-toolkit'); ?>' + response.data.message, 5);
+                            $result.html('<div class="notice notice-error"><p><strong><?php _e('SEO分析失败：', 'wordpress-ai-toolkit'); ?></strong><br>' + response.data.message + '</p></div>').show();
                             setTimeout(function() {
                                 $progress.hide();
                             }, 5000);
@@ -505,13 +463,13 @@ class Website_Optimization_Admin_Page {
                     error: function(xhr, status, error) {
                         var errorMessage = '';
                         if (status === 'timeout') {
-                            errorMessage = '<?php _e('请求超时：处理时间过长，请稍后重试。', 'wordpress-toolkit'); ?>';
+                            errorMessage = '<?php _e('请求超时：处理时间过长，请稍后重试。', 'wordpress-ai-toolkit'); ?>';
                         } else {
-                            errorMessage = '<?php _e('网络错误：', 'wordpress-toolkit'); ?>' + (error || '<?php _e('未知错误', 'wordpress-toolkit'); ?>');
+                            errorMessage = '<?php _e('网络错误：', 'wordpress-ai-toolkit'); ?>' + (error || '<?php _e('未知错误', 'wordpress-ai-toolkit'); ?>');
                         }
 
-                        updateProgress('<?php _e('分析网站SEO', 'wordpress-toolkit'); ?>', 100, 0, 0, 0, errorMessage, 5);
-                        $result.html('<div class="notice notice-error"><p><strong><?php _e('分析失败：', 'wordpress-toolkit'); ?></strong><br>' + errorMessage + '</p></div>').show();
+                        updateProgress('<?php _e('分析网站SEO', 'wordpress-ai-toolkit'); ?>', 100, 0, 0, 0, errorMessage, 5);
+                        $result.html('<div class="notice notice-error"><p><strong><?php _e('分析失败：', 'wordpress-ai-toolkit'); ?></strong><br>' + errorMessage + '</p></div>').show();
                         setTimeout(function() {
                             $progress.hide();
                         }, 5000);
@@ -563,16 +521,6 @@ class Website_Optimization_Admin_Page {
                         $titleRecommendations.append('<li>' + item + '</li>');
                     });
 
-                    // 显示实施步骤
-                    if (titleReport.implementation_steps && titleReport.implementation_steps.length > 0) {
-                        var $titleImplementation = $('#title-implementation-steps');
-                        $titleImplementation.empty();
-                        titleReport.implementation_steps.forEach(function(item) {
-                            $titleImplementation.append('<li style="white-space: pre-line;">' + item + '</li>');
-                        });
-                        $('#title-implementation-section').show();
-                    }
-
                     $('#title-report-section').show();
                 }
 
@@ -596,16 +544,6 @@ class Website_Optimization_Admin_Page {
                         $descriptionRecommendations.append('<li>' + item + '</li>');
                     });
 
-                    // 显示实施步骤
-                    if (descriptionReport.implementation_steps && descriptionReport.implementation_steps.length > 0) {
-                        var $descriptionImplementation = $('#description-implementation-steps');
-                        $descriptionImplementation.empty();
-                        descriptionReport.implementation_steps.forEach(function(item) {
-                            $descriptionImplementation.append('<li style="white-space: pre-line;">' + item + '</li>');
-                        });
-                        $('#description-implementation-section').show();
-                    }
-
                     $('#description-report-section').show();
                 }
 
@@ -628,16 +566,6 @@ class Website_Optimization_Admin_Page {
                     keywordReport.recommendations.forEach(function(item) {
                         $keywordRecommendations.append('<li>' + item + '</li>');
                     });
-
-                    // 显示实施步骤
-                    if (keywordReport.implementation_steps && keywordReport.implementation_steps.length > 0) {
-                        var $keywordImplementation = $('#keyword-implementation-steps');
-                        $keywordImplementation.empty();
-                        keywordReport.implementation_steps.forEach(function(item) {
-                            $keywordImplementation.append('<li style="white-space: pre-line;">' + item + '</li>');
-                        });
-                        $('#keyword-implementation-section').show();
-                    }
 
                     $('#keyword-report-section').show();
                 }
@@ -669,8 +597,8 @@ class Website_Optimization_Admin_Page {
 
                             // 显示成功消息
                             var message = '<div class="notice notice-info is-dismissible"><p>' +
-                                '<strong><?php _e('已加载保存的SEO分析报告', 'wordpress-toolkit'); ?></strong><br>' +
-                                '<?php _e('分析时间：', 'wordpress-toolkit'); ?>' + response.data.analysis_date +
+                                '<strong><?php _e('已加载保存的SEO分析报告', 'wordpress-ai-toolkit'); ?></strong><br>' +
+                                '<?php _e('分析时间：', 'wordpress-ai-toolkit'); ?>' + response.data.analysis_date +
                                 '</p></div>';
                             $('#analysis-result').html(message).show();
                         }

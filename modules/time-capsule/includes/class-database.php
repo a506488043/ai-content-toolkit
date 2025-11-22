@@ -44,6 +44,21 @@ class TimeCapsule_Database {
         global $wpdb;
         require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 
+        // 更新items表结构
+        $this->update_items_table();
+
+        // 更新categories表结构
+        $this->update_categories_table();
+
+        return true;
+    }
+
+    /**
+     * 更新items表结构
+     */
+    private function update_items_table() {
+        global $wpdb;
+
         // 检查是否需要添加证书资质相关字段
         $table_name = $this->get_table_name($this->table_items);
 
@@ -54,7 +69,7 @@ class TimeCapsule_Database {
         }
 
         // 检查字段是否存在
-        $existing_columns = $wpdb->get_col($wpdb->prepare("SHOW COLUMNS FROM %s", $table_name));
+        $existing_columns = $wpdb->get_col("SHOW COLUMNS FROM {$table_name}");
 
         $certificate_fields = array(
             'issue_date' => "ADD COLUMN issue_date date DEFAULT NULL COMMENT '发证时间'",
@@ -82,13 +97,20 @@ class TimeCapsule_Database {
         }
 
         if (!empty($alter_sqls)) {
-            $alter_sql = "ALTER TABLE {$table_name} " . implode(', ', $alter_sqls);
-
-            // 执行ALTER TABLE操作并添加错误处理
-            $result = $wpdb->query($alter_sql);
-            if ($result === false) {
-                wt_log_error('Failed to alter table structure: ' . $wpdb->last_error, 'time-capsule');
-                return false;
+            // 逐个执行ALTER操作，避免重复字段错误
+            foreach ($alter_sqls as $alter_sql) {
+                $full_sql = "ALTER TABLE {$table_name} {$alter_sql}";
+                $result = $wpdb->query($full_sql);
+                if ($result === false) {
+                    // 如果是重复字段错误，记录但不停止
+                    if (strpos($wpdb->last_error, 'Duplicate column name') !== false) {
+                        wt_log_error('Column already exists, skipping: ' . $wpdb->last_error, 'time-capsule');
+                        continue;
+                    } else {
+                        wt_log_error('Failed to alter table structure: ' . $wpdb->last_error, 'time-capsule');
+                        return false;
+                    }
+                }
             }
 
             // 添加索引，并处理错误
@@ -110,6 +132,36 @@ class TimeCapsule_Database {
                     wt_log_error('Failed to create index: ' . $wpdb->last_error, 'time-capsule');
                     // 继续执行，不返回false，因为索引创建失败不会影响主要功能
                 }
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * 更新categories表结构
+     */
+    private function update_categories_table() {
+        global $wpdb;
+
+        $table_name = $this->get_table_name($this->table_categories);
+
+        // 验证表名安全性
+        if (!$this->validate_table_name($this->table_categories)) {
+            wt_log_error('Invalid table name in update_categories_table', 'time-capsule');
+            return false;
+        }
+
+        // 检查字段是否存在
+        $existing_columns = $wpdb->get_col("SHOW COLUMNS FROM {$table_name}");
+
+        // 检查并添加updated_at字段
+        if (!in_array('updated_at', $existing_columns)) {
+            $alter_sql = "ALTER TABLE {$table_name} ADD COLUMN updated_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'";
+            $result = $wpdb->query($alter_sql);
+            if ($result === false) {
+                wt_log_error('Failed to add updated_at column to categories table: ' . $wpdb->last_error, 'time-capsule');
+                return false;
             }
         }
 
@@ -182,6 +234,7 @@ class TimeCapsule_Database {
             is_active tinyint(1) DEFAULT 1,
             sort_order int(11) DEFAULT 0,
             created_at datetime NOT NULL,
+            updated_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             PRIMARY KEY  (id),
             UNIQUE KEY name (name),
             KEY is_active (is_active),

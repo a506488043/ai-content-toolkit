@@ -299,6 +299,32 @@ jQuery(document).ready(function($) {
                 html += '</div>';
             }
 
+            // 元信息建议
+            if (data.ai_meta_info && (data.ai_meta_info.suggested_title || data.ai_meta_info.meta_description)) {
+                html += '<div class="meta-info">';
+                html += '<h3>📝 元信息建议</h3>';
+                html += '<div class="meta-suggestions">';
+
+                if (data.ai_meta_info.suggested_title) {
+                    html += '<div class="meta-item">';
+                    html += '<label>建议标题:</label>';
+                    html += '<div class="meta-value selectable-text" data-type="suggested-title">' + this.escapeHtml(data.ai_meta_info.suggested_title) + '</div>';
+                    html += '<button class="copy-meta-btn" data-text="' + this.escapeHtml(data.ai_meta_info.suggested_title) + '" title="复制建议标题">📋 复制</button>';
+                    html += '</div>';
+                }
+
+                if (data.ai_meta_info.meta_description) {
+                    html += '<div class="meta-item">';
+                    html += '<label>Meta描述:</label>';
+                    html += '<div class="meta-value selectable-text" data-type="meta-description">' + this.escapeHtml(data.ai_meta_info.meta_description) + '</div>';
+                    html += '<button class="copy-meta-btn" data-text="' + this.escapeHtml(data.ai_meta_info.meta_description) + '" title="复制Meta描述">📋 复制</button>';
+                    html += '</div>';
+                }
+
+                html += '</div>';
+                html += '</div>';
+            }
+
             return html;
         },
 
@@ -874,14 +900,14 @@ jQuery(document).ready(function($) {
             var notice = '<div class="notice ' + className + ' is-dismissible"><p>' + message + '</p></div>';
 
             // 移除现有通知
-            $('.wordpress-toolkit-notice').remove();
+            $('.wordpress-ai-toolkit-notice').remove();
 
             // 添加新通知
-            $('body').prepend('<div class="wordpress-toolkit-notice">' + notice + '</div>');
+            $('body').prepend('<div class="wordpress-ai-toolkit-notice">' + notice + '</div>');
 
             // 自动移除
             setTimeout(function() {
-                $('.wordpress-toolkit-notice').fadeOut(function() {
+                $('.wordpress-ai-toolkit-notice').fadeOut(function() {
                     $(this).remove();
                 });
             }, 5000);
@@ -917,6 +943,16 @@ jQuery(document).ready(function($) {
 
                 $container.find('.seo-ai-report-container').prepend(controlHTML);
             }
+        },
+
+        /**
+         * HTML转义
+         */
+        escapeHtml: function(text) {
+            if (!text) return '';
+            var div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
         }
     };
 
@@ -979,5 +1015,79 @@ jQuery(document).ready(function($) {
                 }
             });
         }
+
+        // 绑定复制按钮事件
+        $(document).on('click', '.copy-meta-btn', function() {
+            var textToCopy = $(this).data('text');
+            if (textToCopy) {
+                // 创建临时textarea元素用于复制
+                var tempTextArea = $('<textarea>');
+                $('body').append(tempTextArea);
+                tempTextArea.val(textToCopy).select();
+
+                try {
+                    var successful = document.execCommand('copy');
+                    if (successful) {
+                        // 显示复制成功提示
+                        var originalText = $(this).text();
+                        $(this).text('✅ 已复制');
+
+                        // 2秒后恢复原文本
+                        setTimeout(function() {
+                            $(this).text(originalText);
+                        }.bind(this), 2000);
+                    } else {
+                        alert('复制失败，请手动选择文本复制');
+                    }
+                } catch (err) {
+                    alert('复制失败，请手动选择文本复制');
+                }
+
+                tempTextArea.remove();
+            }
+        });
+
+        // 为现有的meta-card元素添加复制按钮
+        function addCopyButtonsToMetaCards() {
+            $('.meta-card .meta-item').each(function() {
+                var $metaItem = $(this);
+                var $metaValue = $metaItem.find('.meta-value');
+                var $metaLabel = $metaItem.find('.meta-label');
+
+                // 如果还没有复制按钮，并且有文本内容
+                if ($metaValue.length && !$metaItem.find('.copy-meta-btn').length) {
+                    var textToCopy = $metaValue.text().trim();
+                    if (textToCopy) {
+                        var labelText = $metaLabel.text().trim();
+                        var title = '复制' + (labelText || '文本');
+
+                        var $copyButton = $('<button class="copy-meta-btn" data-text="' + textToCopy + '" title="' + title + '">📋 复制</button>');
+                        $metaItem.append($copyButton);
+                    }
+                }
+            });
+        }
+
+        // 页面加载后为meta-card添加复制按钮
+        setTimeout(addCopyButtonsToMetaCards, 100);
+
+        // 监听DOM变化，为动态加载的meta-card添加复制按钮
+        var observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                if (mutation.addedNodes && mutation.addedNodes.length > 0) {
+                    setTimeout(addCopyButtonsToMetaCards, 50);
+                }
+            });
+        });
+
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true
+        });
+
+        // 允许文本选择
+        $(document).on('click', '.selectable-text, .meta-value', function(e) {
+            e.stopPropagation();
+        });
     });
 });

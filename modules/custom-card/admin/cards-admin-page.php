@@ -59,32 +59,32 @@ class Custom_Cards_Admin_Page {
      */
     public function enqueue_scripts($hook) {
         // 只在网站卡片管理页面加载
-        if (strpos($hook, 'wordpress-toolkit-cards-list') === false) {
+        if (strpos($hook, 'wordpress-ai-toolkit-cards-list') === false) {
             return;
         }
 
         // 加载统一样式
         wp_enqueue_style(
-            'wordpress-toolkit-modules-admin',
-            WORDPRESS_TOOLKIT_PLUGIN_URL . 'assets/css/modules-admin.css',
+            'wordpress-ai-toolkit-modules-admin',
+            AI_CONTENT_TOOLKIT_PLUGIN_URL . 'assets/css/modules-admin.css',
             array(),
-            WORDPRESS_TOOLKIT_VERSION
+            AI_CONTENT_TOOLKIT_VERSION
         );
 
         // 加载网站卡片管理脚本
         wp_enqueue_script(
-            'wordpress-toolkit-cards-admin',
-            WORDPRESS_TOOLKIT_PLUGIN_URL . 'modules/custom-card/assets/admin-script.js',
+            'wordpress-ai-toolkit-cards-admin',
+            AI_CONTENT_TOOLKIT_PLUGIN_URL . 'modules/custom-card/assets/admin-script.js',
             array('jquery'),
-            WORDPRESS_TOOLKIT_VERSION,
+            AI_CONTENT_TOOLKIT_VERSION,
             true
         );
 
         // 传递AJAX参数
-        wp_localize_script('wordpress-toolkit-cards-admin', 'custom_cards_ajax', array(
+        wp_localize_script('wordpress-ai-toolkit-cards-admin', 'custom_cards_ajax', array(
             'ajax_url' => admin_url('admin-ajax.php'),
             'nonce' => wp_create_nonce('custom_cards_nonce'),
-            'plugin_url' => WORDPRESS_TOOLKIT_PLUGIN_URL
+            'plugin_url' => AI_CONTENT_TOOLKIT_PLUGIN_URL
         ));
     }
 
@@ -94,7 +94,7 @@ class Custom_Cards_Admin_Page {
     public function admin_page() {
         // 验证用户权限
         if (!current_user_can('manage_options')) {
-            wp_die(__('权限不足', 'wordpress-toolkit'));
+            wp_die(__('权限不足', 'wordpress-ai-toolkit'));
         }
 
         // 获取统计数据
@@ -104,54 +104,36 @@ class Custom_Cards_Admin_Page {
         $cards_data = $this->get_cards_data();
         ?>
         <div class="wrap custom-cards-admin">
-            <h1><?php _e('网站卡片管理', 'wordpress-toolkit'); ?></h1>
+            <h1><?php _e('网站卡片管理', 'wordpress-ai-toolkit'); ?></h1>
 
             <!-- 统计卡片 -->
             <div class="custom-cards-stats-grid">
                 <div class="stat-card">
-                    <h3><?php _e('总卡片数', 'wordpress-toolkit'); ?></h3>
+                    <h3><?php _e('总卡片数', 'wordpress-ai-toolkit'); ?></h3>
                     <span class="stat-number"><?php echo number_format($stats['total_cards']); ?></span>
                 </div>
                 <div class="stat-card">
-                    <h3><?php _e('激活卡片', 'wordpress-toolkit'); ?></h3>
+                    <h3><?php _e('激活卡片', 'wordpress-ai-toolkit'); ?></h3>
                     <span class="stat-number"><?php echo number_format($stats['active_cards']); ?></span>
                 </div>
                 <div class="stat-card">
-                    <h3><?php _e('今日点击量', 'wordpress-toolkit'); ?></h3>
+                    <h3><?php _e('今日点击量', 'wordpress-ai-toolkit'); ?></h3>
                     <span class="stat-number"><?php echo number_format($stats['today_clicks']); ?></span>
                 </div>
                 <div class="stat-card">
-                    <h3><?php _e('总点击量', 'wordpress-toolkit'); ?></h3>
+                    <h3><?php _e('总点击量', 'wordpress-ai-toolkit'); ?></h3>
                     <span class="stat-number"><?php echo number_format($stats['total_clicks']); ?></span>
                 </div>
             </div>
 
-            <!-- 搜索和操作区域 -->
-            <div class="custom-cards-actions">
-                <div class="search-form">
-                    <form method="get">
-                        <input type="hidden" name="page" value="wordpress-toolkit-cards-list">
-                        <input type="text" name="card_search" value="<?php echo esc_attr($cards_data['search']); ?>" placeholder="搜索网站标题、URL或描述...">
-                        <button type="submit" class="button">搜索</button>
-                        <?php if ($cards_data['search']): ?>
-                            <a href="<?php echo admin_url('admin.php?page=wordpress-toolkit-cards-list'); ?>" class="button">清除搜索</a>
-                        <?php endif; ?>
-                    </form>
-                </div>
-
-                <div class="bulk-actions">
-                    <button type="button" class="button button-secondary" id="clear-cards-cache">清除缓存</button>
-                    <button type="button" class="button button-secondary" id="refresh-cards-data">刷新数据</button>
-                </div>
-            </div>
-
+            
             <!-- 卡片列表 -->
             <div class="custom-cards-list-section">
                 <?php if ($cards_data['cards'] && !empty($cards_data['cards'])): ?>
                     <!-- 分页导航 -->
                     <div class="tablenav-pages">
                         <span class="displaying-num">
-                            <?php printf(__('共 %d 个卡片', 'wordpress-toolkit'), $cards_data['total_filtered']); ?>
+                            <?php printf(__('共 %d 个卡片', 'wordpress-ai-toolkit'), $cards_data['total_filtered']); ?>
                         </span>
                         <?php echo $cards_data['pagination']; ?>
                     </div>
@@ -159,12 +141,12 @@ class Custom_Cards_Admin_Page {
                     <table class="wp-list-table widefat fixed striped">
                         <thead>
                             <tr>
-                                <th scope="col"><?php _e('网站标题', 'wordpress-toolkit'); ?></th>
-                                <th scope="col"><?php _e('URL', 'wordpress-toolkit'); ?></th>
-                                <th scope="col"><?php _e('状态', 'wordpress-toolkit'); ?></th>
-                                <th scope="col"><?php _e('点击次数', 'wordpress-toolkit'); ?></th>
-                                <th scope="col"><?php _e('创建时间', 'wordpress-toolkit'); ?></th>
-                                <th scope="col"><?php _e('操作', 'wordpress-toolkit'); ?></th>
+                                <th scope="col"><?php _e('网站标题', 'wordpress-ai-toolkit'); ?></th>
+                                <th scope="col"><?php _e('URL', 'wordpress-ai-toolkit'); ?></th>
+                                <th scope="col"><?php _e('状态', 'wordpress-ai-toolkit'); ?></th>
+                                <th scope="col"><?php _e('点击次数', 'wordpress-ai-toolkit'); ?></th>
+                                <th scope="col"><?php _e('创建时间', 'wordpress-ai-toolkit'); ?></th>
+                                <th scope="col"><?php _e('操作', 'wordpress-ai-toolkit'); ?></th>
                             </tr>
                         </thead>
                         <tbody>
@@ -233,7 +215,7 @@ class Custom_Cards_Admin_Page {
                         <ul>
                             <li>在文章或页面中使用短代码 <code>[custom_card url="https://example.com"]</code></li>
                             <li>访问包含网站卡片的页面时会自动创建卡片</li>
-                            <li>或前往<a href="<?php echo admin_url('admin.php?page=wordpress-toolkit-custom-card-settings'); ?>">设置页面</a>进行配置</li>
+                            <li>或前往<a href="<?php echo admin_url('admin.php?page=wordpress-ai-toolkit-custom-card-settings'); ?>">设置页面</a>进行配置</li>
                         </ul>
                     </div>
                 <?php endif; ?>
@@ -272,35 +254,7 @@ class Custom_Cards_Admin_Page {
             display: block;
         }
 
-        /* 操作区域 - 与文章优化保持一致 */
-        .custom-cards-actions {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-            gap: 15px;
-        }
-
-        .custom-cards-actions .search-form {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-        }
-
-        .custom-cards-actions .search-form input[type="text"] {
-            min-width: 200px;
-            padding: 8px 12px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 14px;
-        }
-
-        .custom-cards-actions .bulk-actions {
-            display: flex;
-            gap: 10px;
-        }
-
+        
         /* 卡片列表区域 - 与文章优化保持一致 */
         .custom-cards-list-section {
             background: #fff;
@@ -509,24 +463,7 @@ class Custom_Cards_Admin_Page {
                 grid-template-columns: repeat(2, 1fr);
             }
 
-            .custom-cards-actions {
-                flex-direction: column;
-                align-items: stretch;
-            }
-
-            .custom-cards-actions .search-form {
-                width: 100%;
-            }
-
-            .custom-cards-actions .search-form input[type="text"] {
-                min-width: auto;
-                width: 100%;
-            }
-
-            .custom-cards-actions .bulk-actions {
-                justify-content: center;
-            }
-
+            
             .tablenav-pages {
                 float: none;
                 text-align: center;
@@ -556,58 +493,11 @@ class Custom_Cards_Admin_Page {
                 margin: 5px 0;
             }
 
-            .search-form {
-                flex-direction: column !important;
-                align-items: stretch !important;
-            }
-
-            .search-form input[type="text"] {
-                width: 100% !important;
-                margin-bottom: 10px;
-            }
-        }
+                    }
         </style>
 
         <script type="text/javascript">
         jQuery(document).ready(function($) {
-            // 清除缓存功能
-            $('#clear-cards-cache').on('click', function(e) {
-                e.preventDefault();
-
-                if (confirm('确定要清除所有网站卡片缓存吗？')) {
-                    var button = $(this);
-                    var originalText = button.text();
-                    button.prop('disabled', true).text('清除中...');
-
-                    $.ajax({
-                        url: ajaxurl,
-                        type: 'POST',
-                        data: {
-                            action: 'clear_custom_card_cache',
-                            nonce: '<?php echo wp_create_nonce('clear_custom_card_cache'); ?>'
-                        },
-                        success: function(response) {
-                            if (response.success) {
-                                alert('缓存已清除');
-                            } else {
-                                alert('清除缓存失败：' + response.data);
-                            }
-                        },
-                        error: function() {
-                            alert('网络错误，请重试');
-                        },
-                        complete: function() {
-                            button.prop('disabled', false).text(originalText);
-                        }
-                    });
-                }
-            });
-
-            // 刷新数据功能
-            $('#refresh-cards-data').on('click', function(e) {
-                e.preventDefault();
-                location.reload();
-            });
 
             // 切换卡片状态
             $(document).on('click', '.toggle-card-status', function(e) {
@@ -716,7 +606,7 @@ class Custom_Cards_Admin_Page {
         // 计算今日点击量（今天0点到现在）
         $today_start = date('Y-m-d 00:00:00');
         $today_clicks = (int) $wpdb->get_var($wpdb->prepare(
-            "SELECT COUNT(*) FROM $clicks_table WHERE created_at >= %s",
+            "SELECT COUNT(*) FROM $clicks_table WHERE clicked_at >= %s",
             $today_start
         ));
 
@@ -743,19 +633,8 @@ class Custom_Cards_Admin_Page {
         $per_page = 20;
         $offset = ($page - 1) * $per_page;
 
-        // 搜索条件
-        $search = isset($_GET['card_search']) ? sanitize_text_field($_GET['card_search']) : '';
-        $where_clause = '';
-        if ($search) {
-            $where_clause = $wpdb->prepare(" WHERE title LIKE %s OR url LIKE %s OR description LIKE %s",
-                '%' . $wpdb->esc_like($search) . '%',
-                '%' . $wpdb->esc_like($search) . '%',
-                '%' . $wpdb->esc_like($search) . '%'
-            );
-        }
-
         // 获取总数
-        $total_filtered = $wpdb->get_var("SELECT COUNT(*) FROM $cards_table $where_clause");
+        $total_filtered = $wpdb->get_var("SELECT COUNT(*) FROM $cards_table");
         $total_pages = ceil($total_filtered / $per_page);
 
         // 获取卡片列表
@@ -763,17 +642,13 @@ class Custom_Cards_Admin_Page {
             "SELECT c.*,
                     (SELECT COUNT(*) FROM $clicks_table WHERE card_id = c.id) as click_count
              FROM $cards_table c
-             $where_clause
              ORDER BY click_count DESC, c.updated_at DESC
              LIMIT %d OFFSET %d",
             $per_page, $offset
         ));
 
         // 生成分页链接
-        $current_url = admin_url('admin.php?page=wordpress-toolkit-cards-list');
-        if ($search) {
-            $current_url .= '&card_search=' . urlencode($search);
-        }
+        $current_url = admin_url('admin.php?page=wordpress-ai-toolkit-cards-list');
 
         $pagination = paginate_links(array(
             'base' => $current_url . '&card_page=%#%',
@@ -786,7 +661,6 @@ class Custom_Cards_Admin_Page {
 
         return array(
             'cards' => $cards,
-            'search' => $search,
             'total_filtered' => $total_filtered,
             'pagination' => $pagination
         );

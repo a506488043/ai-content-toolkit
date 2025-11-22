@@ -22,7 +22,7 @@ function force_regenerate_seo_analysis($post_id) {
     // 加载AI设置
     require_once dirname(__FILE__) . '/../ai-settings/ai-settings-helper.php';
 
-    if (!wordpress_toolkit_is_ai_available()) {
+    if (!wordpress_ai_toolkit_is_ai_available()) {
         return array('success' => false, 'message' => 'AI服务未配置');
     }
 

@@ -64,11 +64,11 @@ class Auto_Excerpt_Admin_Page {
      */
     public function add_admin_menu() {
         add_submenu_page(
-            'wordpress-toolkit',
-            __('自动摘要管理', 'wordpress-toolkit'),
-            __('自动摘要', 'wordpress-toolkit'),
+            'wordpress-ai-toolkit',
+            __('自动摘要管理', 'wordpress-ai-toolkit'),
+            __('自动摘要', 'wordpress-ai-toolkit'),
             'manage_options',
-            'wordpress-toolkit-auto-excerpt',
+            'wordpress-ai-toolkit-auto-excerpt',
             array($this, 'render_admin_page')
         );
     }
@@ -79,7 +79,7 @@ class Auto_Excerpt_Admin_Page {
     public function render_admin_page() {
         // 验证用户权限
         if (!current_user_can('manage_options')) {
-            wp_die(__('权限不足', 'wordpress-toolkit'));
+            wp_die(__('权限不足', 'wordpress-ai-toolkit'));
         }
 
         // 处理表单提交
@@ -92,38 +92,38 @@ class Auto_Excerpt_Admin_Page {
         $settings = $this->module->get_settings();
         ?>
         <div class="wrap auto-excerpt-admin">
-            <h1><?php _e('自动摘要管理', 'wordpress-toolkit'); ?></h1>
+            <h1><?php _e('自动摘要管理', 'wordpress-ai-toolkit'); ?></h1>
 
             <!-- 统计卡片 -->
             <div class="auto-excerpt-stats-grid">
                 <div class="stat-card">
-                    <h3><?php _e('总文章数', 'wordpress-toolkit'); ?></h3>
+                    <h3><?php _e('总文章数', 'wordpress-ai-toolkit'); ?></h3>
                     <span class="stat-number"><?php echo $stats['total_posts']; ?></span>
                 </div>
                 <div class="stat-card">
-                    <h3><?php _e('有摘要的文章', 'wordpress-toolkit'); ?></h3>
+                    <h3><?php _e('有摘要的文章', 'wordpress-ai-toolkit'); ?></h3>
                     <span class="stat-number"><?php echo $stats['posts_with_excerpt']; ?></span>
                 </div>
                 <div class="stat-card">
-                    <h3><?php _e('无摘要的文章', 'wordpress-toolkit'); ?></h3>
+                    <h3><?php _e('无摘要的文章', 'wordpress-ai-toolkit'); ?></h3>
                     <span class="stat-number"><?php echo $stats['posts_without_excerpt']; ?></span>
                 </div>
                 <div class="stat-card">
-                    <h3><?php _e('摘要覆盖率', 'wordpress-toolkit'); ?></h3>
+                    <h3><?php _e('摘要覆盖率', 'wordpress-ai-toolkit'); ?></h3>
                     <span class="stat-number"><?php echo $stats['coverage_rate']; ?>%</span>
                 </div>
             </div>
 
             <!-- 文章列表和SEO分析 -->
             <div class="posts-list-section">
-                <h3><?php _e('文章列表与SEO分析', 'wordpress-toolkit'); ?></h3>
-                <?php if (!function_exists('wordpress_toolkit_is_ai_available') || !wordpress_toolkit_is_ai_available()): ?>
+                <h3><?php _e('文章列表与SEO分析', 'wordpress-ai-toolkit'); ?></h3>
+                <?php if (!function_exists('wordpress_ai_toolkit_is_ai_available') || !wordpress_ai_toolkit_is_ai_available()): ?>
                 <div class="notice notice-warning inline" style="margin-bottom: 20px;">
                     <p>
-                        <strong>⚠️ <?php _e('AI功能未配置', 'wordpress-toolkit'); ?></strong><br>
-                        <?php _e('SEO分析功能需要配置AI服务。请前往', 'wordpress-toolkit'); ?>
-                        <a href="<?php echo admin_url('admin.php?page=wordpress-toolkit-ai-settings'); ?>" class="button button-primary">
-                            <?php _e('工具箱设置 → AI设置', 'wordpress-toolkit'); ?>
+                        <strong>⚠️ <?php _e('AI功能未配置', 'wordpress-ai-toolkit'); ?></strong><br>
+                        <?php _e('SEO分析功能需要配置AI服务。请前往', 'wordpress-ai-toolkit'); ?>
+                        <a href="<?php echo admin_url('admin.php?page=wordpress-ai-toolkit-ai-settings'); ?>" class="button button-primary">
+                            <?php _e('工具箱设置 → AI设置', 'wordpress-ai-toolkit'); ?>
                         </a>
                     </p>
                 </div>
@@ -175,15 +175,15 @@ class Auto_Excerpt_Admin_Page {
                             <div class="alignleft actions bulkactions">
                                 <button type="button" class="button action" id="batch-seo-analyze">
                                     <span class="dashicons dashicons-search"></span>
-                                    <?php _e('批量SEO分析', 'wordpress-toolkit'); ?>
+                                    <?php _e('批量SEO分析', 'wordpress-ai-toolkit'); ?>
                                 </button>
                             </div>
                             <div class="tablenav-pages">
                                 <span class="displaying-num">
-                                    <?php printf(__('共 %d 篇文章', 'wordpress-toolkit'), $total_posts); ?>
+                                    <?php printf(__('共 %d 篇文章', 'wordpress-ai-toolkit'), $total_posts); ?>
                                 </span>
                                 <?php
-                                $current_url = admin_url('admin.php?page=wordpress-toolkit-auto-excerpt');
+                                $current_url = admin_url('admin.php?page=wordpress-ai-toolkit-auto-excerpt');
                                 if (isset($_GET['status'])) {
                                     $current_url .= '&status=' . urlencode($_GET['status']);
                                 }
@@ -205,11 +205,11 @@ class Auto_Excerpt_Admin_Page {
                                     <th scope="col" class="manage-column column-cb check-column">
                                         <input type="checkbox" id="cb-select-all-1">
                                     </th>
-                                    <th scope="col"><?php _e('文章标题', 'wordpress-toolkit'); ?></th>
-                                    <th scope="col"><?php _e('摘要状态', 'wordpress-toolkit'); ?></th>
-                                    <th scope="col"><?php _e('SEO得分', 'wordpress-toolkit'); ?></th>
-                                    <th scope="col"><?php _e('修改时间', 'wordpress-toolkit'); ?></th>
-                                    <th scope="col"><?php _e('操作', 'wordpress-toolkit'); ?></th>
+                                    <th scope="col"><?php _e('文章标题', 'wordpress-ai-toolkit'); ?></th>
+                                    <th scope="col"><?php _e('摘要状态', 'wordpress-ai-toolkit'); ?></th>
+                                    <th scope="col"><?php _e('SEO得分', 'wordpress-ai-toolkit'); ?></th>
+                                    <th scope="col"><?php _e('修改时间', 'wordpress-ai-toolkit'); ?></th>
+                                    <th scope="col"><?php _e('操作', 'wordpress-ai-toolkit'); ?></th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -218,8 +218,9 @@ class Auto_Excerpt_Admin_Page {
                                     $posts_query->the_post();
                                     $post_id = get_the_ID();
                                     $post_title = get_the_title();
-                                    $has_excerpt = !empty(get_the_excerpt());
-                                    $excerpt_length = mb_strlen(get_the_excerpt());
+                                    $direct_excerpt = get_post_field('post_excerpt', $post_id);
+                                    $has_excerpt = !empty($direct_excerpt);
+                                    $excerpt_length = mb_strlen($direct_excerpt);
 
                                     // 获取SEO分数
                                     $seo_db = new Auto_Excerpt_SEO_Analyzer_Database();
@@ -257,12 +258,20 @@ class Auto_Excerpt_Admin_Page {
                                         <td>
                                             <?php if ($has_excerpt): ?>
                                                 <span class="status-badge has-excerpt">
-                                                    <?php _e('有摘要', 'wordpress-toolkit'); ?>
+                                                    <?php _e('有摘要', 'wordpress-ai-toolkit'); ?>
                                                     <small>(<?php echo $excerpt_length; ?> 字符)</small>
+                                                    <?php
+                                                    // 检查是否为AI生成的摘要
+                                                    $is_ai_generated = get_post_meta($post_id, '_ai_generated_excerpt', true) ||
+                                                                     get_post_meta($post_id, '_auto_excerpt_ai_generated', true);
+                                                    if ($is_ai_generated) {
+                                                        echo ' <span class="ai-badge">AI</span>';
+                                                    }
+                                                    ?>
                                                 </span>
                                             <?php else: ?>
                                                 <span class="status-badge no-excerpt">
-                                                    <?php _e('无摘要', 'wordpress-toolkit'); ?>
+                                                    <?php _e('无摘要', 'wordpress-ai-toolkit'); ?>
                                                 </span>
                                             <?php endif; ?>
                                         </td>
@@ -286,19 +295,27 @@ class Auto_Excerpt_Admin_Page {
                                                 </div>
                                             <?php else: ?>
                                                 <span class="seo-score-badge none">
-                                                    <?php _e('未分析', 'wordpress-toolkit'); ?>
+                                                    <?php _e('未分析', 'wordpress-ai-toolkit'); ?>
                                                 </span>
                                             <?php endif; ?>
                                         </td>
                                         <td><?php echo get_the_modified_date('Y-m-d H:i'); ?></td>
                                         <td>
+                                            <!-- 调试信息 -->
+                                            <div style="font-size: 10px; color: #666;">
+                                                DEBUG: Post <?php echo $post_id; ?> -
+                                                Has Excerpt: <?php echo $has_excerpt ? 'YES' : 'NO'; ?> -
+                                                Length: <?php echo $excerpt_length; ?> -
+                                                AI Mark: <?php echo ($ai_meta_1 || $ai_meta_2) ? 'YES' : 'NO'; ?>
+                                            </div>
                                             <div class="row-actions">
-                                                <!-- 调试信息：文章ID <?php echo $post_id; ?> -->
+                                                <!-- 强制显示生成摘要按钮 -->
                                                 <span class="generate-excerpt">
                                                     <button type="button" class="button button-small generate-excerpt-btn" data-post-id="<?php echo $post_id; ?>" style="background: #46b450; color: white; border: none; padding: 6px 12px; margin: 2px;">
                                                         📝 生成摘要
                                                     </button>
                                                 </span>
+
                                                 <span class="generate-tags">
                                                     <button type="button" class="button button-small generate-tags-btn" data-post-id="<?php echo $post_id; ?>" style="background: #ff6900; color: white; border: none; padding: 6px 12px; margin: 2px;">
                                                         🏷️ 生成标签
@@ -333,7 +350,7 @@ class Auto_Excerpt_Admin_Page {
                             <div class="alignleft actions bulkactions">
                                 <button type="button" class="button action" id="batch-seo-analyze-bottom">
                                     <span class="dashicons dashicons-search"></span>
-                                    <?php _e('批量SEO分析', 'wordpress-toolkit'); ?>
+                                    <?php _e('批量SEO分析', 'wordpress-ai-toolkit'); ?>
                                 </button>
                             </div>
                             <div class="tablenav-pages">
@@ -351,7 +368,7 @@ class Auto_Excerpt_Admin_Page {
                         </div>
                         <?php
                     } else {
-                        echo '<p>' . __('没有找到文章', 'wordpress-toolkit') . '</p>';
+                        echo '<p>' . __('没有找到文章', 'wordpress-ai-toolkit') . '</p>';
                     }
                     ?>
                 </div>
@@ -361,11 +378,11 @@ class Auto_Excerpt_Admin_Page {
                     <div class="modal-backdrop"></div>
                     <div class="modal-content">
                         <div class="modal-header">
-                            <h3><?php _e('SEO分析结果', 'wordpress-toolkit'); ?></h3>
+                            <h3><?php _e('SEO分析结果', 'wordpress-ai-toolkit'); ?></h3>
                             <button type="button" class="modal-close">&times;</button>
                         </div>
                         <div class="modal-body" id="seo-result-content">
-                            <div class="loading"><?php _e('正在分析...', 'wordpress-toolkit'); ?></div>
+                            <div class="loading"><?php _e('正在分析...', 'wordpress-ai-toolkit'); ?></div>
                         </div>
                     </div>
                 </div>
@@ -374,10 +391,10 @@ class Auto_Excerpt_Admin_Page {
             <!-- 标签页导航 -->
             <div class="auto-excerpt-tabs">
                 <h2 class="nav-tab-wrapper">
-                    <a href="#settings" class="nav-tab nav-tab-active"><?php _e('基本设置', 'wordpress-toolkit'); ?></a>
-                    <a href="#batch" class="nav-tab"><?php _e('批量操作', 'wordpress-toolkit'); ?></a>
-                    <a href="#analytics" class="nav-tab"><?php _e('数据分析', 'wordpress-toolkit'); ?></a>
-                    <a href="#advanced" class="nav-tab"><?php _e('高级选项', 'wordpress-toolkit'); ?></a>
+                    <a href="#settings" class="nav-tab nav-tab-active"><?php _e('基本设置', 'wordpress-ai-toolkit'); ?></a>
+                    <a href="#batch" class="nav-tab"><?php _e('批量操作', 'wordpress-ai-toolkit'); ?></a>
+                    <a href="#analytics" class="nav-tab"><?php _e('数据分析', 'wordpress-ai-toolkit'); ?></a>
+                    <a href="#advanced" class="nav-tab"><?php _e('高级选项', 'wordpress-ai-toolkit'); ?></a>
                 </h2>
 
                 <!-- 基本设置标签页 -->
@@ -764,11 +781,36 @@ class Auto_Excerpt_Admin_Page {
         }
         </style>
 
+        <!-- 调试信息：检查脚本加载状态 -->
+        <div style="background: #f0f0f1; border: 1px solid #ccd0d4; padding: 10px; margin: 10px 0; font-family: monospace; font-size: 12px;">
+            <h4>🔧 调试信息 - 脚本加载状态</h4>
+            <?php
+            echo "ToolkitConfig 可用: " . (wp_script_is('toolkit-core', 'enqueued') ? '✅ 已加载' : '❌ 未加载') . "<br>";
+            echo "modules-admin.js 可用: " . (wp_script_is('wordpress-ai-toolkit-modules-admin', 'enqueued') ? '✅ 已加载' : '❌ 未加载') . "<br>";
+            echo "当前 nonce: " . wp_create_nonce('toolkit_nonce') . "<br>";
+            echo "用户权限: " . (current_user_can('edit_posts') ? '✅ 有编辑权限' : '❌ 无编辑权限') . "<br>";
+            echo "AI 功能可用: " . (function_exists('wordpress_ai_toolkit_is_ai_available') && wordpress_ai_toolkit_is_ai_available() ? '✅ 可用' : '❌ 不可用');
+            ?>
+        </div>
+
         <script>
+        // 调试信息：检查全局配置
+        console.log('=== AUTO_EXCERPT_DEBUG: Page loaded ===');
+        console.log('ToolkitConfig:', typeof ToolkitConfig !== 'undefined' ? ToolkitConfig : 'UNDEFINED');
+        console.log('ToolkitCore.config:', typeof ToolkitCore !== 'undefined' ? ToolkitCore.config : 'UNDEFINED');
+        console.log('modules-admin.js loaded:', typeof ToolkitModules !== 'undefined');
+        console.log('toolkit-core.js loaded:', typeof ToolkitCore !== 'undefined');
+
         // 全局配置对象，供SEO分析器使用
         var AutoExcerptConfig = {
             ajaxUrl: '<?php echo admin_url('admin-ajax.php'); ?>',
-            seoNonce: '<?php echo wp_create_nonce('auto_excerpt_seo_nonce'); ?>'
+            generateNonce: '<?php echo wp_create_nonce('auto_excerpt_generate'); ?>',
+            tagsNonce: '<?php echo wp_create_nonce('auto_excerpt_generate_tags'); ?>',
+            categorizeNonce: '<?php echo wp_create_nonce('auto_excerpt_ai_categorize'); ?>',
+            optimizeTagsNonce: '<?php echo wp_create_nonce('auto_excerpt_ai_optimize_tags'); ?>',
+            seoAnalyzeNonce: '<?php echo wp_create_nonce('auto_excerpt_seo_analyze'); ?>',
+            getSeoReportNonce: '<?php echo wp_create_nonce('auto_excerpt_get_seo_report'); ?>',
+            batchNonce: '<?php echo wp_create_nonce('auto_excerpt_batch'); ?>'
         };
 
         jQuery(document).ready(function($) {
@@ -808,7 +850,7 @@ class Auto_Excerpt_Admin_Page {
 
                 var data = {
                     action: 'auto_excerpt_batch_generate',
-                    nonce: '<?php echo wp_create_nonce('auto_excerpt_batch'); ?>',
+                    nonce: AutoExcerptConfig.batchNonce,
                     post_type: $('#batch_post_type').val(),
                     limit: parseInt($('#batch_limit').val()),
                     overwrite: $('#batch_overwrite').is(':checked')
@@ -863,7 +905,7 @@ class Auto_Excerpt_Admin_Page {
                     type: 'POST',
                     data: {
                         action: 'auto_excerpt_generate',
-                        nonce: '<?php echo wp_create_nonce('auto_excerpt_generate'); ?>',
+                        nonce: AutoExcerptConfig.generateNonce,
                         post_id: postId
                     },
                     success: function(response) {
@@ -897,7 +939,7 @@ class Auto_Excerpt_Admin_Page {
                     type: 'POST',
                     data: {
                         action: 'auto_excerpt_generate_tags',
-                        nonce: '<?php echo wp_create_nonce('auto_excerpt_generate_tags'); ?>',
+                        nonce: AutoExcerptConfig.tagsNonce,
                         post_id: postId
                     },
                     success: function(response) {
@@ -931,7 +973,7 @@ class Auto_Excerpt_Admin_Page {
                     type: 'POST',
                     data: {
                         action: 'auto_excerpt_ai_categorize',
-                        nonce: '<?php echo wp_create_nonce('auto_excerpt_ai_categorize'); ?>',
+                        nonce: AutoExcerptConfig.categorizeNonce,
                         post_id: postId
                     },
                     success: function(response) {
@@ -966,7 +1008,7 @@ class Auto_Excerpt_Admin_Page {
                     type: 'POST',
                     data: {
                         action: 'auto_excerpt_ai_optimize_tags',
-                        nonce: '<?php echo wp_create_nonce('auto_excerpt_ai_optimize_tags'); ?>',
+                        nonce: AutoExcerptConfig.optimizeTagsNonce,
                         post_id: postId
                     },
                     success: function(response) {
@@ -1001,7 +1043,7 @@ class Auto_Excerpt_Admin_Page {
                     type: 'POST',
                     data: {
                         action: 'auto_excerpt_seo_analyze',
-                        nonce: '<?php echo wp_create_nonce('auto_excerpt_seo_analyze'); ?>',
+                        nonce: AutoExcerptConfig.seoAnalyzeNonce,
                         post_id: postId
                     },
                     success: function(response) {
@@ -1031,7 +1073,7 @@ class Auto_Excerpt_Admin_Page {
                     type: 'POST',
                     data: {
                         action: 'auto_excerpt_get_seo_report',
-                        nonce: '<?php echo wp_create_nonce('auto_excerpt_get_seo_report'); ?>',
+                        nonce: AutoExcerptConfig.getSeoReportNonce,
                         post_id: postId
                     },
                     success: function(response) {
@@ -1075,7 +1117,7 @@ class Auto_Excerpt_Admin_Page {
 
                 function analyzeNextPost() {
                     if (currentIndex >= selectedPosts.length) {
-                        button.prop('disabled', false).html('<span class="dashicons dashicons-search"></span> <?php _e('批量SEO分析', 'wordpress-toolkit'); ?>');
+                        button.prop('disabled', false).html('<span class="dashicons dashicons-search"></span> <?php _e('批量SEO分析', 'wordpress-ai-toolkit'); ?>');
                         alert('批量分析完成！共分析了 ' + results.length + ' 篇文章。');
                         location.reload();
                         return;
@@ -1088,7 +1130,7 @@ class Auto_Excerpt_Admin_Page {
                         type: 'POST',
                         data: {
                             action: 'auto_excerpt_seo_analyze',
-                            nonce: '<?php echo wp_create_nonce('auto_excerpt_seo_analyze'); ?>',
+                            nonce: AutoExcerptConfig.seoAnalyzeNonce,
                             post_id: postId
                         },
                         success: function(response) {
@@ -1232,6 +1274,208 @@ class Auto_Excerpt_Admin_Page {
             $('#cb-select-all-1').on('change', function() {
                 $('.post-checkbox').prop('checked', $(this).prop('checked'));
             });
+
+            // 生成摘要按钮点击事件
+            $('.generate-excerpt-btn').on('click', function(e) {
+                e.preventDefault();
+                var $button = $(this);
+                var postId = $button.data('post-id');
+
+                if (!postId) {
+                    alert('文章ID无效');
+                    return;
+                }
+
+                // 禁用按钮，显示加载状态
+                var originalText = $button.html();
+                $button.prop('disabled', true)
+                       .html('🔄 生成中...')
+                       .css('opacity', '0.6');
+
+                // 发送AJAX请求
+                $.ajax({
+                    url: ajaxurl,
+                    type: 'POST',
+                    data: {
+                        action: 'auto_excerpt_generate',
+                        post_id: postId,
+                        nonce: '<?php echo wp_create_nonce("auto_excerpt_generate"); ?>'
+                    },
+                    success: function(response) {
+                        // 恢复按钮状态
+                        $button.prop('disabled', false)
+                               .html(originalText)
+                               .css('opacity', '1');
+
+                        if (response.success) {
+                            // 显示成功消息
+                            $('<div class="notice notice-success is-dismissible"><p>' +
+                              response.data.message + '</p></div>')
+                                .insertAfter('.wrap h1')
+                                .delay(3000)
+                                .fadeOut(500, function() { $(this).remove(); });
+
+                            // 刷新页面以更新摘要状态
+                            setTimeout(function() {
+                                location.reload();
+                            }, 2000);
+                        } else {
+                            // 显示错误消息
+                            $('<div class="notice notice-error is-dismissible"><p>' +
+                              (response.data.message || '生成摘要失败') + '</p></div>')
+                                .insertAfter('.wrap h1')
+                                .delay(5000)
+                                .fadeOut(500, function() { $(this).remove(); });
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        // 恢复按钮状态
+                        $button.prop('disabled', false)
+                               .html(originalText)
+                               .css('opacity', '1');
+
+                        // 显示错误消息
+                        $('<div class="notice notice-error is-dismissible"><p>' +
+                          '网络错误：' + error + '</p></div>')
+                            .insertAfter('.wrap h1')
+                            .delay(5000)
+                            .fadeOut(500, function() { $(this).remove(); });
+                    }
+                });
+            });
+
+            // 生成标签按钮点击事件
+            $('.generate-tags-btn').on('click', function(e) {
+                e.preventDefault();
+                var $button = $(this);
+                var postId = $button.data('post-id');
+
+                if (!postId) {
+                    alert('文章ID无效');
+                    return;
+                }
+
+                // 禁用按钮，显示加载状态
+                var originalText = $button.html();
+                $button.prop('disabled', true)
+                       .html('🔄 生成中...')
+                       .css('opacity', '0.6');
+
+                // 发送AJAX请求
+                $.ajax({
+                    url: ajaxurl,
+                    type: 'POST',
+                    data: {
+                        action: 'auto_excerpt_generate_tags',
+                        post_id: postId,
+                        nonce: '<?php echo wp_create_nonce("auto_excerpt_generate_tags"); ?>'
+                    },
+                    success: function(response) {
+                        // 恢复按钮状态
+                        $button.prop('disabled', false)
+                               .html(originalText)
+                               .css('opacity', '1');
+
+                        if (response.success) {
+                            // 显示成功消息
+                            $('<div class="notice notice-success is-dismissible"><p>' +
+                              response.data.message + '</p></div>')
+                                .insertAfter('.wrap h1')
+                                .delay(3000)
+                                .fadeOut(500, function() { $(this).remove(); });
+                        } else {
+                            // 显示错误消息
+                            $('<div class="notice notice-error is-dismissible"><p>' +
+                              (response.data.message || '生成标签失败') + '</p></div>')
+                                .insertAfter('.wrap h1')
+                                .delay(5000)
+                                .fadeOut(500, function() { $(this).remove(); });
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        // 恢复按钮状态
+                        $button.prop('disabled', false)
+                               .html(originalText)
+                               .css('opacity', '1');
+
+                        // 显示错误消息
+                        $('<div class="notice notice-error is-dismissible"><p>' +
+                          '网络错误：' + error + '</p></div>')
+                            .insertAfter('.wrap h1')
+                            .delay(5000)
+                            .fadeOut(500, function() { $(this).remove(); });
+                    }
+                });
+            });
+
+            // SEO分析按钮点击事件
+            $('.seo-analyze-btn').on('click', function(e) {
+                e.preventDefault();
+                var $button = $(this);
+                var postId = $button.data('post-id');
+
+                if (!postId) {
+                    alert('文章ID无效');
+                    return;
+                }
+
+                // 禁用按钮，显示加载状态
+                var originalText = $button.html();
+                $button.prop('disabled', true)
+                       .html('🔄 分析中...')
+                       .css('opacity', '0.6');
+
+                // 发送AJAX请求
+                $.ajax({
+                    url: ajaxurl,
+                    type: 'POST',
+                    data: {
+                        action: 'analyze_post_seo',
+                        post_id: postId,
+                        nonce: '<?php echo wp_create_nonce("analyze_post_seo"); ?>'
+                    },
+                    success: function(response) {
+                        // 恢复按钮状态
+                        $button.prop('disabled', false)
+                               .html(originalText)
+                               .css('opacity', '1');
+
+                        if (response.success) {
+                            // 显示成功消息
+                            $('<div class="notice notice-success is-dismissible"><p>' +
+                              response.data.message + '</p></div>')
+                                .insertAfter('.wrap h1')
+                                .delay(3000)
+                                .fadeOut(500, function() { $(this).remove(); });
+
+                            // 刷新页面以更新SEO分数
+                            setTimeout(function() {
+                                location.reload();
+                            }, 2000);
+                        } else {
+                            // 显示错误消息
+                            $('<div class="notice notice-error is-dismissible"><p>' +
+                              (response.data.message || 'SEO分析失败') + '</p></div>')
+                                .insertAfter('.wrap h1')
+                                .delay(5000)
+                                .fadeOut(500, function() { $(this).remove(); });
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        // 恢复按钮状态
+                        $button.prop('disabled', false)
+                               .html(originalText)
+                               .css('opacity', '1');
+
+                        // 显示错误消息
+                        $('<div class="notice notice-error is-dismissible"><p>' +
+                          '网络错误：' + error + '</p></div>')
+                            .insertAfter('.wrap h1')
+                            .delay(5000)
+                            .fadeOut(500, function() { $(this).remove(); });
+                    }
+                });
+            });
         });
         </script>
         <?php
@@ -1249,65 +1493,65 @@ class Auto_Excerpt_Admin_Page {
             <table class="form-table">
                 <tr>
                     <th scope="row">
-                        <label for="auto_generate"><?php _e('自动生成摘要', 'wordpress-toolkit'); ?></label>
+                        <label for="auto_generate"><?php _e('自动生成摘要', 'wordpress-ai-toolkit'); ?></label>
                     </th>
                     <td>
                         <input type="checkbox" id="auto_generate" name="auto_generate" value="1"
                                <?php checked($settings['auto_generate']); ?>>
-                        <span class="description"><?php _e('保存文章时自动为没有摘要的文章生成摘要', 'wordpress-toolkit'); ?></span>
+                        <span class="description"><?php _e('保存文章时自动为没有摘要的文章生成摘要', 'wordpress-ai-toolkit'); ?></span>
                     </td>
                 </tr>
 
                 <tr>
                     <th scope="row">
-                        <label for="excerpt_length"><?php _e('摘要长度', 'wordpress-toolkit'); ?></label>
+                        <label for="excerpt_length"><?php _e('摘要长度', 'wordpress-ai-toolkit'); ?></label>
                     </th>
                     <td>
                         <input type="number" id="excerpt_length" name="excerpt_length"
                                value="<?php echo $settings['excerpt_length']; ?>"
                                min="50" max="500" step="10">
-                        <span class="description"><?php _e('字符（建议100-200字符）', 'wordpress-toolkit'); ?></span>
+                        <span class="description"><?php _e('字符（建议100-200字符）', 'wordpress-ai-toolkit'); ?></span>
                     </td>
                 </tr>
 
                 <tr>
                     <th scope="row">
-                        <label for="smart_extraction"><?php _e('智能提取', 'wordpress-toolkit'); ?></label>
+                        <label for="smart_extraction"><?php _e('智能提取', 'wordpress-ai-toolkit'); ?></label>
                     </th>
                     <td>
                         <input type="checkbox" id="smart_extraction" name="smart_extraction" value="1"
                                <?php checked($settings['smart_extraction']); ?>>
-                        <span class="description"><?php _e('优先提取文章关键句子，保持语义完整', 'wordpress-toolkit'); ?></span>
+                        <span class="description"><?php _e('优先提取文章关键句子，保持语义完整', 'wordpress-ai-toolkit'); ?></span>
                     </td>
                 </tr>
 
                 <tr>
                     <th scope="row">
-                        <label for="preserve_formatting"><?php _e('保留格式', 'wordpress-toolkit'); ?></label>
+                        <label for="preserve_formatting"><?php _e('保留格式', 'wordpress-ai-toolkit'); ?></label>
                     </th>
                     <td>
                         <input type="checkbox" id="preserve_formatting" name="preserve_formatting" value="1"
                                <?php checked($settings['preserve_formatting']); ?>>
-                        <span class="description"><?php _e('在摘要中保留基本的HTML格式标签', 'wordpress-toolkit'); ?></span>
+                        <span class="description"><?php _e('在摘要中保留基本的HTML格式标签', 'wordpress-ai-toolkit'); ?></span>
                     </td>
                 </tr>
 
                 <tr>
                     <th scope="row">
-                        <label for="min_content_length"><?php _e('最小内容长度', 'wordpress-toolkit'); ?></label>
+                        <label for="min_content_length"><?php _e('最小内容长度', 'wordpress-ai-toolkit'); ?></label>
                     </th>
                     <td>
                         <input type="number" id="min_content_length" name="min_content_length"
                                value="<?php echo $settings['min_content_length']; ?>"
                                min="50" max="1000" step="10">
-                        <span class="description"><?php _e('字符（内容少于此长度时不生成摘要）', 'wordpress-toolkit'); ?></span>
+                        <span class="description"><?php _e('字符（内容少于此长度时不生成摘要）', 'wordpress-ai-toolkit'); ?></span>
                     </td>
                 </tr>
             </table>
 
             <p class="submit">
                 <input type="submit" name="save_settings" class="button button-primary"
-                       value="<?php _e('保存设置', 'wordpress-toolkit'); ?>">
+                       value="<?php _e('保存设置', 'wordpress-ai-toolkit'); ?>">
             </p>
         </form>
         <?php
@@ -1318,14 +1562,14 @@ class Auto_Excerpt_Admin_Page {
      */
     private function render_batch_tab() {
         ?>
-        <h3><?php _e('批量生成摘要', 'wordpress-toolkit'); ?></h3>
-        <p><?php _e('为现有的文章批量生成摘要。您可以选择文章类型、数量限制，以及是否覆盖已有摘要。', 'wordpress-toolkit'); ?></p>
+        <h3><?php _e('批量生成摘要', 'wordpress-ai-toolkit'); ?></h3>
+        <p><?php _e('为现有的文章批量生成摘要。您可以选择文章类型、数量限制，以及是否覆盖已有摘要。', 'wordpress-ai-toolkit'); ?></p>
 
         <div class="batch-progress">
             <div class="progress-bar">
                 <div class="progress-fill" style="width: 0%"></div>
             </div>
-            <div class="progress-text"><?php _e('准备开始...', 'wordpress-toolkit'); ?></div>
+            <div class="progress-text"><?php _e('准备开始...', 'wordpress-ai-toolkit'); ?></div>
         </div>
 
         <form id="batch-generate-form" method="post" action="">
@@ -1334,12 +1578,12 @@ class Auto_Excerpt_Admin_Page {
             <table class="form-table">
                 <tr>
                     <th scope="row">
-                        <label for="batch_post_type"><?php _e('文章类型', 'wordpress-toolkit'); ?></label>
+                        <label for="batch_post_type"><?php _e('文章类型', 'wordpress-ai-toolkit'); ?></label>
                     </th>
                     <td>
                         <select id="batch_post_type" name="batch_post_type">
-                            <option value="post"><?php _e('文章', 'wordpress-toolkit'); ?></option>
-                            <option value="page"><?php _e('页面', 'wordpress-toolkit'); ?></option>
+                            <option value="post"><?php _e('文章', 'wordpress-ai-toolkit'); ?></option>
+                            <option value="page"><?php _e('页面', 'wordpress-ai-toolkit'); ?></option>
                             <?php
                             $post_types = get_post_types(array('public' => true), 'objects');
                             foreach ($post_types as $post_type) {
@@ -1358,28 +1602,28 @@ class Auto_Excerpt_Admin_Page {
 
                 <tr>
                     <th scope="row">
-                        <label for="batch_limit"><?php _e('处理数量', 'wordpress-toolkit'); ?></label>
+                        <label for="batch_limit"><?php _e('处理数量', 'wordpress-ai-toolkit'); ?></label>
                     </th>
                     <td>
                         <input type="number" id="batch_limit" name="batch_limit" value="50" min="1" max="1000" step="10">
-                        <span class="description"><?php _e('一次最多处理的文章数量', 'wordpress-toolkit'); ?></span>
+                        <span class="description"><?php _e('一次最多处理的文章数量', 'wordpress-ai-toolkit'); ?></span>
                     </td>
                 </tr>
 
                 <tr>
                     <th scope="row">
-                        <label for="batch_overwrite"><?php _e('覆盖已有摘要', 'wordpress-toolkit'); ?></label>
+                        <label for="batch_overwrite"><?php _e('覆盖已有摘要', 'wordpress-ai-toolkit'); ?></label>
                     </th>
                     <td>
                         <input type="checkbox" id="batch_overwrite" name="batch_overwrite" value="1">
-                        <span class="description"><?php _e('勾选此项将覆盖已有的摘要内容', 'wordpress-toolkit'); ?></span>
+                        <span class="description"><?php _e('勾选此项将覆盖已有的摘要内容', 'wordpress-ai-toolkit'); ?></span>
                     </td>
                 </tr>
             </table>
 
             <p class="submit">
                 <input type="submit" name="batch_generate" class="button button-primary"
-                       value="<?php _e('开始批量生成', 'wordpress-toolkit'); ?>">
+                       value="<?php _e('开始批量生成', 'wordpress-ai-toolkit'); ?>">
             </p>
         </form>
 
@@ -1392,10 +1636,10 @@ class Auto_Excerpt_Admin_Page {
      */
     private function render_analytics_tab($stats) {
         ?>
-        <h3><?php _e('摘要数据统计', 'wordpress-toolkit'); ?></h3>
+        <h3><?php _e('摘要数据统计', 'wordpress-ai-toolkit'); ?></h3>
 
         <div class="analytics-chart">
-            <h4><?php _e('摘要长度分布', 'wordpress-toolkit'); ?></h4>
+            <h4><?php _e('摘要长度分布', 'wordpress-ai-toolkit'); ?></h4>
             <div class="chart-container">
                 <?php
                 // 生成摘要长度分布图表数据
@@ -1403,7 +1647,7 @@ class Auto_Excerpt_Admin_Page {
 
                 if (!empty($length_distribution)) {
                     echo '<table class="wp-list-table widefat fixed striped">';
-                    echo '<thead><tr><th>' . __('长度范围', 'wordpress-toolkit') . '</th><th>' . __('文章数量', 'wordpress-toolkit') . '</th><th>' . __('百分比', 'wordpress-toolkit') . '</th></tr></thead>';
+                    echo '<thead><tr><th>' . __('长度范围', 'wordpress-ai-toolkit') . '</th><th>' . __('文章数量', 'wordpress-ai-toolkit') . '</th><th>' . __('百分比', 'wordpress-ai-toolkit') . '</th></tr></thead>';
                     echo '<tbody>';
 
                     foreach ($length_distribution as $range => $count) {
@@ -1417,33 +1661,33 @@ class Auto_Excerpt_Admin_Page {
 
                     echo '</tbody></table>';
                 } else {
-                    echo '<p>' . __('暂无数据', 'wordpress-toolkit') . '</p>';
+                    echo '<p>' . __('暂无数据', 'wordpress-ai-toolkit') . '</p>';
                 }
                 ?>
             </div>
         </div>
 
         <div class="analytics-chart">
-            <h4><?php _e('最近生成的摘要', 'wordpress-toolkit'); ?></h4>
+            <h4><?php _e('最近生成的摘要', 'wordpress-ai-toolkit'); ?></h4>
             <?php
             $recent_excerpts = $this->get_recent_generated_excerpts(10);
 
             if (!empty($recent_excerpts)) {
                 echo '<table class="wp-list-table widefat fixed striped">';
-                echo '<thead><tr><th>' . __('文章标题', 'wordpress-toolkit') . '</th><th>' . __('摘要长度', 'wordpress-toolkit') . '</th><th>' . __('生成时间', 'wordpress-toolkit') . '</th></tr></thead>';
+                echo '<thead><tr><th>' . __('文章标题', 'wordpress-ai-toolkit') . '</th><th>' . __('摘要长度', 'wordpress-ai-toolkit') . '</th><th>' . __('生成时间', 'wordpress-ai-toolkit') . '</th></tr></thead>';
                 echo '<tbody>';
 
                 foreach ($recent_excerpts as $post) {
                     echo '<tr>';
                     echo '<td><a href="' . get_edit_post_link($post->ID) . '" target="_blank">' . get_the_title($post->ID) . '</a></td>';
-                    echo '<td>' . mb_strlen($post->post_excerpt) . ' ' . __('字符', 'wordpress-toolkit') . '</td>';
+                    echo '<td>' . mb_strlen($post->post_excerpt) . ' ' . __('字符', 'wordpress-ai-toolkit') . '</td>';
                     echo '<td>' . get_the_modified_date('Y-m-d H:i:s', $post->ID) . '</td>';
                     echo '</tr>';
                 }
 
                 echo '</tbody></table>';
             } else {
-                echo '<p>' . __('暂无数据', 'wordpress-toolkit') . '</p>';
+                echo '<p>' . __('暂无数据', 'wordpress-ai-toolkit') . '</p>';
             }
             ?>
         </div>
@@ -1455,7 +1699,7 @@ class Auto_Excerpt_Admin_Page {
      */
     private function render_advanced_tab() {
         ?>
-        <h3><?php _e('高级设置', 'wordpress-toolkit'); ?></h3>
+        <h3><?php _e('高级设置', 'wordpress-ai-toolkit'); ?></h3>
 
         <form method="post" action="">
             <?php wp_nonce_field('auto_excerpt_advanced'); ?>
@@ -1463,54 +1707,54 @@ class Auto_Excerpt_Admin_Page {
             <table class="form-table">
                 <tr>
                     <th scope="row">
-                        <label><?php _e('排除的短代码', 'wordpress-toolkit'); ?></label>
+                        <label><?php _e('排除的短代码', 'wordpress-ai-toolkit'); ?></label>
                     </th>
                     <td>
                         <textarea name="exclude_shortcodes" rows="4" class="large-text"
                                   placeholder="gallery&#10;video&#10;audio&#10;caption"><?php
                             echo implode("\n", $this->module->get_settings()['exclude_shortcodes'] ?? array());
                         ?></textarea>
-                        <span class="description"><?php _e('每行一个短代码名称，这些短代码的内容将在生成摘要时被忽略', 'wordpress-toolkit'); ?></span>
+                        <span class="description"><?php _e('每行一个短代码名称，这些短代码的内容将在生成摘要时被忽略', 'wordpress-ai-toolkit'); ?></span>
                     </td>
                 </tr>
 
                 <tr>
                     <th scope="row">
-                        <label for="excluded_tags"><?php _e('保留的HTML标签', 'wordpress-toolkit'); ?></label>
+                        <label for="excluded_tags"><?php _e('保留的HTML标签', 'wordpress-ai-toolkit'); ?></label>
                     </th>
                     <td>
                         <input type="text" id="excluded_tags" name="excluded_tags"
                                value="p,br,strong,em" class="regular-text">
-                        <span class="description"><?php _e('逗号分隔的HTML标签列表，这些标签在清理内容时将被保留', 'wordpress-toolkit'); ?></span>
+                        <span class="description"><?php _e('逗号分隔的HTML标签列表，这些标签在清理内容时将被保留', 'wordpress-ai-toolkit'); ?></span>
                     </td>
                 </tr>
 
                 <tr>
                     <th scope="row">
-                        <label for="custom_prompt"><?php _e('自定义提示词', 'wordpress-toolkit'); ?></label>
+                        <label for="custom_prompt"><?php _e('自定义提示词', 'wordpress-ai-toolkit'); ?></label>
                     </th>
                     <td>
                         <textarea id="custom_prompt" name="custom_prompt" rows="4" class="large-text"
                                   placeholder="请为以下内容生成一个简洁的摘要，突出重点信息..."></textarea>
-                        <span class="description"><?php _e('用于指导摘要生成的提示词，留空使用默认提示词', 'wordpress-toolkit'); ?></span>
+                        <span class="description"><?php _e('用于指导摘要生成的提示词，留空使用默认提示词', 'wordpress-ai-toolkit'); ?></span>
                     </td>
                 </tr>
             </table>
 
             <p class="submit">
                 <input type="submit" name="save_advanced" class="button button-primary"
-                       value="<?php _e('保存高级设置', 'wordpress-toolkit'); ?>">
+                       value="<?php _e('保存高级设置', 'wordpress-ai-toolkit'); ?>">
             </p>
         </form>
 
         <div class="card">
-            <h4><?php _e('危险操作', 'wordpress-toolkit'); ?></h4>
-            <p><strong><?php _e('清除所有摘要', 'wordpress-toolkit'); ?></strong></p>
-            <p><?php _e('此操作将删除所有文章的摘要内容，无法撤销。请谨慎操作。', 'wordpress-toolkit'); ?></p>
-            <form method="post" action="" onsubmit="return confirm('<?php _e('确定要清除所有摘要吗？此操作无法撤销！', 'wordpress-toolkit'); ?>')">
+            <h4><?php _e('危险操作', 'wordpress-ai-toolkit'); ?></h4>
+            <p><strong><?php _e('清除所有摘要', 'wordpress-ai-toolkit'); ?></strong></p>
+            <p><?php _e('此操作将删除所有文章的摘要内容，无法撤销。请谨慎操作。', 'wordpress-ai-toolkit'); ?></p>
+            <form method="post" action="" onsubmit="return confirm('<?php _e('确定要清除所有摘要吗？此操作无法撤销！', 'wordpress-ai-toolkit'); ?>')">
                 <?php wp_nonce_field('auto_excerpt_clear_all'); ?>
                 <input type="submit" name="clear_all_excerpts" class="button"
-                       value="<?php _e('清除所有摘要', 'wordpress-toolkit'); ?>">
+                       value="<?php _e('清除所有摘要', 'wordpress-ai-toolkit'); ?>">
             </form>
         </div>
         <?php
@@ -1603,7 +1847,7 @@ class Auto_Excerpt_Admin_Page {
     private function handle_form_submission() {
         if (isset($_POST['save_settings'])) {
             if (!wp_verify_nonce($_POST['_wpnonce'], 'auto_excerpt_settings')) {
-                wp_die(__('安全验证失败', 'wordpress-toolkit'));
+                wp_die(__('安全验证失败', 'wordpress-ai-toolkit'));
             }
 
             $settings = array(
@@ -1615,12 +1859,12 @@ class Auto_Excerpt_Admin_Page {
             );
 
             $this->module->update_settings($settings);
-            echo '<div class="notice notice-success is-dismissible"><p>' . __('设置保存成功！', 'wordpress-toolkit') . '</p></div>';
+            echo '<div class="notice notice-success is-dismissible"><p>' . __('设置保存成功！', 'wordpress-ai-toolkit') . '</p></div>';
         }
 
         if (isset($_POST['save_advanced'])) {
             if (!wp_verify_nonce($_POST['_wpnonce'], 'auto_excerpt_advanced')) {
-                wp_die(__('安全验证失败', 'wordpress-toolkit'));
+                wp_die(__('安全验证失败', 'wordpress-ai-toolkit'));
             }
 
             $settings = $this->module->get_settings();
@@ -1636,12 +1880,12 @@ class Auto_Excerpt_Admin_Page {
             $settings['custom_prompt'] = sanitize_textarea_field($_POST['custom_prompt']);
 
             $this->module->update_settings($settings);
-            echo '<div class="notice notice-success is-dismissible"><p>' . __('高级设置保存成功！', 'wordpress-toolkit') . '</p></div>';
+            echo '<div class="notice notice-success is-dismissible"><p>' . __('高级设置保存成功！', 'wordpress-ai-toolkit') . '</p></div>';
         }
 
         if (isset($_POST['clear_all_excerpts'])) {
             if (!wp_verify_nonce($_POST['_wpnonce'], 'auto_excerpt_clear_all')) {
-                wp_die(__('安全验证失败', 'wordpress-toolkit'));
+                wp_die(__('安全验证失败', 'wordpress-ai-toolkit'));
             }
 
             global $wpdb;
@@ -1651,7 +1895,7 @@ class Auto_Excerpt_Admin_Page {
                 WHERE post_type = 'post'
             ");
 
-            echo '<div class="notice notice-success is-dismissible"><p>' . __('所有摘要已清除！', 'wordpress-toolkit') . '</p></div>';
+            echo '<div class="notice notice-success is-dismissible"><p>' . __('所有摘要已清除！', 'wordpress-ai-toolkit') . '</p></div>';
         }
     }
 
@@ -1661,11 +1905,11 @@ class Auto_Excerpt_Admin_Page {
     public function handle_batch_operations() {
         if (isset($_POST['action']) && $_POST['action'] === 'auto_excerpt_batch_generate') {
             if (!wp_verify_nonce($_POST['nonce'], 'auto_excerpt_batch')) {
-                wp_send_json_error(__('安全验证失败', 'wordpress-toolkit'));
+                wp_send_json_error(__('安全验证失败', 'wordpress-ai-toolkit'));
             }
 
             if (!current_user_can('manage_options')) {
-                wp_send_json_error(__('权限不足', 'wordpress-toolkit'));
+                wp_send_json_error(__('权限不足', 'wordpress-ai-toolkit'));
             }
 
             $post_type = sanitize_text_field($_POST['post_type']);
@@ -1705,7 +1949,7 @@ class Auto_Excerpt_Admin_Page {
             }
 
             wp_send_json_success(array(
-                'message' => sprintf(__('成功处理了 %d 篇文章', 'wordpress-toolkit'), $processed),
+                'message' => sprintf(__('成功处理了 %d 篇文章', 'wordpress-ai-toolkit'), $processed),
                 'processed' => $processed
             ));
         }
@@ -1717,14 +1961,14 @@ class Auto_Excerpt_Admin_Page {
      */
     public function enqueue_seo_scripts($hook) {
         // 只在自动摘要管理页面加载
-        if (strpos($hook, 'wordpress-toolkit-auto-excerpt') === false) {
+        if (strpos($hook, 'wordpress-ai-toolkit-auto-excerpt') === false) {
             return;
         }
 
         // 加载SEO分析器样式
         wp_enqueue_style(
             'seo-analyzer-css',
-            WORDPRESS_TOOLKIT_PLUGIN_URL . 'modules/auto-excerpt/assets/css/seo-analyzer.css',
+            AI_CONTENT_TOOLKIT_PLUGIN_URL . 'modules/auto-excerpt/assets/css/seo-analyzer.css',
             array(),
             '1.0.0'
         );
@@ -1732,7 +1976,7 @@ class Auto_Excerpt_Admin_Page {
         // 加载新的SEO报告显示样式
         wp_enqueue_style(
             'seo-report-display-css',
-            WORDPRESS_TOOLKIT_PLUGIN_URL . 'modules/auto-excerpt/assets/css/seo-report-display.css',
+            AI_CONTENT_TOOLKIT_PLUGIN_URL . 'modules/auto-excerpt/assets/css/seo-report-display.css',
             array(),
             '1.0.0'
         );
@@ -1740,7 +1984,7 @@ class Auto_Excerpt_Admin_Page {
         // 加载SEO分析器脚本
         wp_enqueue_script(
             'seo-analyzer-js',
-            WORDPRESS_TOOLKIT_PLUGIN_URL . 'modules/auto-excerpt/assets/js/seo-analyzer.js',
+            AI_CONTENT_TOOLKIT_PLUGIN_URL . 'modules/auto-excerpt/assets/js/seo-analyzer.js',
             array('jquery'),
             '1.0.0',
             true
@@ -1749,7 +1993,7 @@ class Auto_Excerpt_Admin_Page {
         // 加载新的SEO报告显示组件
         wp_enqueue_script(
             'seo-report-display-js',
-            WORDPRESS_TOOLKIT_PLUGIN_URL . 'modules/auto-excerpt/assets/js/seo-report-display.js',
+            AI_CONTENT_TOOLKIT_PLUGIN_URL . 'modules/auto-excerpt/assets/js/seo-report-display.js',
             array('seo-analyzer-js'),
             '1.0.0',
             true

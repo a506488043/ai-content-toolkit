@@ -10,12 +10,12 @@ if (!defined('ABSPATH')) {
 
 // 调试日志
 if (defined('WP_DEBUG') && WP_DEBUG) {
-    error_log('Custom Card Admin Page: Started');
-    error_log('Custom Card Admin Page: Current tab: ' . (isset($_GET['tab']) ? $_GET['tab'] : 'Not set'));
+
+
 }
 
 // 获取选项
-$options = get_option('wordpress_toolkit_custom_card_options');
+$options = get_option('wordpress_ai_toolkit_custom_card_options');
 $cache_expire_hours = isset($options['cache_expire_hours']) ? intval($options['cache_expire_hours']) : 72;
 $enable_memcached = isset($options['enable_memcached']) ? $options['enable_memcached'] : false;
 $enable_opcache = isset($options['enable_opcache']) ? $options['enable_opcache'] : true;
@@ -23,16 +23,16 @@ $enable_opcache = isset($options['enable_opcache']) ? $options['enable_opcache']
 // 获取当前选项卡
 // 如果是通过设置菜单访问，强制显示设置选项卡
 // 如果是通过工具箱菜单访问，强制显示卡片列表选项卡
-if (isset($_GET['page']) && $_GET['page'] === 'wordpress-toolkit-custom-card-settings') {
+if (isset($_GET['page']) && $_GET['page'] === 'wordpress-ai-toolkit-custom-card-settings') {
     $current_tab = 'settings';
-} elseif (isset($_GET['page']) && $_GET['page'] === 'wordpress-toolkit-cards-list') {
+} elseif (isset($_GET['page']) && $_GET['page'] === 'wordpress-ai-toolkit-cards-list') {
     $current_tab = 'cards';
 } else {
     $current_tab = isset($_GET['tab']) ? sanitize_text_field($_GET['tab']) : 'settings';
 }
 
 if (defined('WP_DEBUG') && WP_DEBUG) {
-    error_log('Custom Card Admin Page: Current tab set to: ' . $current_tab);
+
 }
 ?>
 
@@ -43,10 +43,11 @@ if (defined('WP_DEBUG') && WP_DEBUG) {
 
     <!-- 基本设置 -->
     <?php if ($current_tab === 'settings'): ?>
-    <div class="toolkit-settings-form">
-        <h2>📝 基本设置</h2>
-        <form method="post" action="options.php">
-            <?php settings_fields('wordpress_toolkit_custom_card_options'); ?>
+    <div class="postbox" style="margin-top: 15px; margin-bottom: 10px;">
+        <div class="inside" style="padding: 15px;">
+            <h2 style="margin-top: 0; margin-bottom: 20px;">📝 基本设置</h2>
+            <form method="post" action="options.php">
+                <?php settings_fields('wordpress_ai_toolkit_custom_card_options'); ?>
 
             <table class="form-table">
                     <tr>
@@ -54,7 +55,7 @@ if (defined('WP_DEBUG') && WP_DEBUG) {
                             <label for="cache_expire_hours">缓存时间（小时）</label>
                         </th>
                         <td>
-                            <input type="number" id="cache_expire_hours" name="wordpress_toolkit_custom_card_options[cache_expire_hours]" 
+                            <input type="number" id="cache_expire_hours" name="wordpress_ai_toolkit_custom_card_options[cache_expire_hours]" 
                                    value="<?php echo esc_attr($cache_expire_hours); ?>" min="1" max="720" class="small-text">
                             <p class="description">设置卡片数据的缓存时间，默认为72小时。</p>
                         </td>
@@ -65,7 +66,7 @@ if (defined('WP_DEBUG') && WP_DEBUG) {
                             <label for="enable_memcached">启用Memcached缓存</label>
                         </th>
                         <td>
-                            <input type="checkbox" id="enable_memcached" name="wordpress_toolkit_custom_card_options[enable_memcached]" 
+                            <input type="checkbox" id="enable_memcached" name="wordpress_ai_toolkit_custom_card_options[enable_memcached]" 
                                    value="1" <?php checked($enable_memcached); ?>>
                             <p class="description">如果服务器支持Memcached，可以启用此选项提高性能。</p>
                         </td>
@@ -76,7 +77,7 @@ if (defined('WP_DEBUG') && WP_DEBUG) {
                             <label for="enable_opcache">启用OPcache缓存</label>
                         </th>
                         <td>
-                            <input type="checkbox" id="enable_opcache" name="wordpress_toolkit_custom_card_options[enable_opcache]" 
+                            <input type="checkbox" id="enable_opcache" name="wordpress_ai_toolkit_custom_card_options[enable_opcache]" 
                                    value="1" <?php checked($enable_opcache); ?>>
                             <p class="description">如果服务器支持OPcache，可以启用此选项提高性能。</p>
                         </td>
@@ -84,20 +85,22 @@ if (defined('WP_DEBUG') && WP_DEBUG) {
                 </table>
 
             <div class="submit">
-                <?php submit_button('保存设置'); ?>
-            </div>
-        </form>
+                    <?php submit_button('保存设置'); ?>
+                </div>
+            </form>
+        </div>
     </div>
 
-    <div class="toolkit-settings-form">
-        <h2>🔄 缓存管理</h2>
+    <div class="postbox" style="margin-top: 10px;">
+        <div class="inside" style="padding: 15px;">
+            <h2 style="margin-top: 0; margin-bottom: 20px;">🔄 缓存管理</h2>
             <p>当前缓存设置：</p>
             <ul>
                 <li>数据库缓存：<?php echo $cache_expire_hours; ?> 小时</li>
                 <li>Memcached：<?php echo $enable_memcached ? '已启用' : '已禁用'; ?></li>
                 <li>OPcache：<?php echo $enable_opcache ? '已启用' : '已禁用'; ?></li>
             </ul>
-            
+
             <button type="button" class="button button-secondary" id="clear-card-cache">清除所有缓存</button>
         </div>
     </div>
@@ -116,9 +119,51 @@ if (defined('WP_DEBUG') && WP_DEBUG) {
     $inactive_cards = $total_cards - $active_cards;
     $total_clicks = (int) $wpdb->get_var("SELECT SUM(click_count) FROM (SELECT COUNT(*) as click_count FROM $clicks_table GROUP BY card_id) as counts");
 
-    // 获取卡片数据
-    $page = isset($_GET['card_page']) ? max(1, intval($_GET['card_page'])) : 1;
-    $per_page = 20;
+    // 显示统计信息 - 与其他模块保持一致的布局
+    ?>
+    <div class="postbox" style="margin-top: 15px; margin-bottom: 10px;">
+        <div class="inside" style="padding: 12px 15px;">
+            <div style="display: flex; align-items: center; gap: 30px; padding: 0; flex-wrap: wrap; justify-content: space-between;">
+                <div>
+                    <strong><?php _e('卡片总数', 'wordpress-ai-toolkit'); ?></strong>
+                    <div style="margin-top: 5px;">
+                        <span class="dashicons dashicons-admin-links" style="color: #0073aa;"></span>
+                        <?php echo number_format($total_cards); ?>
+                    </div>
+                </div>
+                <div>
+                    <strong><?php _e('激活卡片', 'wordpress-ai-toolkit'); ?></strong>
+                    <div style="margin-top: 5px;">
+                        <span class="dashicons dashicons-yes-alt" style="color: #00a32a;"></span>
+                        <?php echo number_format($active_cards); ?>
+                    </div>
+                </div>
+                <div>
+                    <strong><?php _e('未激活卡片', 'wordpress-ai-toolkit'); ?></strong>
+                    <div style="margin-top: 5px;">
+                        <span class="dashicons dashicons-no-alt" style="color: #d63638;"></span>
+                        <?php echo number_format($inactive_cards); ?>
+                    </div>
+                </div>
+                <div>
+                    <strong><?php _e('总点击次数', 'wordpress-ai-toolkit'); ?></strong>
+                    <div style="margin-top: 5px;">
+                        <span class="dashicons dashicons-chart-bar" style="color: #0073aa;"></span>
+                        <?php echo number_format($total_clicks); ?>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="postbox" style="margin-top: 10px;">
+        <div class="inside" style="padding: 15px;">
+            <h3><?php _e('网站卡片列表', 'wordpress-ai-toolkit'); ?></h3>
+
+            <?php
+            // 获取卡片数据
+            $page = isset($_GET['card_page']) ? max(1, intval($_GET['card_page'])) : 1;
+            $per_page = 20;
     $offset = ($page - 1) * $per_page;
 
     // 搜索条件
@@ -155,10 +200,10 @@ if (defined('WP_DEBUG') && WP_DEBUG) {
                 <!-- 分页导航 -->
                 <div class="tablenav-pages">
                     <span class="displaying-num">
-                        <?php printf(__('共 %d 个卡片', 'wordpress-toolkit'), $total_filtered); ?>
+                        <?php printf(__('共 %d 个卡片', 'wordpress-ai-toolkit'), $total_filtered); ?>
                     </span>
                     <?php
-                    $current_url = admin_url('admin.php?page=wordpress-toolkit-cards-list');
+                    $current_url = admin_url('admin.php?page=wordpress-ai-toolkit-cards-list');
                     if ($search) {
                         $current_url .= '&card_search=' . urlencode($search);
                     }
@@ -176,11 +221,11 @@ if (defined('WP_DEBUG') && WP_DEBUG) {
                 <table class="wp-list-table widefat fixed striped">
                     <thead>
                         <tr>
-                            <th scope="col"><?php _e('网站标题', 'wordpress-toolkit'); ?></th>
-                            <th scope="col"><?php _e('状态', 'wordpress-toolkit'); ?></th>
-                            <th scope="col"><?php _e('点击次数', 'wordpress-toolkit'); ?></th>
-                            <th scope="col"><?php _e('创建时间', 'wordpress-toolkit'); ?></th>
-                            <th scope="col"><?php _e('操作', 'wordpress-toolkit'); ?></th>
+                            <th scope="col"><?php _e('网站标题', 'wordpress-ai-toolkit'); ?></th>
+                            <th scope="col"><?php _e('状态', 'wordpress-ai-toolkit'); ?></th>
+                            <th scope="col"><?php _e('点击次数', 'wordpress-ai-toolkit'); ?></th>
+                            <th scope="col"><?php _e('创建时间', 'wordpress-ai-toolkit'); ?></th>
+                            <th scope="col"><?php _e('操作', 'wordpress-ai-toolkit'); ?></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -245,7 +290,7 @@ if (defined('WP_DEBUG') && WP_DEBUG) {
                     <ul>
                         <li>在文章或页面中使用短代码 <code>[custom_card url="https://example.com"]</code></li>
                         <li>访问包含网站卡片的页面时会自动创建卡片</li>
-                        <li>或前往<a href="<?php echo admin_url('admin.php?page=wordpress-toolkit-custom-card-settings'); ?>">设置页面</a>进行配置</li>
+                        <li>或前往<a href="<?php echo admin_url('admin.php?page=wordpress-ai-toolkit-custom-card-settings'); ?>">设置页面</a>进行配置</li>
                     </ul>
                 </div>
             <?php endif; ?>
@@ -255,41 +300,7 @@ if (defined('WP_DEBUG') && WP_DEBUG) {
 </div>
 
 <style>
-/* WordPress Toolkit 统一设置页面样式 */
-.toolkit-settings-form {
-    background: #fff;
-    border: 1px solid #ccd0d4;
-    border-radius: 8px;
-    padding: 24px;
-    margin-bottom: 20px;
-    box-shadow: 0 1px 3px rgba(0,0,0,.04);
-}
-
-.toolkit-settings-form h2 {
-    margin-top: 0;
-    margin-bottom: 20px;
-    font-size: 1.4em;
-    font-weight: 600;
-    color: #1d2327;
-    border-bottom: 2px solid #2271b1;
-    padding-bottom: 8px;
-}
-
-.toolkit-settings-form .form-table {
-    margin-top: 20px;
-}
-
-.toolkit-settings-form .form-table th {
-    font-weight: 600;
-    color: #1d2327;
-    width: 35%;
-}
-
-.toolkit-settings-form .submit {
-    margin-top: 24px;
-    padding-top: 20px;
-    border-top: 1px solid #ddd;
-}
+/* WordPress Toolkit 统一网站卡片样式 */
 
 /* 网站卡片统计网格 - 与文章优化保持一致 */
 .custom-cards-stats-grid {
@@ -385,10 +396,39 @@ if (defined('WP_DEBUG') && WP_DEBUG) {
 .button.disabled {
     background: #f7f7f7 !important;
     border-color: #ddd !important;
-    color: #a0a5aa !important;
-    cursor: default;
-    transform: none !important;
-    box-shadow: none !important;
+    color: #a7aaad !important;
+}
+
+/* 无卡片提示样式 - WordPress标准notice样式 */
+.toolkit-no-cards {
+    background: #fff;
+    border: 1px solid #d63638;
+    border-left: 4px solid #d63638;
+    border-radius: 4px;
+    padding: 12px;
+    margin: 20px 0;
+}
+
+.toolkit-no-cards h3 {
+    margin: 0 0 10px 0;
+    color: #d63638;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.toolkit-no-cards p {
+    margin: 0 0 10px 0;
+    color: #1d2327;
+}
+
+.toolkit-no-cards ul {
+    margin: 0;
+    padding-left: 20px;
+    color: #1d2327;
+}
+
+.toolkit-no-cards li {
+    margin-bottom: 5px;
 }
 
 /* WordPress标准表格样式 - 与文章优化保持一致 */

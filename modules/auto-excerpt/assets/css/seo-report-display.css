@@ -760,6 +760,115 @@
     border-left: 4px solid #2271b1;
     color: #1d2327;
     line-height: 1.6;
+    user-select: text;
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+    cursor: text;
+    word-break: break-word;
+    white-space: pre-wrap;
+}
+
+/* 支持实际的元信息卡片结构 */
+.meta-card {
+    background: white;
+    border: 1px solid #e9ecef;
+    border-radius: 12px;
+    padding: 25px;
+    margin-bottom: 25px;
+}
+
+.meta-card .card-title {
+    margin: 0 0 20px 0;
+    color: #1d2327;
+    font-size: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.meta-item {
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.meta-item:last-child {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+.meta-label {
+    margin: 0 0 8px 0;
+    color: #2271b1;
+    font-size: 16px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.meta-card .meta-value {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    border-left: 4px solid #2271b1;
+    padding: 12px 16px;
+    color: #1d2327;
+    line-height: 1.6;
+    user-select: text;
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+    cursor: text;
+    word-break: break-word;
+    white-space: pre-wrap;
+    margin: 0;
+}
+
+.keywords-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.focus-keyword-chip {
+    background: #e7f3ff;
+    color: #0073aa;
+    border: 1px solid #0073aa;
+    border-radius: 20px;
+    padding: 6px 12px;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.selectable-text {
+    user-select: text !important;
+    -webkit-user-select: text !important;
+    -moz-user-select: text !important;
+    -ms-user-select: text !important;
+    cursor: text !important;
+}
+
+.copy-meta-btn {
+    background: #2271b1;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 6px 12px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    margin-top: 8px;
+}
+
+.copy-meta-btn:hover {
+    background: #135e96;
+}
+
+.copy-meta-btn:active {
+    background: #0a4b78;
 }
 
 /* 控制面板 */

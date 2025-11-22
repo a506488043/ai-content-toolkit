@@ -152,18 +152,24 @@ Complete friend link management system with user submission and moderation capab
   - Pagination support
 
 ### 🤖 Article Optimization
-**Version**: 1.0.1
+**Version**: 1.0.2
 
-Intelligent article optimization system supporting AI-powered excerpt generation, SEO analysis, and tag generation.
+Intelligent article optimization system supporting AI-powered excerpt generation, SEO analysis, automatic categorization, and tag generation.
 
 **Core Features**:
-- ✅ **AI-Powered Generation**: Smart excerpt generation based on DeepSeek AI
-- ✅ **SEO Analysis Reports**: All-new AI-driven article SEO analysis and optimization recommendations
-- ✅ **Traditional Algorithms**: Efficient local excerpt extraction algorithms
-- ✅ **Batch Processing**: Support for batch excerpt generation
-- ✅ **Status Filtering**: Filter articles by excerpt status
-- ✅ **Smart Detection**: Automatic identification and marking of AI-generated excerpts
-- ✅ **Statistics Dashboard**: Detailed excerpt coverage statistics
+- ✅ **AI Auto Categorization**: Smart analysis of article content and automatic category selection
+- ✅ **Three Smart Modes**: Draft always, Smart first, Draft once generation modes
+- ✅ **WordPress Default Detection**: Avoid overwriting user manual category selections
+- ✅ **AI Excerpt Generation**: Smart excerpt generation with unified three-mode strategy
+- ✅ **AI Tag Generation**: Intelligent tag recommendation with unified three-mode management
+- ✅ **AI-Powered Generation**: Smart content generation based on DeepSeek AI
+- ✅ **SEO Analysis Reports**: AI-driven article SEO analysis and optimization recommendations
+- ✅ **AI Summary Display**: Beautiful AI summary display with typing animation effects
+- ✅ **Custom Prompt Support**: Custom AI prompts for enhanced categorization accuracy
+- ✅ **Batch Processing**: Support for batch content generation
+- ✅ **Status Filtering**: Filter articles by generation status
+- ✅ **Smart Detection**: Automatic identification and marking of AI-generated content
+- ✅ **Statistics Dashboard**: Detailed coverage statistics
 - ✅ **Paginated Display**: Efficient paginated browsing experience
 
 **SEO Analysis Report Features**:
@@ -175,6 +181,14 @@ Intelligent article optimization system supporting AI-powered excerpt generation
 - 📱 **Fully Responsive**: Perfect modern interface adaptation for all devices
 - 🚀 **Performance Optimization**: Increased token limits ensure complete AI responses
 - 🔧 **Interface Optimization**: Removed redundant elements, optimized font sizes and layout
+
+**AI Summary Display Features**:
+- ✨ **Typewriter Effect**: Simulates typewriter character-by-character display effect
+- 🎨 **Professional Design**: Modern design style similar to reference websites
+- 📱 **Responsive Layout**: Perfect adaptation for various screen sizes
+- 🔧 **Smart Cleaning**: Automatic text format cleaning and excess space removal
+- 🎯 **Precise Positioning**: Cursor position accurately follows text display
+- ⚡ **Performance Optimization**: Optimized JavaScript animation performance
 
 **Technical Features**:
 - 🧠 **DeepSeek AI Integration**: Advanced AI models for high-quality excerpt generation and SEO analysis
@@ -250,40 +264,43 @@ Intelligent tag description generation system that automatically generates optim
 - Filtering and batch operation features
 - AI-generated description marking display
 
-### 🌐 Website Optimization
+### 🤖 AI Settings Management
 **Version**: 1.0.0
 
-Professional website SEO analysis and optimization recommendation system providing specific implementation guidance.
+Unified AI service configuration management module supporting multi-provider dynamic switching and independent data saving.
 
 **Core Features**:
-- ✅ **Intelligent SEO Analysis**: Comprehensive analysis of website title, description, and keyword SEO performance
-- ✅ **Specific Implementation Steps**: Provides detailed optimization operation guidance, not just suggestions
-- ✅ **Priority Identification**: Uses 🔴🟡🟢 colors to identify optimization priority levels
-- ✅ **WordPress Integration**: Provides specific WordPress admin setup paths
-- ✅ **SEO Plugin Compatibility**: Supports setup methods for SEO plugins like WPJAM
-- ✅ **Content Quality Analysis**: Analyzes description and keyword quality and value
-- ✅ **Smart Recommendation Generation**: Generates specific optimization suggestions based on website content
+- ✅ **Multi-provider Support**: Supports both DeepSeek and SiliconFlow AI providers
+- ✅ **Dynamic Configuration Switching**: Real-time provider switching with automatic interface updates
+- ✅ **Independent Data Saving**: Each provider's API keys and configurations saved independently
+- ✅ **API Connection Testing**: One-click AI service connection status testing
+- ✅ **Unified Settings Management**: All AI-related modules share unified configuration
+- ✅ **Fallback Mechanism**: Automatic fallback to traditional algorithms when AI fails
 
-**SEO Analysis Report Features**:
-- 🎯 **Specifically Actionable**: Users know how to implement each SEO optimization suggestion
-- 📝 **Detailed Guidance**: Includes specific operations, WordPress setup methods, SEO plugin setup methods
-- 🔧 **Implementation Steps**: Each suggestion includes specific implementation steps and operation methods
-- 🏷️ **Clear Priority**: Identifies optimization priority through colors and icons
-- 🎨 **User Experience Friendly**: Uses emojis and clear formatting to improve readability
+**Supported AI Providers**:
+- 🧠 **DeepSeek**: Supports deepseek-chat and deepseek-reasoner models
+- ⚡ **SiliconFlow**: Supports DeepSeek-V3, Qwen, GLM, and various other models
 
 **Technical Features**:
-- 🧠 **Smart Analysis Algorithm**: Automatically analyzes website content SEO performance
-- 📊 **Multi-dimensional Evaluation**: Evaluates SEO from multiple dimensions like length, content, quality
-- 🎯 **Specific Suggestions**: Transforms abstract suggestions into specific operation steps
-- 🔧 **WordPress Integration**: Deep integration with WordPress settings system
-- ⚡ **Real-time Analysis**: Quickly generates detailed SEO analysis reports
+- 🔄 **Dynamic Interface**: JavaScript-driven real-time configuration switching
+- 💾 **Smart Saving**: Ensures all provider configurations are saved independently
+- 🧪 **Connection Testing**: Complete API connection verification and error handling
+- 🎯 **Unified Configuration**: All AI modules share a unified settings system
+- 🔒 **Secure & Reliable**: Complete permission verification and CSRF protection
 
-**User Interface**:
-- Website basic information statistics panel
-- Real-time SEO analysis progress display
-- Detailed SEO analysis reports (title, description, keywords)
-- Specific implementation steps and setup methods
-- Smartly generated optimization suggestions
+**Configuration Options**:
+- AI feature global toggle
+- Provider selection and switching
+- API keys and base URL configuration
+- Model selection and parameter adjustment
+- Maximum token count and creativity settings
+- Fallback mechanism configuration
+
+**Dynamic Switching Features**:
+- Real-time display of current provider configuration fields
+- Hide configuration interfaces for inactive providers
+- Ensure all configuration data is completely saved
+- Provide API connection testing functionality
 
 ### 🛡️ REST Proxy Fix
 **Version**: 1.0.0
@@ -343,7 +360,8 @@ wordpress-toolkit/
 │   ├── simple-friendlink/        # Friend links module
 │   ├── auto-excerpt/             # Article optimization module
 │   ├── category-optimization/    # Category optimization module
-│   └── tag-optimization/         # Tag optimization module
+│   ├── tag-optimization/         # Tag optimization module
+│   └── ai-settings/              # AI settings management module
 ├── assets/                       # Asset files
 │   ├── css/                      # Style files
 │   │   ├── variables.css         # CSS variable system
@@ -548,7 +566,7 @@ wordpress-toolkit/
 - **Article Optimization**: Excerpt management, AI configuration, batch processing
 - **Category Optimization**: Category description AI generation, batch optimization, status management
 - **Tag Optimization**: Tag description AI generation, batch optimization, statistics panel
-- **Website Optimization**: SEO analysis, optimization recommendations, implementation guidance
+- **AI Settings Management**: Multi-provider configuration, dynamic switching, connection testing
 
 ### Settings Pages
 - **Website Card Settings**: Cache configuration, fetch settings, display options
@@ -558,7 +576,7 @@ wordpress-toolkit/
 - **Article Optimization Settings**: AI configuration, excerpt rules, batch settings
 - **Category Optimization Settings**: AI API configuration, generation rules, batch settings
 - **Tag Optimization Settings**: AI API configuration, generation rules, statistics settings
-- **Website Optimization Settings**: AI analysis configuration, optimization rules, implementation settings
+- **AI Settings Management**: Multi-provider configuration, dynamic switching, connection testing
 
 ## 📈 Use Cases
 
@@ -728,24 +746,6 @@ $template->render();
 
 ## 🔄 Version History
 
-### v1.0.7 (2025-11-18)
-**Website Optimization Module**:
-- 🌐 **Website SEO Analysis**: New professional website SEO analysis and optimization system
-- 🎯 **Actionable Recommendations**: Provides specific implementation steps, not just general suggestions
-- 🔴🟡🟢 **Priority Levels**: Uses color-coded priority indicators for optimization tasks
-- 🔧 **WordPress Integration**: Includes specific WordPress admin setup paths and methods
-- 📝 **Detailed Implementation**: Each suggestion includes step-by-step implementation guidance
-- 🏷️ **SEO Plugin Compatibility**: Supports setup methods for WPJAM and other SEO plugins
-- 📊 **Multi-dimensional Analysis**: Analyzes title, description, and keywords from multiple dimensions
-- ⚡ **Real-time Analysis**: Quick generation of detailed SEO analysis reports
-
-**Technical Features**:
-- Smart analysis algorithm for website content SEO performance
-- Automatic extraction of keywords from website content
-- Quality analysis for descriptions and keywords
-- WordPress settings system integration
-- Real-time progress display and status monitoring
-
 ### v1.0.6 (2025-11-04)
 **AI Article Optimization Module**:
 - 🤖 **Auto Excerpt System**: All-new intelligent article excerpt generation feature
@@ -901,7 +901,7 @@ A: WordPress Toolkit includes ten core tools:
 7. **Article Optimization** - AI-powered intelligent article optimization system
 8. **Category Optimization** - AI-powered intelligent category description generation system
 9. **Tag Optimization** - AI-powered intelligent tag description generation system
-10. **Website Optimization** - Professional website SEO analysis and optimization system
+10. **AI Settings Management** - Unified AI service configuration management module
 
 ### Q: Can I use individual tools separately?
 A: Yes, each tool is an independent module. You can enable or disable corresponding modules as needed without affecting other functions.

@@ -29,14 +29,14 @@ $allowed_drop_tables = array(
 );
 
 // 删除插件选项
-delete_option('wordpress_toolkit_custom_card_options');
-delete_option('wordpress_toolkit_age_calculator_options');
-delete_option('wordpress_toolkit_time_capsule_options');
-delete_option('wordpress_toolkit_cookieguard_options');
-delete_option('wordpress_toolkit_activated_time');
-delete_option('wordpress_toolkit_custom_card_activated_time');
-delete_option('wordpress_toolkit_time_capsule_activated_time');
-delete_option('wordpress_toolkit_cookieguard_activated_time');
+delete_option('wordpress_ai_toolkit_custom_card_options');
+delete_option('wordpress_ai_toolkit_age_calculator_options');
+delete_option('wordpress_ai_toolkit_time_capsule_options');
+delete_option('wordpress_ai_toolkit_cookieguard_options');
+delete_option('wordpress_ai_toolkit_activated_time');
+delete_option('wordpress_ai_toolkit_custom_card_activated_time');
+delete_option('wordpress_ai_toolkit_time_capsule_activated_time');
+delete_option('wordpress_ai_toolkit_cookieguard_activated_time');
 
 // 安全地删除Custom Card数据库表
 if (in_array($wpdb->prefix . 'chf_card_cache', $allowed_drop_tables)) {
@@ -73,7 +73,7 @@ if (in_array($seo_table, $allowed_drop_tables)) {
 // 使用prepare语句安全地删除用户元数据中的相关数据
 $result = $wpdb->query($wpdb->prepare(
     "DELETE FROM {$wpdb->usermeta} WHERE meta_key LIKE %s",
-    'wordpress_toolkit_%'
+    'wordpress_ai_toolkit_%'
 ));
 if ($result === false && defined('WP_DEBUG') && WP_DEBUG) {
     wt_log_error('Failed to delete user meta data: ' . $wpdb->last_error, 'uninstall');
@@ -81,10 +81,10 @@ if ($result === false && defined('WP_DEBUG') && WP_DEBUG) {
 
 // 使用prepare语句安全地删除transients缓存
 $transient_patterns = array(
-    '_transient_wordpress_toolkit_%',
-    '_transient_timeout_wordpress_toolkit_%',
-    '_transient_wordpress_toolkit_cookieguard_geo_%',
-    '_transient_timeout_wordpress_toolkit_cookieguard_geo_%',
+    '_transient_wordpress_ai_toolkit_%',
+    '_transient_timeout_wordpress_ai_toolkit_%',
+    '_transient_wordpress_ai_toolkit_cookieguard_geo_%',
+    '_transient_timeout_wordpress_ai_toolkit_cookieguard_geo_%',
     '_transient_chf_card_%',
     '_transient_timeout_chf_card_%'
 );
@@ -102,7 +102,7 @@ foreach ($transient_patterns as $pattern) {
 // 安全地清理post meta中的相关数据
 $result = $wpdb->query($wpdb->prepare(
     "DELETE FROM {$wpdb->postmeta} WHERE meta_key LIKE %s",
-    'wordpress_toolkit_%'
+    'wordpress_ai_toolkit_%'
 ));
 if ($result === false && defined('WP_DEBUG') && WP_DEBUG) {
     wt_log_error('Failed to delete post meta data: ' . $wpdb->last_error, 'uninstall');

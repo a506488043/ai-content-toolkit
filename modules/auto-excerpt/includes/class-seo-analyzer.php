@@ -48,12 +48,12 @@ class Auto_Excerpt_SEO_Analyzer extends WordPress_Toolkit_Module_Base {
             // 保存到数据库
             $this->database->save_seo_analysis($post_id, $analysis_result);
 
-            error_log('[SEO ANALYZER] Analysis completed for post: ' . $post_id . ' | Score: ' . $analysis_result['overall_score']);
+
 
             return $analysis_result;
 
         } catch (Exception $e) {
-            error_log('[SEO ANALYZER] Analysis failed for post: ' . $post_id . ' - ' . $e->getMessage());
+
             return $this->create_fallback_analysis($post_id);
         }
     }
@@ -112,12 +112,12 @@ class Auto_Excerpt_SEO_Analyzer extends WordPress_Toolkit_Module_Base {
      * 执行AI分析
      */
     private function perform_ai_analysis($content_data) {
-        error_log("WordPress Toolkit: 开始执行AI分析");
+
         $prompt = $this->build_ai_prompt($content_data);
-        error_log("WordPress Toolkit: AI提示词构建完成，长度 = " . strlen($prompt));
+
 
         $response = $this->call_ai_api($prompt);
-        error_log("WordPress Toolkit: AI API调用完成，响应长度 = " . strlen($response));
+
 
         return $this->parse_ai_response($response);
     }
@@ -139,17 +139,27 @@ class Auto_Excerpt_SEO_Analyzer extends WordPress_Toolkit_Module_Base {
             $content .= '...(content truncated)';
         }
 
-        return <<<PROMPT
-作为专业SEO分析师，请分析以下文章。只返回JSON格式，不要其他解释文字。
+        // 使用动态提示词设置
+        if (function_exists('wordpress_ai_toolkit_get_prompt')) {
+            $prompt = wordpress_ai_toolkit_get_prompt('seo_analysis', array(
+                'title' => $title,
+                'excerpt' => $excerpt,
+                'word_count' => $word_count,
+                'title_length' => $title_length,
+                'content' => $content
+            ));
+        } else {
+            // 降级到默认提示词
+            $prompt = '作为专业SEO分析师，请分析以下文章。只返回JSON格式，不要其他解释文字。
 
 文章信息：
-标题：{$title}
-摘要：{$excerpt}
-字数：{$word_count}字
-标题长度：{$title_length}字符
+标题：' . $title . '
+摘要：' . $excerpt . '
+字数：' . $word_count . '字
+标题长度：' . $title_length . '字符
 
 内容：
-{$content}
+' . $content . '
 
 请直接返回标准JSON格式：
 ```json
@@ -184,18 +194,20 @@ class Auto_Excerpt_SEO_Analyzer extends WordPress_Toolkit_Module_Base {
 }
 ```
 
-重要：确保JSON语法正确，只返回代码块
-PROMPT;
+重要：确保JSON语法正确，只返回代码块';
+        }
+
+        return $prompt;
     }
 
     /**
      * 调用AI API
      */
     private function call_ai_api($prompt) {
-        error_log("WordPress Toolkit: 开始调用AI API");
+
         $api_url = rtrim($this->settings['api_base'], '/') . '/v1/chat/completions';
-        error_log("WordPress Toolkit: API URL = " . $api_url);
-        error_log("WordPress Toolkit: API Key = " . substr($this->settings['api_key'], 0, 10) . "...");
+
+
 
         $request_data = array(
             'model' => $this->settings['ai_model'],
@@ -225,32 +237,32 @@ PROMPT;
         ));
 
         if (is_wp_error($response)) {
-            error_log("WordPress Toolkit: API请求失败 - " . $response->get_error_message());
+
             throw new Exception('API request failed: ' . $response->get_error_message());
         }
 
         $response_code = wp_remote_retrieve_response_code($response);
         $response_body = wp_remote_retrieve_body($response);
 
-        error_log("WordPress Toolkit: API响应状态码 = " . $response_code);
-        error_log("WordPress Toolkit: API响应体长度 = " . strlen($response_body));
-        error_log("WordPress Toolkit: API响应内容 = " . substr($response_body, 0, 500) . "...");
-        error_log("WordPress Toolkit: API完整响应数据 = " . $response_body);
+
+
+
+
 
         if ($response_code !== 200) {
-            error_log("WordPress Toolkit: API响应错误 - 状态码 = " . $response_code);
+
             throw new Exception("API request failed with status code: {$response_code}");
         }
 
         $data = json_decode($response_body, true);
         if (json_last_error() !== JSON_ERROR_NONE) {
-            error_log("WordPress Toolkit: API响应JSON解析失败 - " . json_last_error_msg());
+
             throw new Exception('API response parsing failed');
         }
 
         if (!isset($data['choices'][0]['message']['content'])) {
-            error_log("WordPress Toolkit: API响应格式无效 - 缺少choices[0][message][content]");
-            error_log("WordPress Toolkit: 实际响应数据 = " . print_r($data, true));
+
+
             throw new Exception('Invalid API response format');
         }
 
@@ -264,8 +276,8 @@ PROMPT;
         $response = trim($response);
 
         // 添加调试日志
-        error_log("WordPress Toolkit: AI响应原始数据长度 = " . strlen($response));
-        error_log("WordPress Toolkit: AI完整响应数据 = " . $response);
+
+
 
         // 简单直接提取JSON
         $json_content = '';
@@ -273,36 +285,67 @@ PROMPT;
         // 优先提取```json代码块
         if (preg_match('/```json\s*(.*?)\s*```/s', $response, $matches)) {
             $json_content = trim($matches[1]);
-            error_log("WordPress Toolkit: 通过```json代码块提取JSON成功");
+
         }
         // 备选：直接提取JSON对象
         elseif (preg_match('/\{.*\}/s', $response, $matches)) {
             $json_content = trim($matches[0]);
-            error_log("WordPress Toolkit: 直接提取JSON对象");
+
         }
 
         if (empty($json_content)) {
-            error_log("WordPress Toolkit: 无法提取JSON内容");
+
             return $this->create_basic_analysis($response);
         }
 
-        error_log("WordPress Toolkit: 提取的JSON内容 = " . substr($json_content, 0, 300) . "...");
-        error_log("WordPress Toolkit: 完整提取的JSON = " . $json_content);
+
+
 
         // 尝试解析JSON
         $analysis_data = json_decode($json_content, true);
 
         if (json_last_error() !== JSON_ERROR_NONE) {
-            error_log("WordPress Toolkit: JSON解析失败 - " . json_last_error_msg());
-            error_log("WordPress Toolkit: JSON错误码 = " . json_last_error());
-            error_log("WordPress Toolkit: 失败的JSON内容 = " . $json_content);
-            error_log("WordPress Toolkit: 失败的JSON长度 = " . strlen($json_content));
+
+
+
+
+
+            // 尝试修复JSON
+            $fixed_json = $this->fix_json_errors($json_content);
+            if ($fixed_json !== $json_content) {
+
+                $analysis_data = json_decode($fixed_json, true);
+                if (json_last_error() === JSON_ERROR_NONE) {
+
+                    return $analysis_data;
+                }
+            }
+
             // JSON解析失败，返回基础结构
             return $this->create_basic_analysis($response);
         }
 
-        error_log("WordPress Toolkit: JSON解析成功");
+
         return $analysis_data;
+    }
+
+    /**
+     * 修复常见的JSON错误
+     *
+     * @param string $json_content 原始JSON内容
+     * @return string 修复后的JSON内容
+     */
+    private function fix_json_errors($json_content) {
+        $fixed = $json_content;
+
+        // 修复1: 缺少引号的字段名（如 focus_keywords 缺少引号）
+        // 只修复 focus_keywords 字段，其他字段已经有引号
+        $fixed = str_replace('focus_keywords":', '"focus_keywords":', $fixed);
+
+        // 修复2: 修复中文引号问题
+        $fixed = str_replace(['"', '"'], '"', $fixed);
+
+        return $fixed;
     }
 
     /**
@@ -525,7 +568,7 @@ PROMPT;
      * 修复不完整的JSON字符串
      */
     private function fix_incomplete_json($json_string) {
-        error_log("WordPress Toolkit: 开始修复不完整的JSON");
+
 
         // 计算花括号差异
         $open_count = substr_count($json_string, '{');
@@ -535,7 +578,7 @@ PROMPT;
         // 添加缺失的闭合花括号
         if ($brace_diff > 0) {
             $json_string .= str_repeat('}', $brace_diff);
-            error_log("WordPress Toolkit: 添加了 {$brace_diff} 个闭合花括号");
+
         }
 
         // 处理未闭合的字符串和常见JSON错误
@@ -557,18 +600,18 @@ PROMPT;
         // 4. 确保字符串值被正确引号包围
         $json_string = preg_replace('/:\s*([^",\[\]{\s][^",\[\]{]*?)\s*([,}\]])/', ': "$1"$2', $json_string);
 
-        error_log("WordPress Toolkit: JSON修复完成，尝试解析");
+
 
         // 最终验证
         if ($this->is_json_complete($json_string)) {
-            error_log("WordPress Toolkit: JSON修复成功");
+
             return $json_string;
         } else {
             // 更详细的失败诊断
             json_decode($json_string);
             $json_error = json_last_error_msg();
-            error_log("WordPress Toolkit: JSON修复失败 - 最终错误: " . $json_error);
-            error_log("WordPress Toolkit: 修复后的JSON内容: " . substr($json_string, -200));
+
+
             return null;
         }
     }

@@ -27,12 +27,12 @@
             });
             
             // 表单提交事件
-            $(document).on('submit', '.wordpress-toolkit-admin-form', function(e) {
+            $(document).on('submit', '.wordpress-ai-toolkit-admin-form', function(e) {
                 self.handleFormSubmit(e);
             });
             
             // 按钮点击事件
-            $(document).on('click', '.wordpress-toolkit-button', function(e) {
+            $(document).on('click', '.wordpress-ai-toolkit-button', function(e) {
                 self.handleButtonClick(e);
             });
             
@@ -45,7 +45,7 @@
         // 初始化页面
         initPage: function() {
             // 添加页面加载动画
-            $('.wordpress-toolkit-admin-section').hide().fadeIn(500);
+            $('.wordpress-ai-toolkit-admin-section').hide().fadeIn(500);
             
             // 初始化工具提示
             this.initTooltips();
@@ -74,7 +74,7 @@
                 $('#' + target).addClass('active');
                 
                 // 触发标签切换事件
-                $(document).trigger('wordpress-toolkit-tab-changed', [target]);
+                $(document).trigger('wordpress-ai-toolkit-tab-changed', [target]);
             });
         },
         
@@ -84,11 +84,11 @@
                 $('.color-picker').wpColorPicker({
                     change: function(event, ui) {
                         // 触发颜色改变事件
-                        $(document).trigger('wordpress-toolkit-color-changed', [ui.color.toString()]);
+                        $(document).trigger('wordpress-ai-toolkit-color-changed', [ui.color.toString()]);
                     },
                     clear: function() {
                         // 触发颜色清除事件
-                        $(document).trigger('wordpress-toolkit-color-cleared');
+                        $(document).trigger('wordpress-ai-toolkit-color-cleared');
                     }
                 });
             }
@@ -96,7 +96,7 @@
         
         // 初始化工具提示
         initTooltips: function() {
-            $('.wordpress-toolkit-tooltip').each(function() {
+            $('.wordpress-ai-toolkit-tooltip').each(function() {
                 const $this = $(this);
                 const title = $this.attr('title');
                 
@@ -104,7 +104,7 @@
                     $this.attr('data-tooltip', title).removeAttr('title');
                     
                     $this.on('mouseenter', function() {
-                        const tooltip = $('<div class="wordpress-toolkit-tooltip-text"></div>')
+                        const tooltip = $('<div class="wordpress-ai-toolkit-tooltip-text"></div>')
                             .text(title)
                             .appendTo('body');
                         
@@ -121,7 +121,7 @@
                     });
                     
                     $this.on('mouseleave', function() {
-                        $('.wordpress-toolkit-tooltip-text').fadeOut(200, function() {
+                        $('.wordpress-ai-toolkit-tooltip-text').fadeOut(200, function() {
                             $(this).remove();
                         });
                     });
@@ -176,7 +176,7 @@
             submitButton.val('处理中...').text('处理中...');
             
             // 触发表单提交前事件
-            $(document).trigger('wordpress-toolkit-form-submitting', [$form]);
+            $(document).trigger('wordpress-ai-toolkit-form-submitting', [$form]);
             
             // 如果是AJAX表单，阻止默认提交
             if ($form.hasClass('ajax-form')) {
@@ -188,7 +188,7 @@
         // AJAX表单提交
         submitFormAjax: function($form, submitButton) {
             const formData = $form.serialize();
-            const action = $form.data('action') || 'wordpress_toolkit_ajax';
+            const action = $form.data('action') || 'wordpress_ai_toolkit_ajax';
             
             $.ajax({
                 url: ajaxurl,
@@ -200,7 +200,7 @@
                         WordPressToolkitAdmin.showNotice('success', response.data.message || '操作成功');
                         
                         // 触发成功事件
-                        $(document).trigger('wordpress-toolkit-ajax-success', [response]);
+                        $(document).trigger('wordpress-ai-toolkit-ajax-success', [response]);
                         
                         // 如果有重定向URL，则重定向
                         if (response.data.redirect) {
@@ -211,7 +211,7 @@
                         WordPressToolkitAdmin.showNotice('error', response.data || '操作失败');
                         
                         // 触发失败事件
-                        $(document).trigger('wordpress-toolkit-ajax-error', [response]);
+                        $(document).trigger('wordpress-ai-toolkit-ajax-error', [response]);
                     }
                 },
                 error: function() {
@@ -253,7 +253,7 @@
                     break;
                 default:
                     // 触发自定义按钮事件
-                    $(document).trigger('wordpress-toolkit-button-clicked', [$button, action]);
+                    $(document).trigger('wordpress-ai-toolkit-button-clicked', [$button, action]);
             }
         },
         
@@ -265,7 +265,7 @@
                 url: ajaxurl,
                 type: 'POST',
                 data: {
-                    action: 'wordpress_toolkit_clear_cache',
+                    action: 'wordpress_ai_toolkit_clear_cache',
                     nonce: $button.data('nonce'),
                     cache_type: cacheType
                 },
@@ -291,7 +291,7 @@
                 url: ajaxurl,
                 type: 'POST',
                 data: {
-                    action: 'wordpress_toolkit_export_data',
+                    action: 'wordpress_ai_toolkit_export_data',
                     nonce: $button.data('nonce'),
                     format: format,
                     category: category
@@ -328,7 +328,7 @@
                 url: ajaxurl,
                 type: 'POST',
                 data: {
-                    action: 'wordpress_toolkit_reset_settings',
+                    action: 'wordpress_ai_toolkit_reset_settings',
                     nonce: $button.data('nonce'),
                     module: module
                 },
@@ -361,7 +361,7 @@
                 url: ajaxurl,
                 type: 'POST',
                 data: {
-                    action: 'wordpress_toolkit_test_connection',
+                    action: 'wordpress_ai_toolkit_test_connection',
                     nonce: $button.data('nonce'),
                     service: service
                 },
@@ -387,7 +387,7 @@
             console.error('WordPress Toolkit AJAX Error:', thrownError);
             
             // 触发AJAX错误事件
-            $(document).trigger('wordpress-toolkit-ajax-error', [event, jqXHR, settings, thrownError]);
+            $(document).trigger('wordpress-ai-toolkit-ajax-error', [event, jqXHR, settings, thrownError]);
         },
         
         // 显示通知

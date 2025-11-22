@@ -59,49 +59,49 @@ class Tag_Optimization_Admin_Page {
     public function admin_page() {
         // 验证用户权限
         if (!current_user_can('manage_options')) {
-            wp_die(__('权限不足', 'wordpress-toolkit'));
+            wp_die(__('权限不足', 'wordpress-ai-toolkit'));
         }
 
         // 验证nonce（防止CSRF攻击）
-        if (isset($_POST['action']) && !wp_verify_nonce($_POST['_wpnonce'], 'wordpress_toolkit_tag_optimization')) {
-            wp_die(__('安全验证失败', 'wordpress-toolkit'));
+        if (isset($_POST['action']) && !wp_verify_nonce($_POST['_wpnonce'], 'wordpress_ai_toolkit_tag_optimization')) {
+            wp_die(__('安全验证失败', 'wordpress-ai-toolkit'));
         }
 
         // 显示管理页面
         ?>
         <div class="wrap">
             <?php
-            error_log("Tag Optimization: Loading admin page");
+
             $stats = $this->tag_optimization->get_statistics();
-            error_log("Tag Optimization: Stats loaded - " . print_r($stats, true));
+
             ?>
 
             <div class="postbox" style="margin-top: 15px; margin-bottom: 10px;">
                 <div class="inside" style="padding: 12px 15px;">
                     <div style="display: flex; align-items: center; gap: 30px; padding: 0; flex-wrap: wrap; justify-content: space-between;">
                         <div>
-                            <strong><?php _e('标签总数', 'wordpress-toolkit'); ?></strong>
+                            <strong><?php _e('标签总数', 'wordpress-ai-toolkit'); ?></strong>
                             <div style="margin-top: 5px;">
                                 <span class="dashicons dashicons-tag" style="color: #0073aa;"></span>
                                 <?php echo number_format($stats['total_tags']); ?>
                             </div>
                         </div>
                         <div>
-                            <strong><?php _e('有描述标签', 'wordpress-toolkit'); ?></strong>
+                            <strong><?php _e('有描述标签', 'wordpress-ai-toolkit'); ?></strong>
                             <div style="margin-top: 5px;">
                                 <span class="dashicons dashicons-yes-alt" style="color: #00a32a;"></span>
                                 <?php echo number_format($stats['tags_with_description']); ?>
                             </div>
                         </div>
                         <div>
-                            <strong><?php _e('无描述标签数量', 'wordpress-toolkit'); ?></strong>
+                            <strong><?php _e('无描述标签数量', 'wordpress-ai-toolkit'); ?></strong>
                             <div style="margin-top: 5px;">
                                 <span class="dashicons dashicons-no-alt" style="color: #d63638;"></span>
                                 <?php echo number_format($stats['tags_without_description']); ?>
                             </div>
                         </div>
                         <div>
-                            <strong><?php _e('描述覆盖率', 'wordpress-toolkit'); ?></strong>
+                            <strong><?php _e('描述覆盖率', 'wordpress-ai-toolkit'); ?></strong>
                             <div style="margin-top: 5px; display: flex; align-items: center; gap: 10px;">
                                 <span class="dashicons dashicons-chart-bar" style="color: #0073aa;"></span>
                                 <span><?php echo $stats['coverage_rate']; ?>%</span>
@@ -118,9 +118,9 @@ class Tag_Optimization_Admin_Page {
                     $current_page = isset($_GET['paged']) ? intval($_GET['paged']) : 1;
                     $status = isset($_GET['status']) ? sanitize_text_field($_GET['status']) : 'all';
 
-                    error_log("Tag Optimization: Loading tag list - page: $current_page, status: $status");
+
                     $tags_list = $this->tag_optimization->get_tags_list($current_page, 15, $status);
-                    error_log("Tag Optimization: Tag list loaded - " . print_r($tags_list, true));
+
                     ?>
 
                     <!-- 筛选器、批量操作和分页放在同一行 -->
@@ -128,18 +128,18 @@ class Tag_Optimization_Admin_Page {
                         <!-- 左侧：筛选器和批量操作 -->
                         <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
                             <form method="get" action="" style="display: flex; align-items: center; gap: 10px; margin: 0;">
-                                <input type="hidden" name="page" value="wordpress-toolkit-tag-optimization">
+                                <input type="hidden" name="page" value="wordpress-ai-toolkit-tag-optimization">
                                 <select name="status" id="tag-status-filter">
-                                    <option value="all" <?php selected(isset($_GET['status']) ? $_GET['status'] : 'all', 'all'); ?>><?php _e('全部标签', 'wordpress-toolkit'); ?></option>
-                                    <option value="with_description" <?php selected(isset($_GET['status']) ? $_GET['status'] : 'all', 'with_description'); ?>><?php _e('有描述标签', 'wordpress-toolkit'); ?></option>
-                                    <option value="without_description" <?php selected(isset($_GET['status']) ? $_GET['status'] : 'all', 'without_description'); ?>><?php _e('无描述标签', 'wordpress-toolkit'); ?></option>
+                                    <option value="all" <?php selected(isset($_GET['status']) ? $_GET['status'] : 'all', 'all'); ?>><?php _e('全部标签', 'wordpress-ai-toolkit'); ?></option>
+                                    <option value="with_description" <?php selected(isset($_GET['status']) ? $_GET['status'] : 'all', 'with_description'); ?>><?php _e('有描述标签', 'wordpress-ai-toolkit'); ?></option>
+                                    <option value="without_description" <?php selected(isset($_GET['status']) ? $_GET['status'] : 'all', 'without_description'); ?>><?php _e('无描述标签', 'wordpress-ai-toolkit'); ?></option>
                                 </select>
-                                <button type="submit" class="button"><?php _e('筛选', 'wordpress-toolkit'); ?></button>
+                                <button type="submit" class="button"><?php _e('筛选', 'wordpress-ai-toolkit'); ?></button>
 
                                 <span style="margin: 0 5px; color: #666;">|</span>
 
                                 <button type="button" id="batch-generate-descriptions" class="button button-primary">
-                                    <?php _e('为无描述标签生成描述', 'wordpress-toolkit'); ?>
+                                    <?php _e('为无描述标签生成描述', 'wordpress-ai-toolkit'); ?>
                                 </button>
                                 <span class="spinner" id="batch-generate-spinner" style="display: none; margin-left: 5px;"></span>
                             </form>
@@ -149,13 +149,13 @@ class Tag_Optimization_Admin_Page {
                         <?php if (!empty($tags_list) && isset($tags_list['pages']) && $tags_list['pages'] > 1): ?>
                         <div class="tablenav-pages" style="margin: 0;">
                             <?php
-                            $current_url = admin_url('admin.php?page=wordpress-toolkit-tag-optimization');
+                            $current_url = admin_url('admin.php?page=wordpress-ai-toolkit-tag-optimization');
                             if (isset($_GET['status'])) {
                                 $current_url .= '&status=' . urlencode($_GET['status']);
                             }
                             ?>
                             <span class="displaying-num">
-                                <?php printf(__('共 %d 个项目', 'wordpress-toolkit'), $tags_list['total']); ?>
+                                <?php printf(__('共 %d 个项目', 'wordpress-ai-toolkit'), $tags_list['total']); ?>
                             </span>
                             <?php
                             // 使用WordPress标准的paginate_links函数
@@ -199,18 +199,18 @@ class Tag_Optimization_Admin_Page {
                     // 添加调试信息和错误处理
                     if (empty($tags_list) || !isset($tags_list['tags'])) {
                         echo '<div class="notice notice-warning"><p>标签列表数据加载失败，请检查错误日志。</p></div>';
-                        error_log("Tag Optimization: Tag list data is invalid");
+
                     } elseif (empty($tags_list['tags'])) {
                         // 显示空状态
                         ?>
                         <table class="wp-list-table widefat fixed striped">
                             <thead>
                                 <tr>
-                                    <th scope="col" width="30%"><?php _e('标签名称', 'wordpress-toolkit'); ?></th>
-                                    <th scope="col" width="10%"><?php _e('描述状态', 'wordpress-toolkit'); ?></th>
-                                    <th scope="col" width="10%"><?php _e('描述长度', 'wordpress-toolkit'); ?></th>
-                                    <th scope="col" width="10%"><?php _e('文章数量', 'wordpress-toolkit'); ?></th>
-                                    <th scope="col" width="20%"><?php _e('操作', 'wordpress-toolkit'); ?></th>
+                                    <th scope="col" width="30%"><?php _e('标签名称', 'wordpress-ai-toolkit'); ?></th>
+                                    <th scope="col" width="10%"><?php _e('描述状态', 'wordpress-ai-toolkit'); ?></th>
+                                    <th scope="col" width="10%"><?php _e('描述长度', 'wordpress-ai-toolkit'); ?></th>
+                                    <th scope="col" width="10%"><?php _e('文章数量', 'wordpress-ai-toolkit'); ?></th>
+                                    <th scope="col" width="20%"><?php _e('操作', 'wordpress-ai-toolkit'); ?></th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -224,7 +224,7 @@ class Tag_Optimization_Admin_Page {
                                             <span class="dashicons dashicons-search" style="font-size: 48px; color: #ccc; display: block; margin-bottom: 10px;"></span>
                                             没有找到匹配的<?php echo $current_status === 'with_description' ? '有描述' : '无描述'; ?>标签
                                         </div>
-                                        <a href="<?php echo admin_url('admin.php?page=wordpress-toolkit-tag-optimization'); ?>" class="button button-primary">
+                                        <a href="<?php echo admin_url('admin.php?page=wordpress-ai-toolkit-tag-optimization'); ?>" class="button button-primary">
                                             清除筛选条件
                                         </a>
                                         <?php else: ?>
@@ -238,19 +238,19 @@ class Tag_Optimization_Admin_Page {
                             </tbody>
                         </table>
                         <?php
-                        error_log("Tag Optimization: No tags found matching criteria");
+
                     } else {
-                        error_log("Tag Optimization: Displaying " . count($tags_list['tags']) . " tags");
+
                     ?>
 
                     <table class="wp-list-table widefat fixed striped">
                         <thead>
                             <tr>
-                                <th scope="col" width="30%"><?php _e('标签名称', 'wordpress-toolkit'); ?></th>
-                                <th scope="col" width="10%"><?php _e('描述状态', 'wordpress-toolkit'); ?></th>
-                                <th scope="col" width="10%"><?php _e('描述长度', 'wordpress-toolkit'); ?></th>
-                                <th scope="col" width="10%"><?php _e('文章数量', 'wordpress-toolkit'); ?></th>
-                                <th scope="col" width="20%"><?php _e('操作', 'wordpress-toolkit'); ?></th>
+                                <th scope="col" width="30%"><?php _e('标签名称', 'wordpress-ai-toolkit'); ?></th>
+                                <th scope="col" width="10%"><?php _e('描述状态', 'wordpress-ai-toolkit'); ?></th>
+                                <th scope="col" width="10%"><?php _e('描述长度', 'wordpress-ai-toolkit'); ?></th>
+                                <th scope="col" width="10%"><?php _e('文章数量', 'wordpress-ai-toolkit'); ?></th>
+                                <th scope="col" width="20%"><?php _e('操作', 'wordpress-ai-toolkit'); ?></th>
                             </tr>
                         </thead>
                         <tbody>
@@ -264,17 +264,17 @@ class Tag_Optimization_Admin_Page {
                                 </td>
                                 <td>
                                     <?php if ($tag['has_description']): ?>
-                                        <span class="status-active"><?php _e('有描述', 'wordpress-toolkit'); ?></span>
+                                        <span class="status-active"><?php _e('有描述', 'wordpress-ai-toolkit'); ?></span>
                                     <?php else: ?>
-                                        <span class="status-inactive"><?php _e('无描述', 'wordpress-toolkit'); ?></span>
+                                        <span class="status-inactive"><?php _e('无描述', 'wordpress-ai-toolkit'); ?></span>
                                     <?php endif; ?>
                                 </td>
-                                <td><?php echo $tag['description_length']; ?> <?php _e('字符', 'wordpress-toolkit'); ?></td>
-                                <td><?php echo $tag['post_count']; ?> <?php _e('篇', 'wordpress-toolkit'); ?></td>
+                                <td><?php echo $tag['description_length']; ?> <?php _e('字符', 'wordpress-ai-toolkit'); ?></td>
+                                <td><?php echo $tag['post_count']; ?> <?php _e('篇', 'wordpress-ai-toolkit'); ?></td>
                                 <td>
                                     <div class="action-buttons-container">
-                                        <a href="<?php echo esc_url($tag['edit_url']); ?>" class="button button-small" target="_blank" style="background: #646970; color: white; border-color: #646970; margin: 0; text-decoration: none;"><?php _e('编辑', 'wordpress-toolkit'); ?></a>
-                                        <a href="<?php echo esc_url($tag['view_url']); ?>" class="button button-small" target="_blank" style="background: #646970; color: white; border-color: #646970; margin: 0; text-decoration: none;"><?php _e('查看', 'wordpress-toolkit'); ?></a>
+                                        <a href="<?php echo esc_url($tag['edit_url']); ?>" class="button button-small" target="_blank" style="background: #646970; color: white; border-color: #646970; margin: 0; text-decoration: none;"><?php _e('编辑', 'wordpress-ai-toolkit'); ?></a>
+                                        <a href="<?php echo esc_url($tag['view_url']); ?>" class="button button-small" target="_blank" style="background: #646970; color: white; border-color: #646970; margin: 0; text-decoration: none;"><?php _e('查看', 'wordpress-ai-toolkit'); ?></a>
                                         <?php if (!$tag['has_description']): ?>
                                         <button type="button" class="button button-small generate-description-single" data-tag-id="<?php echo $tag['ID']; ?>" data-tag-name="<?php echo esc_attr($tag['name']); ?>" title="为这个标签生成AI描述" style="background: #46b450; color: white; border-color: #46b450; margin: 0;">
                                             生成描述

@@ -9,7 +9,7 @@ if (!defined('ABSPATH')) {
 }
 
 // 获取选项
-$options = get_option('wordpress_toolkit_age_calculator_options');
+$options = get_option('wordpress_ai_toolkit_age_calculator_options');
 $default_format = isset($options['default_format']) ? $options['default_format'] : 'years';
 $show_for_logged_in = isset($options['show_for_logged_in']) ? $options['show_for_logged_in'] : true;
 $show_for_logged_out = isset($options['show_for_logged_out']) ? $options['show_for_logged_out'] : true;
@@ -21,7 +21,7 @@ $show_for_logged_out = isset($options['show_for_logged_out']) ? $options['show_f
     <div class="toolkit-settings-form">
         <h2>⏰ 基本设置</h2>
         <form method="post" action="options.php">
-            <?php settings_fields('wordpress_toolkit_age_calculator_options'); ?>
+            <?php settings_fields('wordpress_ai_toolkit_age_calculator_options'); ?>
 
             <table class="form-table">
                 <tr>
@@ -29,7 +29,7 @@ $show_for_logged_out = isset($options['show_for_logged_out']) ? $options['show_f
                         <label for="default_format">默认显示格式</label>
                     </th>
                     <td>
-                        <select id="default_format" name="wordpress_toolkit_age_calculator_options[default_format]">
+                        <select id="default_format" name="wordpress_ai_toolkit_age_calculator_options[default_format]">
                             <option value="years" <?php selected($default_format, 'years'); ?>>年</option>
                             <option value="months" <?php selected($default_format, 'months'); ?>>月</option>
                             <option value="days" <?php selected($default_format, 'days'); ?>>天</option>
@@ -44,7 +44,7 @@ $show_for_logged_out = isset($options['show_for_logged_out']) ? $options['show_f
                         <label for="show_for_logged_in">对登录用户显示</label>
                     </th>
                     <td>
-                        <input type="checkbox" id="show_for_logged_in" name="wordpress_toolkit_age_calculator_options[show_for_logged_in]" 
+                        <input type="checkbox" id="show_for_logged_in" name="wordpress_ai_toolkit_age_calculator_options[show_for_logged_in]" 
                                value="1" <?php checked($show_for_logged_in); ?>>
                         <p class="description">是否对已登录用户显示年龄计算器。</p>
                     </td>
@@ -55,7 +55,7 @@ $show_for_logged_out = isset($options['show_for_logged_out']) ? $options['show_f
                         <label for="show_for_logged_out">对未登录用户显示</label>
                     </th>
                     <td>
-                        <input type="checkbox" id="show_for_logged_out" name="wordpress_toolkit_age_calculator_options[show_for_logged_out]" 
+                        <input type="checkbox" id="show_for_logged_out" name="wordpress_ai_toolkit_age_calculator_options[show_for_logged_out]" 
                                value="1" <?php checked($show_for_logged_out); ?>>
                         <p class="description">是否对未登录用户显示年龄计算器。</p>
                     </td>

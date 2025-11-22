@@ -27,7 +27,7 @@ class Custom_Card_Module {
     /**
      * 选项键名
      */
-    private $option_name = 'wordpress_toolkit_custom_card_options';
+    private $option_name = 'wordpress_ai_toolkit_custom_card_options';
     
     /**
      * 获取单例实例
@@ -85,12 +85,12 @@ class Custom_Card_Module {
         add_shortcode('custom_card_lazy', array($this, 'shortcode_lazy_display'));
         
         // 注册AJAX处理钩子
-        add_action('wp_ajax_wordpress_toolkit_load_custom_card', array($this, 'handle_ajax_load_card'));
-        add_action('wp_ajax_nopriv_wordpress_toolkit_load_custom_card', array($this, 'handle_ajax_load_card'));
+        add_action('wp_ajax_wordpress_ai_toolkit_load_custom_card', array($this, 'handle_ajax_load_card'));
+        add_action('wp_ajax_nopriv_wordpress_ai_toolkit_load_custom_card', array($this, 'handle_ajax_load_card'));
         
         // 注册点击统计AJAX处理钩子
-        add_action('wp_ajax_wordpress_toolkit_record_card_click', array($this, 'handle_ajax_record_click'));
-        add_action('wp_ajax_nopriv_wordpress_toolkit_record_card_click', array($this, 'handle_ajax_record_click'));
+        add_action('wp_ajax_wordpress_ai_toolkit_record_card_click', array($this, 'handle_ajax_record_click'));
+        add_action('wp_ajax_nopriv_wordpress_ai_toolkit_record_card_click', array($this, 'handle_ajax_record_click'));
         
         // 注册清除缓存AJAX处理钩子
         add_action('wp_ajax_clear_custom_card_cache', array($this, 'handle_ajax_clear_cache'));
@@ -118,8 +118,8 @@ class Custom_Card_Module {
      */
     public function register_settings() {
         register_setting(
-            'wordpress_toolkit_custom_card_options',
-            'wordpress_toolkit_custom_card_options',
+            'wordpress_ai_toolkit_custom_card_options',
+            'wordpress_ai_toolkit_custom_card_options',
             array(
                 'type' => 'array',
                 'description' => 'Custom Card 模块设置',
@@ -169,26 +169,26 @@ class Custom_Card_Module {
     public function enqueue_scripts() {
         // 加载原Custom Card的前端样式
         wp_enqueue_style(
-            'wordpress-toolkit-custom-card',
-            WORDPRESS_TOOLKIT_PLUGIN_URL . 'modules/custom-card/assets/chf-card.css',
+            'wordpress-ai-toolkit-custom-card',
+            AI_CONTENT_TOOLKIT_PLUGIN_URL . 'modules/custom-card/assets/chf-card.css',
             array(),
             self::MODULE_VERSION
         );
         
         // 加载原Custom Card的前端脚本
         wp_enqueue_script(
-            'wordpress-toolkit-custom-card-script',
-            WORDPRESS_TOOLKIT_PLUGIN_URL . 'modules/custom-card/assets/chf-card.js',
+            'wordpress-ai-toolkit-custom-card-script',
+            AI_CONTENT_TOOLKIT_PLUGIN_URL . 'modules/custom-card/assets/chf-card.js',
             array('jquery'),
             self::MODULE_VERSION,
             true
         );
         
         // 传递AJAX URL
-        wp_localize_script('wordpress-toolkit-custom-card-script', 'chf_card_ajax', array(
+        wp_localize_script('wordpress-ai-toolkit-custom-card-script', 'chf_card_ajax', array(
             'ajax_url' => admin_url('admin-ajax.php'),
             'nonce' => wp_create_nonce('custom_card_nonce'),
-            'plugin_url' => WORDPRESS_TOOLKIT_PLUGIN_URL,
+            'plugin_url' => AI_CONTENT_TOOLKIT_PLUGIN_URL,
             'debug_mode' => defined('WP_DEBUG') && WP_DEBUG
         ));
     }
@@ -198,7 +198,7 @@ class Custom_Card_Module {
      */
     public function settings_page() {
         // 获取选项
-        $options = get_option('wordpress_toolkit_custom_card_options');
+        $options = get_option('wordpress_ai_toolkit_custom_card_options');
         $cache_expire_hours = isset($options['cache_expire_hours']) ? intval($options['cache_expire_hours']) : 72;
         $enable_memcached = isset($options['enable_memcached']) ? $options['enable_memcached'] : false;
         $enable_opcache = isset($options['enable_opcache']) ? $options['enable_opcache'] : true;
@@ -207,9 +207,9 @@ class Custom_Card_Module {
         <div class="wrap">
             <h1>网站卡片设置</h1>
 
-            <div class="wordpress-toolkit-admin-section">
+            <div class="wordpress-ai-toolkit-admin-section">
                 <form method="post" action="options.php">
-                    <?php settings_fields('wordpress_toolkit_custom_card_options'); ?>
+                    <?php settings_fields('wordpress_ai_toolkit_custom_card_options'); ?>
 
                     <table class="form-table">
                         <tr>
@@ -217,7 +217,7 @@ class Custom_Card_Module {
                                 <label for="cache_expire_hours">缓存时间（小时）</label>
                             </th>
                             <td>
-                                <input type="number" id="cache_expire_hours" name="wordpress_toolkit_custom_card_options[cache_expire_hours]"
+                                <input type="number" id="cache_expire_hours" name="wordpress_ai_toolkit_custom_card_options[cache_expire_hours]"
                                        value="<?php echo esc_attr($cache_expire_hours); ?>" min="1" max="720" class="small-text">
                                 <p class="description">设置卡片数据的缓存时间，默认为72小时。</p>
                             </td>
@@ -228,7 +228,7 @@ class Custom_Card_Module {
                                 <label for="enable_memcached">启用Memcached缓存</label>
                             </th>
                             <td>
-                                <input type="checkbox" id="enable_memcached" name="wordpress_toolkit_custom_card_options[enable_memcached]"
+                                <input type="checkbox" id="enable_memcached" name="wordpress_ai_toolkit_custom_card_options[enable_memcached]"
                                        value="1" <?php checked($enable_memcached); ?>>
                                 <p class="description">如果服务器支持Memcached，可以启用此选项提高性能。</p>
                             </td>
@@ -239,7 +239,7 @@ class Custom_Card_Module {
                                 <label for="enable_opcache">启用OPcache缓存</label>
                             </th>
                             <td>
-                                <input type="checkbox" id="enable_opcache" name="wordpress_toolkit_custom_card_options[enable_opcache]"
+                                <input type="checkbox" id="enable_opcache" name="wordpress_ai_toolkit_custom_card_options[enable_opcache]"
                                        value="1" <?php checked($enable_opcache); ?>>
                                 <p class="description">如果服务器支持OPcache，可以启用此选项提高性能。</p>
                             </td>
@@ -251,7 +251,7 @@ class Custom_Card_Module {
             </div>
 
             
-            <div class="wordpress-toolkit-admin-section">
+            <div class="wordpress-ai-toolkit-admin-section">
                 <h2>缓存管理</h2>
                 <p>当前缓存设置：</p>
                 <ul>
@@ -301,11 +301,11 @@ class Custom_Card_Module {
     public function cards_list_page() {
         // 调试日志
         if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('Custom Card Module: cards_list_page() called');
+
         }
 
         // 包含新的管理页面
-        include WORDPRESS_TOOLKIT_PLUGIN_PATH . 'modules/custom-card/admin/cards-admin-page.php';
+        include AI_CONTENT_TOOLKIT_PLUGIN_PATH . 'modules/custom-card/admin/cards-admin-page.php';
 
         // 显示管理页面
         $admin_page = Custom_Cards_Admin_Page::get_instance();
@@ -318,19 +318,19 @@ class Custom_Card_Module {
     public function admin_page() {
         // 调试日志
         if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('Custom Card Module: admin_page() called');
-            error_log('Custom Card Module: Current tab: ' . (isset($_GET['tab']) ? $_GET['tab'] : 'Not set'));
-            error_log('Custom Card Module: Plugin path: ' . WORDPRESS_TOOLKIT_PLUGIN_PATH);
+
+
+
         }
 
         // 包含原Custom Card的管理页面
         if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('Custom Card Module: Including admin-page.php');
+
         }
-        include WORDPRESS_TOOLKIT_PLUGIN_PATH . 'modules/custom-card/admin/admin-page.php';
+        include AI_CONTENT_TOOLKIT_PLUGIN_PATH . 'modules/custom-card/admin/admin-page.php';
 
         if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('Custom Card Module: admin_page() completed');
+
         }
     }
     
@@ -363,7 +363,7 @@ class Custom_Card_Module {
         
         // 渲染卡片
         ob_start();
-        include WORDPRESS_TOOLKIT_PLUGIN_PATH . 'modules/custom-card/template/card.php';
+        include AI_CONTENT_TOOLKIT_PLUGIN_PATH . 'modules/custom-card/template/card.php';
         return ob_get_clean();
     }
     
@@ -826,7 +826,7 @@ class Custom_Card_Module {
     private function register_gutenberg_block() {
         // 使用block.json文件注册Gutenberg区块
         register_block_type(
-            WORDPRESS_TOOLKIT_PLUGIN_PATH . 'modules/custom-card/blocks/custom-card',
+            AI_CONTENT_TOOLKIT_PLUGIN_PATH . 'modules/custom-card/blocks/custom-card',
             array(
                 'render_callback' => array($this, 'shortcode_display')
             )
@@ -873,7 +873,7 @@ class Custom_Card_Module {
             
             // 渲染卡片HTML
             ob_start();
-            include WORDPRESS_TOOLKIT_PLUGIN_PATH . 'modules/custom-card/template/card.php';
+            include AI_CONTENT_TOOLKIT_PLUGIN_PATH . 'modules/custom-card/template/card.php';
             $html = ob_get_clean();
             
             if (empty($html)) {

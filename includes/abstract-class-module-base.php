@@ -21,7 +21,7 @@ abstract class WordPress_Toolkit_Module_Base {
         // 验证nonce
         if (!wp_verify_nonce($_POST['nonce'] ?? '', $nonce_action)) {
             wp_send_json_error(array(
-                'message' => __('安全验证失败', 'wordpress-toolkit'),
+                'message' => __('安全验证失败', 'wordpress-ai-toolkit'),
                 'error_code' => 'invalid_nonce'
             ));
         }
@@ -29,7 +29,7 @@ abstract class WordPress_Toolkit_Module_Base {
         // 验证用户权限
         if (!current_user_can($capability)) {
             wp_send_json_error(array(
-                'message' => __('权限不足', 'wordpress-toolkit'),
+                'message' => __('权限不足', 'wordpress-ai-toolkit'),
                 'error_code' => 'insufficient_permissions'
             ));
         }
@@ -207,7 +207,7 @@ abstract class WordPress_Toolkit_Module_Base {
                 return (json_last_error() === JSON_ERROR_NONE) ? $decoded : false;
 
             default:
-                return apply_filters('wordpress_toolkit_validate_input_' . $type, $input, $options);
+                return apply_filters('wordpress_ai_toolkit_validate_input_' . $type, $input, $options);
         }
     }
 

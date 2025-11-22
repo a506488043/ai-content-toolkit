@@ -18,10 +18,18 @@ class WordPress_Toolkit_Security_Validator {
      * @return bool
      */
     public static function verify_admin_ajax($nonce_action) {
+        // 调试日志
+        error_log('=== SECURITY_DEBUG: verify_admin_ajax started ===');
+        error_log('Nonce action: ' . $nonce_action);
+        error_log('POST nonce: ' . (isset($_POST['nonce']) ? $_POST['nonce'] : 'NOT SET'));
+        error_log('User can manage_options: ' . (current_user_can('manage_options') ? 'YES' : 'NO'));
+        error_log('User can edit_posts: ' . (current_user_can('edit_posts') ? 'YES' : 'NO'));
+
         // 权限检查
         if (!current_user_can('manage_options')) {
+            error_log('=== SECURITY_DEBUG: Permission check FAILED ===');
             wp_send_json_error([
-                'message' => __('权限不足', 'wordpress-toolkit'),
+                'message' => __('权限不足', 'wordpress-ai-toolkit'),
                 'code' => 'insufficient_permissions'
             ]);
             return false;
@@ -29,13 +37,54 @@ class WordPress_Toolkit_Security_Validator {
 
         // Nonce验证
         if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], $nonce_action)) {
+            error_log('=== SECURITY_DEBUG: Nonce verification FAILED ===');
+            error_log('Nonce verification result: ' . (isset($_POST['nonce']) ? (wp_verify_nonce($_POST['nonce'], $nonce_action) ? 'VALID' : 'INVALID') : 'NO NONCE'));
             wp_send_json_error([
-                'message' => __('安全验证失败', 'wordpress-toolkit'),
+                'message' => __('安全验证失败', 'wordpress-ai-toolkit'),
                 'code' => 'invalid_nonce'
             ]);
             return false;
         }
 
+        error_log('=== SECURITY_DEBUG: All checks PASSED ===');
+        return true;
+    }
+
+    /**
+     * 验证编辑权限AJAX请求
+     *
+     * @param string $nonce_action nonce动作名称
+     * @return bool
+     */
+    public static function verify_editor_ajax($nonce_action) {
+        // 调试日志
+        error_log('=== SECURITY_DEBUG: verify_editor_ajax started ===');
+        error_log('Nonce action: ' . $nonce_action);
+        error_log('POST nonce: ' . (isset($_POST['nonce']) ? $_POST['nonce'] : 'NOT SET'));
+        error_log('User can edit_posts: ' . (current_user_can('edit_posts') ? 'YES' : 'NO'));
+
+        // 权限检查 - 只需要编辑权限
+        if (!current_user_can('edit_posts')) {
+            error_log('=== SECURITY_DEBUG: Editor permission check FAILED ===');
+            wp_send_json_error([
+                'message' => __('权限不足', 'wordpress-ai-toolkit'),
+                'code' => 'insufficient_permissions'
+            ]);
+            return false;
+        }
+
+        // Nonce验证
+        if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], $nonce_action)) {
+            error_log('=== SECURITY_DEBUG: Editor nonce verification FAILED ===');
+            error_log('Nonce verification result: ' . (isset($_POST['nonce']) ? (wp_verify_nonce($_POST['nonce'], $nonce_action) ? 'VALID' : 'INVALID') : 'NO NONCE'));
+            wp_send_json_error([
+                'message' => __('安全验证失败', 'wordpress-ai-toolkit'),
+                'code' => 'invalid_nonce'
+            ]);
+            return false;
+        }
+
+        error_log('=== SECURITY_DEBUG: Editor checks PASSED ===');
         return true;
     }
 
@@ -50,7 +99,7 @@ class WordPress_Toolkit_Security_Validator {
         // 权限检查
         if (!current_user_can($capability)) {
             wp_send_json_error([
-                'message' => __('权限不足', 'wordpress-toolkit'),
+                'message' => __('权限不足', 'wordpress-ai-toolkit'),
                 'code' => 'insufficient_permissions'
             ]);
             return false;
@@ -59,7 +108,7 @@ class WordPress_Toolkit_Security_Validator {
         // Nonce验证
         if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], $nonce_action)) {
             wp_send_json_error([
-                'message' => __('安全验证失败', 'wordpress-toolkit'),
+                'message' => __('安全验证失败', 'wordpress-ai-toolkit'),
                 'code' => 'invalid_nonce'
             ]);
             return false;
@@ -137,7 +186,7 @@ class WordPress_Toolkit_Security_Validator {
         foreach ($required_fields as $field) {
             if (!isset($data[$field]) || empty($data[$field])) {
                 $errors[] = sprintf(
-                    __('字段 "%s" 是必填的', 'wordpress-toolkit'),
+                    __('字段 "%s" 是必填的', 'wordpress-ai-toolkit'),
                     $field
                 );
             }
@@ -238,5 +287,14 @@ class WordPress_Toolkit_Security_Validator {
 
         $extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
         return in_array($extension, $allowed_types);
+    }
+
+    /**
+     * 检查当前用户是否有编辑文章的权限
+     *
+     * @return bool
+     */
+    public static function current_user_can_edit_posts() {
+        return current_user_can('edit_posts');
     }
 }

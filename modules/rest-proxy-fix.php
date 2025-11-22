@@ -171,7 +171,7 @@ class WordPress_Toolkit_REST_Proxy_Fix {
         add_action('admin_init', [$this, 'handle_form_submission']);
 
         // 插件激活时清理缓存
-        register_activation_hook(WORDPRESS_TOOLKIT_PLUGIN_BASENAME, [$this, 'plugin_activation']);
+        register_activation_hook(AI_CONTENT_TOOLKIT_PLUGIN_BASENAME, [$this, 'plugin_activation']);
     }
 
     /**
@@ -233,7 +233,7 @@ class WordPress_Toolkit_REST_Proxy_Fix {
         foreach ($blocked_domains as $blocked_domain) {
             if (strpos($host, $blocked_domain) !== false) {
                 // 记录被阻止的请求
-                error_log("WordPress Toolkit REST Proxy Fix: Blocked request to {$url}");
+
                 return new WP_Error('rest_proxy_blocked', 'REST API connection blocked for security reasons.');
             }
         }
@@ -270,7 +270,7 @@ class WordPress_Toolkit_REST_Proxy_Fix {
     public function add_admin_menu() {
         // 添加到工具箱设置菜单下的子菜单
         add_submenu_page(
-            'wordpress-toolkit-settings',
+            'wordpress-ai-toolkit-settings',
             'REST代理修复设置',
             'REST代理修复',
             'manage_options',
@@ -861,7 +861,7 @@ class WordPress_Toolkit_REST_Proxy_Fix {
         $this->clear_related_cache();
 
         // 添加激活日志
-        error_log('WordPress Toolkit: REST Proxy Fix module activated successfully');
+
     }
 
     /**

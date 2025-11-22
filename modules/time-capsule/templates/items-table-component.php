@@ -18,9 +18,9 @@ if (!defined('ABSPATH')) {
 }
 ?>
 
-<div class="wordpress-toolkit-admin-section">
+<div class="wordpress-ai-toolkit-admin-section">
     <form method="get" action="">
-        <input type="hidden" name="page" value="wordpress-toolkit-time-capsule">
+        <input type="hidden" name="page" value="wordpress-ai-toolkit-time-capsule">
         <input type="hidden" name="tab" value="items">
 
         <div class="tablenav top">
@@ -108,13 +108,13 @@ if (!defined('ABSPATH')) {
 
                 <input type="submit" class="button" value="筛选">
 
-                <a href="<?php echo admin_url('admin.php?page=wordpress-toolkit-time-capsule&tab=items'); ?>" class="button">重置</a>
+                <a href="<?php echo admin_url('admin.php?page=wordpress-ai-toolkit-time-capsule&tab=items'); ?>" class="button">重置</a>
 
                 <!-- 操作按钮 -->
-                <a href="<?php echo admin_url('admin.php?page=wordpress-toolkit-time-capsule&tab=add'); ?>"
+                <a href="<?php echo admin_url('admin.php?page=wordpress-ai-toolkit-time-capsule&tab=add'); ?>"
                    class="button-primary">添加物品</a>
 
-                <a href="<?php echo admin_url('admin.php?page=wordpress-toolkit-time-capsule&tab=categories'); ?>"
+                <a href="<?php echo admin_url('admin.php?page=wordpress-ai-toolkit-time-capsule&tab=categories'); ?>"
                    class="button">类别管理</a>
 
                 <!-- 统计信息 -->
@@ -135,7 +135,7 @@ if (!defined('ABSPATH')) {
                 <?php if ($total_pages > 1): ?>
                     <span class="pagination-links">
                         <?php
-                        $base_url = admin_url('admin.php?page=wordpress-toolkit-time-capsule&tab=items');
+                        $base_url = admin_url('admin.php?page=wordpress-ai-toolkit-time-capsule&tab=items');
                         if ($category_filter) {
                             $base_url = add_query_arg('category', $category_filter, $base_url);
                         }
@@ -187,7 +187,7 @@ if (!defined('ABSPATH')) {
                                 <span class="dashicons dashicons-search" style="font-size: 48px; color: #ccc; display: block; margin-bottom: 10px;"></span>
                                 没有找到匹配的物品
                             </div>
-                            <a href="<?php echo admin_url('admin.php?page=wordpress-toolkit-time-capsule&tab=items'); ?>" class="button button-primary">
+                            <a href="<?php echo admin_url('admin.php?page=wordpress-ai-toolkit-time-capsule&tab=items'); ?>" class="button button-primary">
                                 清除筛选条件
                             </a>
                         <?php else: ?>
@@ -320,11 +320,11 @@ if (!defined('ABSPATH')) {
 
 <style>
 /* 统一样式 - 与网站卡片页面保持一致 */
-.wordpress-toolkit-admin-section .tablenav {
+.wordpress-ai-toolkit-admin-section .tablenav {
     margin-bottom: 15px;
 }
 
-.wordpress-toolkit-admin-section .wp-list-table {
+.wordpress-ai-toolkit-admin-section .wp-list-table {
     margin-top: 0;
 }
 
@@ -418,25 +418,25 @@ if (!defined('ABSPATH')) {
 
 /* 响应式设计 */
 @media screen and (max-width: 1200px) {
-    .wordpress-toolkit-admin-section .tablenav .alignleft {
+    .wordpress-ai-toolkit-admin-section .tablenav .alignleft {
         display: block;
         width: 100%;
         margin-bottom: 10px;
     }
 
-    .wordpress-toolkit-admin-section .tablenav .alignleft > * {
+    .wordpress-ai-toolkit-admin-section .tablenav .alignleft > * {
         display: inline-block;
         margin-bottom: 5px;
     }
 }
 
 @media screen and (max-width: 782px) {
-    .wordpress-toolkit-admin-section .wp-list-table th,
-    .wordpress-toolkit-admin-section .wp-list-table td {
+    .wordpress-ai-toolkit-admin-section .wp-list-table th,
+    .wordpress-ai-toolkit-admin-section .wp-list-table td {
         padding: 8px 10px;
     }
 
-    .wordpress-toolkit-admin-section .button {
+    .wordpress-ai-toolkit-admin-section .button {
         margin-bottom: 5px;
     }
 }

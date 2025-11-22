@@ -17,7 +17,7 @@ ini_set('display_errors', 1);
 // 添加详细调试日志
 function debug_log($message) {
     if (defined('WP_DEBUG') && WP_DEBUG) {
-        error_log('Custom Card Debug: ' . $message);
+
     }
 }
 
@@ -41,7 +41,7 @@ if (isset($_GET['action']) && wp_verify_nonce($_GET['_wpnonce'], 'custom_card_ac
                 $card_id = intval($_GET['id']);
                 $wpdb->delete($cards_table, array('id' => $card_id));
                 // 重定向回卡片列表页面
-                wp_redirect(add_query_arg(array('page' => 'wordpress-toolkit-cards-list', 'message' => 'deleted'), admin_url('admin.php')));
+                wp_redirect(add_query_arg(array('page' => 'wordpress-ai-toolkit-cards-list', 'message' => 'deleted'), admin_url('admin.php')));
                 exit;
             }
             break;
@@ -130,7 +130,7 @@ if (!$table_exists) {
     }
 
     if (is_wp_error($cards)) {
-        error_log('Custom Card Query Error: ' . $cards->get_error_message());
+
     }
 }
 
@@ -164,9 +164,9 @@ $click_stats = array();
     
         
     <!-- 搜索和卡片列表 -->
-    <div class="wordpress-toolkit-admin-section">
+    <div class="wordpress-ai-toolkit-admin-section">
         <form method="get" action="">
-            <input type="hidden" name="page" value="wordpress-toolkit-cards-list">
+            <input type="hidden" name="page" value="wordpress-ai-toolkit-cards-list">
 
             <div class="tablenav top">
                 <div class="alignleft actions">
@@ -182,7 +182,7 @@ $click_stats = array();
                     <input type="submit" class="button" value="搜索">
 
                     <?php if (!empty($search) || !empty($status) || $per_page != 10): ?>
-                        <a href="<?php echo admin_url('admin.php?page=wordpress-toolkit-cards-list'); ?>" class="button">清除筛选</a>
+                        <a href="<?php echo admin_url('admin.php?page=wordpress-ai-toolkit-cards-list'); ?>" class="button">清除筛选</a>
                     <?php endif; ?>
 
                     <!-- 统计信息 -->
@@ -208,7 +208,7 @@ $click_stats = array();
                         <span class="pagination-links">
                             <?php
                             // 修复翻页链接：使用正确的页面参数
-                            $base_url = admin_url('admin.php?page=wordpress-toolkit-cards-list');
+                            $base_url = admin_url('admin.php?page=wordpress-ai-toolkit-cards-list');
                             $base_url = add_query_arg(array('per_page' => $per_page), $base_url);
 
                             echo paginate_links(array(
@@ -246,7 +246,7 @@ $click_stats = array();
                                     <span class="dashicons dashicons-search" style="font-size: 48px; color: #ccc; display: block; margin-bottom: 10px;"></span>
                                     没有找到匹配的卡片
                                 </div>
-                                <a href="<?php echo admin_url('admin.php?page=wordpress-toolkit-cards-list'); ?>" class="button button-primary">
+                                <a href="<?php echo admin_url('admin.php?page=wordpress-ai-toolkit-cards-list'); ?>" class="button button-primary">
                                     清除筛选条件
                                 </a>
                             <?php else: ?>
@@ -299,7 +299,7 @@ $click_stats = array();
                             <td>
                                 <div class="row-actions">
                                     <span class="delete">
-                                        <a href="<?php echo wp_nonce_url(add_query_arg(array('action' => 'delete', 'id' => $card->id), admin_url('admin.php?page=wordpress-toolkit-cards-list')), 'custom_card_action'); ?>"
+                                        <a href="<?php echo wp_nonce_url(add_query_arg(array('action' => 'delete', 'id' => $card->id), admin_url('admin.php?page=wordpress-ai-toolkit-cards-list')), 'custom_card_action'); ?>"
                                            onclick="return confirm('确定要删除这个卡片吗？此操作不可恢复。');"
                                            style="color: #a00;">
                                             删除
@@ -318,11 +318,11 @@ $click_stats = array();
 
 <style>
 /* 优化合并布局 */
-.wordpress-toolkit-admin-section .tablenav {
+.wordpress-ai-toolkit-admin-section .tablenav {
     margin-bottom: 15px;
 }
 
-.wordpress-toolkit-admin-section .wp-list-table {
+.wordpress-ai-toolkit-admin-section .wp-list-table {
     margin-top: 0;
 }
 

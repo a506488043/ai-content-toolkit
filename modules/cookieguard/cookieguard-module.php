@@ -25,7 +25,7 @@ class CookieGuard_Module {
     /**
      * 选项键名
      */
-    private $option_name = 'wordpress_toolkit_cookieguard_options';
+    private $option_name = 'wordpress_ai_toolkit_cookieguard_options';
     
     /**
      * 单例实例
@@ -76,7 +76,7 @@ class CookieGuard_Module {
         add_option($this->option_name, $default_options);
         
         // 设置插件激活时间
-        add_option('wordpress_toolkit_cookieguard_activated_time', current_time('timestamp'));
+        add_option('wordpress_ai_toolkit_cookieguard_activated_time', current_time('timestamp'));
     }
     
     /**
@@ -91,8 +91,8 @@ class CookieGuard_Module {
      * 初始化模块
      */
     public function init() {
-        // 加载文本域
-        load_plugin_textdomain('wordpress-toolkit', false, dirname(plugin_basename(__FILE__)) . '/languages');
+        // 加载文本域（WordPress会自动加载托管在wordpress.org的插件）
+        // load_plugin_textdomain() 在WordPress 4.6+中已不推荐使用
         
         // 检查版本更新
         $this->check_version_update();
@@ -111,9 +111,9 @@ class CookieGuard_Module {
         add_action('body_class', array($this, 'add_body_class'));
         
         // AJAX钩子
-        add_action('wp_ajax_wordpress_toolkit_cookie_consent', array($this, 'handle_cookie_consent'));
-        add_action('wp_ajax_nopriv_wordpress_toolkit_cookie_consent', array($this, 'handle_cookie_consent'));
-        add_action('wp_ajax_wordpress_toolkit_clear_geo_cache', array($this, 'handle_clear_geo_cache'));
+        add_action('wp_ajax_wordpress_ai_toolkit_cookie_consent', array($this, 'handle_cookie_consent'));
+        add_action('wp_ajax_nopriv_wordpress_ai_toolkit_cookie_consent', array($this, 'handle_cookie_consent'));
+        add_action('wp_ajax_wordpress_ai_toolkit_clear_geo_cache', array($this, 'handle_clear_geo_cache'));
         
         // GDPR合规性钩子
         $this->register_gdpr_hooks();
@@ -143,25 +143,25 @@ class CookieGuard_Module {
         }
         
         wp_enqueue_style(
-            'wordpress-toolkit-cookieguard-style',
-            WORDPRESS_TOOLKIT_PLUGIN_URL . 'modules/cookieguard/assets/css/style.css',
+            'wordpress-ai-toolkit-cookieguard-style',
+            AI_CONTENT_TOOLKIT_PLUGIN_URL . 'modules/cookieguard/assets/css/style.css',
             array(),
             self::MODULE_VERSION
         );
         
         wp_enqueue_script(
-            'wordpress-toolkit-cookieguard-script',
-            WORDPRESS_TOOLKIT_PLUGIN_URL . 'modules/cookieguard/assets/js/script.js',
+            'wordpress-ai-toolkit-cookieguard-script',
+            AI_CONTENT_TOOLKIT_PLUGIN_URL . 'modules/cookieguard/assets/js/script.js',
             array('jquery'),
             self::MODULE_VERSION,
             true
         );
         
         // 传递AJAX URL和nonce
-        wp_localize_script('wordpress-toolkit-cookieguard-script', 'wordpress_toolkit_cookie_consent_ajax', array(
+        wp_localize_script('wordpress-ai-toolkit-cookieguard-script', 'wordpress_ai_toolkit_cookie_consent_ajax', array(
             'ajax_url' => admin_url('admin-ajax.php'),
-            'nonce' => wp_create_nonce('wordpress_toolkit_cookieguard_nonce'),
-            'plugin_url' => WORDPRESS_TOOLKIT_PLUGIN_URL,
+            'nonce' => wp_create_nonce('wordpress_ai_toolkit_cookieguard_nonce'),
+            'plugin_url' => AI_CONTENT_TOOLKIT_PLUGIN_URL,
             'version' => self::MODULE_VERSION,
             'debug_mode' => defined('WP_DEBUG') && WP_DEBUG
         ));
@@ -184,7 +184,7 @@ class CookieGuard_Module {
         }
         
         $options = get_option($this->option_name);
-        include WORDPRESS_TOOLKIT_PLUGIN_PATH . 'modules/cookieguard/includes/cookie-notice-template.php';
+        include AI_CONTENT_TOOLKIT_PLUGIN_PATH . 'modules/cookieguard/includes/cookie-notice-template.php';
     }
     
     /**
@@ -195,16 +195,16 @@ class CookieGuard_Module {
         
         // 添加地理位置检测状态class
         if (isset($options['enable_geo_detection']) && $options['enable_geo_detection']) {
-            $classes[] = 'wordpress-toolkit-cookieguard-geo-enabled';
+            $classes[] = 'wordpress-ai-toolkit-cookieguard-geo-enabled';
         } else {
-            $classes[] = 'wordpress-toolkit-cookieguard-geo-disabled';
+            $classes[] = 'wordpress-ai-toolkit-cookieguard-geo-disabled';
         }
         
         // 添加Cookie同意状态class
-        if (isset($_COOKIE['wordpress_toolkit_cookieguard_consent'])) {
-            $classes[] = 'wordpress-toolkit-cookieguard-consent-' . sanitize_html_class($_COOKIE['wordpress_toolkit_cookieguard_consent']);
+        if (isset($_COOKIE['wordpress_ai_toolkit_cookieguard_consent'])) {
+            $classes[] = 'wordpress-ai-toolkit-cookieguard-consent-' . sanitize_html_class($_COOKIE['wordpress_ai_toolkit_cookieguard_consent']);
         } else {
-            $classes[] = 'wordpress-toolkit-cookieguard-consent-none';
+            $classes[] = 'wordpress-ai-toolkit-cookieguard-consent-none';
         }
         
         return $classes;
@@ -215,9 +215,9 @@ class CookieGuard_Module {
      */
     private function should_show_notice() {
         // 检查Cookie是否已设置
-        if (isset($_COOKIE['wordpress_toolkit_cookieguard_consent'])) {
+        if (isset($_COOKIE['wordpress_ai_toolkit_cookieguard_consent'])) {
             if (defined('WP_DEBUG') && WP_DEBUG) {
-                wt_log_debug('Cookie found, not showing notice', 'cookieguard', array('cookie_value' => $_COOKIE['wordpress_toolkit_cookieguard_consent']));
+                wt_log_debug('Cookie found, not showing notice', 'cookieguard', array('cookie_value' => $_COOKIE['wordpress_ai_toolkit_cookieguard_consent']));
             }
             return false;
         }
@@ -241,7 +241,7 @@ class CookieGuard_Module {
             // 调试信息（仅在WP_DEBUG开启时显示）
             if (defined('WP_DEBUG') && WP_DEBUG) {
                 $user_ip = $this->get_user_ip();
-                $cache_key = 'wordpress_toolkit_cookieguard_geo_' . md5($user_ip);
+                $cache_key = 'wordpress_ai_toolkit_cookieguard_geo_' . md5($user_ip);
                 $cached_result = get_transient($cache_key);
                 
                 wt_log_debug('IP地理位置检测结果', 'cookieguard', array(
@@ -268,7 +268,7 @@ class CookieGuard_Module {
      */
     public function handle_cookie_consent() {
         // 验证nonce
-        if (!wp_verify_nonce($_POST['nonce'], 'wordpress_toolkit_cookieguard_nonce')) {
+        if (!wp_verify_nonce($_POST['nonce'], 'wordpress_ai_toolkit_cookieguard_nonce')) {
             wp_send_json_error(array('message' => 'Security check failed'));
             return;
         }
@@ -285,7 +285,7 @@ class CookieGuard_Module {
             
             // 修复：使用安全的Cookie设置参数
             $cookie_result = setcookie(
-                'wordpress_toolkit_cookieguard_consent',
+                'wordpress_ai_toolkit_cookieguard_consent',
                 $consent,
                 array(
                     'expires' => time() + ($expiry * 24 * 60 * 60),
@@ -314,7 +314,7 @@ class CookieGuard_Module {
                 'debug_info' => array(
                     'cookie_value' => $consent,
                     'expiry_days' => $expiry,
-                    'server_cookie' => isset($_COOKIE['wordpress_toolkit_cookieguard_consent']) ? $_COOKIE['wordpress_toolkit_cookieguard_consent'] : 'not set'
+                    'server_cookie' => isset($_COOKIE['wordpress_ai_toolkit_cookieguard_consent']) ? $_COOKIE['wordpress_ai_toolkit_cookieguard_consent'] : 'not set'
                 )
             ));
         } else {
@@ -332,7 +332,7 @@ class CookieGuard_Module {
         }
         
         // 验证nonce
-        if (!wp_verify_nonce($_POST['nonce'], 'wordpress_toolkit_cookieguard_nonce')) {
+        if (!wp_verify_nonce($_POST['nonce'], 'wordpress_ai_toolkit_cookieguard_nonce')) {
             wp_die('Security check failed');
         }
         
@@ -340,11 +340,11 @@ class CookieGuard_Module {
         global $wpdb;
         $wpdb->query($wpdb->prepare(
             "DELETE FROM {$wpdb->options} WHERE option_name LIKE %s",
-            '_transient_wordpress_toolkit_cookieguard_geo_%'
+            '_transient_wordpress_ai_toolkit_cookieguard_geo_%'
         ));
         $wpdb->query($wpdb->prepare(
             "DELETE FROM {$wpdb->options} WHERE option_name LIKE %s",
-            '_transient_timeout_wordpress_toolkit_cookieguard_geo_%'
+            '_transient_timeout_wordpress_ai_toolkit_cookieguard_geo_%'
         ));
         
         wp_send_json_success(array('message' => 'Cache cleared successfully'));
@@ -357,15 +357,15 @@ class CookieGuard_Module {
         $export_data = array();
         
         // 导出Cookie同意记录
-        if (isset($_COOKIE['wordpress_toolkit_cookieguard_consent'])) {
+        if (isset($_COOKIE['wordpress_ai_toolkit_cookieguard_consent'])) {
             $consent_data = array(
-                'group_id' => 'wordpress-toolkit-cookieguard',
+                'group_id' => 'wordpress-ai-toolkit-cookieguard',
                 'group_label' => 'Cookie同意数据',
                 'item_id' => 'cookie-consent',
                 'data' => array(
                     array(
                         'name' => 'Cookie同意状态',
-                        'value' => sanitize_text_field($_COOKIE['wordpress_toolkit_cookieguard_consent']),
+                        'value' => sanitize_text_field($_COOKIE['wordpress_ai_toolkit_cookieguard_consent']),
                     ),
                     array(
                         'name' => '同意时间',
@@ -383,12 +383,12 @@ class CookieGuard_Module {
         // 导出地理位置缓存数据
         $user_ip = $this->get_user_ip();
         if (!empty($user_ip)) {
-            $cache_key = 'wordpress_toolkit_cookieguard_geo_' . md5($user_ip);
+            $cache_key = 'wordpress_ai_toolkit_cookieguard_geo_' . md5($user_ip);
             $cached_result = get_transient($cache_key);
             
             if ($cached_result !== false) {
                 $geo_data = array(
-                    'group_id' => 'wordpress-toolkit-cookieguard',
+                    'group_id' => 'wordpress-ai-toolkit-cookieguard',
                     'group_label' => '地理位置数据',
                     'item_id' => 'geo-location',
                     'data' => array(
@@ -421,10 +421,10 @@ class CookieGuard_Module {
         $messages = array();
         
         // 删除Cookie同意数据
-        if (isset($_COOKIE['wordpress_toolkit_cookieguard_consent'])) {
+        if (isset($_COOKIE['wordpress_ai_toolkit_cookieguard_consent'])) {
             // 设置Cookie过期
             setcookie(
-                'wordpress_toolkit_cookieguard_consent',
+                'wordpress_ai_toolkit_cookieguard_consent',
                 '',
                 time() - 3600,
                 '/',
@@ -439,7 +439,7 @@ class CookieGuard_Module {
         // 删除地理位置缓存数据
         $user_ip = $this->get_user_ip();
         if (!empty($user_ip)) {
-            $cache_key = 'wordpress_toolkit_cookieguard_geo_' . md5($user_ip);
+            $cache_key = 'wordpress_ai_toolkit_cookieguard_geo_' . md5($user_ip);
             $result = delete_transient($cache_key);
             
             if ($result) {
@@ -613,7 +613,7 @@ class CookieGuard_Module {
         }
         
         // 生成缓存键
-        $cache_key = 'wordpress_toolkit_cookieguard_geo_' . md5($user_ip);
+        $cache_key = 'wordpress_ai_toolkit_cookieguard_geo_' . md5($user_ip);
         $cached_result = get_transient($cache_key);
         
         if ($cached_result !== false) {
@@ -730,7 +730,7 @@ class CookieGuard_Module {
      */
     public function settings_page() {
         // 包含CookieGuard的管理页面，强制显示设置选项卡
-        include WORDPRESS_TOOLKIT_PLUGIN_PATH . 'modules/cookieguard/admin/admin-page.php';
+        include AI_CONTENT_TOOLKIT_PLUGIN_PATH . 'modules/cookieguard/admin/admin-page.php';
     }
 
     /**
@@ -738,6 +738,6 @@ class CookieGuard_Module {
      */
     public function admin_page() {
         // 包含CookieGuard的管理页面
-        include WORDPRESS_TOOLKIT_PLUGIN_PATH . 'modules/cookieguard/admin/admin-page.php';
+        include AI_CONTENT_TOOLKIT_PLUGIN_PATH . 'modules/cookieguard/admin/admin-page.php';
     }
 }

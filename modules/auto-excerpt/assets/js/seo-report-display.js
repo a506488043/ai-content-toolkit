@@ -404,14 +404,16 @@ class SEOReportDisplay {
         if (metaInfo.suggested_title) {
             html += '<div class="meta-item">';
             html += '<label>建议标题:</label>';
-            html += '<div class="meta-value">' + this.escapeHtml(metaInfo.suggested_title) + '</div>';
+            html += '<div class="meta-value selectable-text" data-type="suggested-title">' + this.escapeHtml(metaInfo.suggested_title) + '</div>';
+            html += '<button class="copy-meta-btn" data-text="' + this.escapeHtml(metaInfo.suggested_title) + '" title="复制建议标题">📋 复制</button>';
             html += '</div>';
         }
 
         if (metaInfo.meta_description) {
             html += '<div class="meta-item">';
             html += '<label>Meta描述:</label>';
-            html += '<div class="meta-value">' + this.escapeHtml(metaInfo.meta_description) + '</div>';
+            html += '<div class="meta-value selectable-text" data-type="meta-description">' + this.escapeHtml(metaInfo.meta_description) + '</div>';
+            html += '<button class="copy-meta-btn" data-text="' + this.escapeHtml(metaInfo.meta_description) + '" title="复制Meta描述">📋 复制</button>';
             html += '</div>';
         }
 

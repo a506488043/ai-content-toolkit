@@ -150,7 +150,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && current_user_can('manage_options'))
                         <?php if ($category->is_active): ?>
                             <span class="tc-status-active"><?php _e('启用', 'time-capsule'); ?></span>
                             <form method="post" action="" class="tc-toggle-category-form" style="display: inline-block; margin-left: 10px;">
-                                <?php wp_nonce_field('wordpress_toolkit_time_capsule'); ?>
+                                <?php wp_nonce_field('wordpress_ai_toolkit_time_capsule'); ?>
                                 <?php wp_nonce_field('time_capsule_toggle_category_' . $category->name, 'tc_toggle_category_nonce'); ?>
                                 <input type="hidden" name="action" value="toggle_category">
                                 <input type="hidden" name="category_name" value="<?php echo esc_attr($category->name); ?>">
@@ -162,7 +162,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && current_user_can('manage_options'))
                         <?php else: ?>
                             <span class="tc-status-inactive"><?php _e('禁用', 'time-capsule'); ?></span>
                             <form method="post" action="" class="tc-toggle-category-form" style="display: inline-block; margin-left: 10px;">
-                                <?php wp_nonce_field('wordpress_toolkit_time_capsule'); ?>
+                                <?php wp_nonce_field('wordpress_ai_toolkit_time_capsule'); ?>
                                 <?php wp_nonce_field('time_capsule_toggle_category_' . $category->name, 'tc_toggle_category_nonce'); ?>
                                 <input type="hidden" name="action" value="toggle_category">
                                 <input type="hidden" name="category_name" value="<?php echo esc_attr($category->name); ?>">
@@ -178,7 +178,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && current_user_can('manage_options'))
                         $item_count = $category_manager->get_category_item_count($category->name);
                         if ($item_count === 0): ?>
                             <form method="post" action="" class="tc-delete-category-form" style="display: inline-block; margin-left: 10px;">
-                                <?php wp_nonce_field('wordpress_toolkit_time_capsule'); ?>
+                                <?php wp_nonce_field('wordpress_ai_toolkit_time_capsule'); ?>
                                 <?php wp_nonce_field('time_capsule_delete_category_' . $category->name, 'tc_delete_category_nonce'); ?>
                                 <input type="hidden" name="action" value="delete_category">
                                 <input type="hidden" name="category_name" value="<?php echo esc_attr($category->name); ?>">
@@ -234,7 +234,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && current_user_can('manage_options'))
         <div class="tc-add-category-form">
             <h4><?php _e('添加新类别', 'time-capsule'); ?></h4>
             <form method="post" action="" class="tc-category-form">
-                <?php wp_nonce_field('wordpress_toolkit_time_capsule'); ?>
+                <?php wp_nonce_field('wordpress_ai_toolkit_time_capsule'); ?>
                 <?php wp_nonce_field('time_capsule_add_category', 'tc_category_nonce'); ?>
                 <input type="hidden" name="action" value="add_category">
 
@@ -300,7 +300,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && current_user_can('manage_options'))
             <p class="tc-note"><?php _e('如果发现类别显示问题（如存在重复的"其他"类别但没有"宠物"类别），请点击下面的按钮强制更新类别。', 'time-capsule'); ?></p>
 
             <form method="post" action="" class="tc-force-update-form">
-                <?php wp_nonce_field('wordpress_toolkit_time_capsule'); ?>
+                <?php wp_nonce_field('wordpress_ai_toolkit_time_capsule'); ?>
                 <?php wp_nonce_field('time_capsule_force_update_categories', 'tc_force_update_nonce'); ?>
                 <input type="hidden" name="action" value="force_update_categories">
                 <button type="submit" class="button button-secondary" onclick="return confirm('确定要强制更新类别吗？这会将现有的\"其他\"类别更新为\"宠物\"类别。')">

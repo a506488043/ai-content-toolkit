@@ -65,7 +65,7 @@ class Website_Optimization_Module {
             'description_length_limit' => 160
         );
 
-        $saved_settings = get_option('wordpress_toolkit_website_optimization_settings', array());
+        $saved_settings = get_option('wordpress_ai_toolkit_website_optimization_settings', array());
         $this->settings = wp_parse_args($saved_settings, $default_settings);
     }
 
@@ -84,6 +84,34 @@ class Website_Optimization_Module {
         add_action('admin_enqueue_scripts', array($this, 'admin_enqueue_scripts'));
     }
 
+    /**
+     * 模块激活
+     */
+    public function activate() {
+        // 设置默认选项
+        $default_options = array(
+            'auto_analysis' => false,
+            'analysis_interval' => 7, // 天
+            'enable_notifications' => false,
+            'last_analysis_date' => null
+        );
+
+        // 如果设置不存在，则添加默认设置
+        if (!get_option('wordpress_ai_toolkit_website_optimization_settings')) {
+            add_option('wordpress_ai_toolkit_website_optimization_settings', $default_options);
+        }
+    }
+
+    /**
+     * 模块停用
+     */
+    public function deactivate() {
+        // 清理定时任务（如果有）
+        wp_clear_scheduled_hook('wordpress_ai_toolkit_website_seo_analysis');
+
+        // 清理临时缓存和选项（可选）
+        // delete_option('wordpress_ai_toolkit_last_website_analysis');
+    }
 
     /**
      * 渲染管理页面 - 兼容主插件调用
@@ -98,7 +126,7 @@ class Website_Optimization_Module {
     public function render_admin_page() {
         // 验证用户权限
         if (!current_user_can('manage_options')) {
-            wp_die(__('权限不足', 'wordpress-toolkit'));
+            wp_die(__('权限不足', 'wordpress-ai-toolkit'));
         }
 
         // 获取网站基本信息
@@ -111,7 +139,7 @@ class Website_Optimization_Module {
         $settings = $this->get_settings();
 
         // 加载管理页面模板
-        require_once WORDPRESS_TOOLKIT_PLUGIN_PATH . 'modules/website-optimization/admin/admin-page.php';
+        require_once AI_CONTENT_TOOLKIT_PLUGIN_PATH . 'modules/website-optimization/admin/admin-page.php';
         Website_Optimization_Admin_Page::get_instance()->render_page($site_info, $stats, $settings);
     }
 
@@ -132,7 +160,7 @@ class Website_Optimization_Module {
             'total_pages' => wp_count_posts('page')->publish,
             'total_categories' => wp_count_terms('category'),
             'total_tags' => wp_count_terms('post_tag'),
-            'last_analysis_date' => get_option('wordpress_toolkit_last_website_analysis', __('从未分析', 'wordpress-toolkit'))
+            'last_analysis_date' => get_option('wordpress_ai_toolkit_last_website_analysis', __('从未分析', 'wordpress-ai-toolkit'))
         );
 
         // 获取主题信息
@@ -202,7 +230,7 @@ class Website_Optimization_Module {
      */
     public function update_settings($new_settings) {
         $this->settings = wp_parse_args($new_settings, $this->settings);
-        update_option('wordpress_toolkit_website_optimization_settings', $this->settings);
+        update_option('wordpress_ai_toolkit_website_optimization_settings', $this->settings);
     }
 
     /**
@@ -260,8 +288,8 @@ class Website_Optimization_Module {
         );
 
         // 保存分析结果
-        update_option('wordpress_toolkit_website_seo_analysis', $analysis);
-        update_option('wordpress_toolkit_last_website_analysis', current_time('mysql'));
+        update_option('wordpress_ai_toolkit_website_seo_analysis', $analysis);
+        update_option('wordpress_ai_toolkit_last_website_analysis', current_time('mysql'));
 
         return $analysis;
     }
@@ -281,31 +309,26 @@ class Website_Optimization_Module {
             'title_length' => $title_length,
             'analysis' => array(),
             'recommendations' => array(),
-            'suggested_titles' => array(),
-            'implementation_steps' => array()
+            'suggested_titles' => array()
         );
 
         // 标题长度分析 - 具体结果
         if ($title_length < 30) {
-            $report['analysis'][] = __('标题长度分析：当前标题过短（' . $title_length . '字符），建议扩展到30-60字符', 'wordpress-toolkit');
-            $report['recommendations'][] = __('🔴 高优先级：标题过短会影响搜索引擎排名，建议立即优化', 'wordpress-toolkit');
-            $report['implementation_steps'][] = __('📝 具体操作：在标题中添加描述性词语，如"专业"、"优质"、"最新"、"权威"等', 'wordpress-toolkit');
+            $report['analysis'][] = sprintf(__('标题长度分析：当前标题过短（%d字符），建议扩展到30-60字符', 'wordpress-ai-toolkit'), $title_length);
+            $report['recommendations'][] = __('具体优化：在标题中添加更多描述性词语，如"专业"、"优质"、"最新"等', 'wordpress-ai-toolkit');
         } elseif ($title_length > 60) {
-            $report['analysis'][] = __('标题长度分析：当前标题过长（' . $title_length . '字符），可能被搜索引擎截断', 'wordpress-toolkit');
-            $report['recommendations'][] = __('🟡 中优先级：标题过长会导致显示不完整，影响点击率', 'wordpress-toolkit');
-            $report['implementation_steps'][] = __('📝 具体操作：精简标题内容，删除不必要的词语，保持在60字符以内', 'wordpress-toolkit');
+            $report['analysis'][] = sprintf(__('标题长度分析：当前标题过长（%d字符），可能被搜索引擎截断', 'wordpress-ai-toolkit'), $title_length);
+            $report['recommendations'][] = __('具体优化：精简标题内容，删除不必要的词语，保持在60字符以内', 'wordpress-ai-toolkit');
         } else {
-            $report['analysis'][] = __('标题长度分析：标题长度适中，符合搜索引擎要求', 'wordpress-toolkit');
-            $report['recommendations'][] = __('🟢 良好：标题长度符合SEO最佳实践', 'wordpress-toolkit');
+            $report['analysis'][] = __('标题长度分析：标题长度适中，符合搜索引擎要求', 'wordpress-ai-toolkit');
         }
 
         // 标题内容分析 - 具体结果
         if (empty($site_title)) {
-            $report['analysis'][] = __('标题内容分析：未设置网站标题', 'wordpress-toolkit');
-            $report['recommendations'][] = __('🔴 高优先级：未设置网站标题会严重影响SEO效果', 'wordpress-toolkit');
-            $report['implementation_steps'][] = __('📝 具体操作：立即设置一个包含关键词和品牌名称的网站标题', 'wordpress-toolkit');
+            $report['analysis'][] = __('标题内容分析：未设置网站标题', 'wordpress-ai-toolkit');
+            $report['recommendations'][] = __('具体优化：请立即设置一个包含关键词和品牌名称的网站标题', 'wordpress-ai-toolkit');
         } else {
-            $report['analysis'][] = __('标题内容分析：当前标题为"' . $site_title . '"', 'wordpress-toolkit');
+            $report['analysis'][] = sprintf(__('标题内容分析：当前标题为"%s"', 'wordpress-ai-toolkit'), $site_title);
 
             // 检查是否包含关键词
             $keywords = $this->extract_keywords_from_content();
@@ -318,10 +341,7 @@ class Website_Optimization_Module {
             }
 
             if (!$contains_keywords) {
-                $report['recommendations'][] = __('🟡 中优先级：标题未包含主要关键词，影响搜索排名', 'wordpress-toolkit');
-                $report['implementation_steps'][] = __('📝 具体操作：确保标题包含主要关键词，格式建议："[关键词] - [品牌名称]" 或 "[品牌名称] | [核心业务]"', 'wordpress-toolkit');
-            } else {
-                $report['recommendations'][] = __('🟢 良好：标题已包含关键词，符合SEO要求', 'wordpress-toolkit');
+                $report['recommendations'][] = __('具体优化：确保标题包含主要关键词，格式建议："[关键词] - [品牌名称]" 或 "[品牌名称] | [核心业务]"', 'wordpress-ai-toolkit');
             }
         }
 
@@ -331,25 +351,19 @@ class Website_Optimization_Module {
 
         if (!empty($top_keywords)) {
             $report['suggested_titles'] = array(
-                __('✨ 建议标题1：' . $top_keywords[0] . ' - ' . $site_title . '（包含主要关键词）', 'wordpress-toolkit'),
-                __('✨ 建议标题2：' . $site_title . ' | ' . $top_keywords[0] . '服务（突出服务特色）', 'wordpress-toolkit'),
-                __('✨ 建议标题3：专业' . $top_keywords[0] . ' - ' . $site_title . '官方网站（强调专业性）', 'wordpress-toolkit'),
-                __('✨ 建议标题4：' . $top_keywords[0] . ' ' . $top_keywords[1] . ' - ' . $site_title . '（多关键词组合）', 'wordpress-toolkit'),
-                __('✨ 建议标题5：' . $site_title . ' - 专注' . $top_keywords[0] . '和' . $top_keywords[1] . '领域（突出专注领域）', 'wordpress-toolkit')
+                sprintf(__('建议标题1：%s - %s', 'wordpress-ai-toolkit'), $top_keywords[0], $site_title),
+                sprintf(__('建议标题2：%s | %s服务', 'wordpress-ai-toolkit'), $site_title, $top_keywords[0]),
+                sprintf(__('建议标题3：专业%s - %s官方网站', 'wordpress-ai-toolkit'), $top_keywords[0], $site_title),
+                sprintf(__('建议标题4：%s %s - %s', 'wordpress-ai-toolkit'), $top_keywords[0], $top_keywords[1], $site_title),
+                sprintf(__('建议标题5：%s - 专注%s和%s领域', 'wordpress-ai-toolkit'), $site_title, $top_keywords[0], $top_keywords[1])
             );
         } else {
             $report['suggested_titles'] = array(
-                __('✨ 建议标题1：' . $site_title . ' - 官方网站（基础格式）', 'wordpress-toolkit'),
-                __('✨ 建议标题2：' . $site_title . ' | 专业服务提供商（突出专业性）', 'wordpress-toolkit'),
-                __('✨ 建议标题3：欢迎访问' . $site_title . ' - 优质内容分享（友好邀请式）', 'wordpress-toolkit')
+                sprintf(__('建议标题1：%s - 官方网站', 'wordpress-ai-toolkit'), $site_title),
+                sprintf(__('建议标题2：%s | 专业服务提供商', 'wordpress-ai-toolkit'), $site_title),
+                sprintf(__('建议标题3：欢迎访问%s - 优质内容分享', 'wordpress-ai-toolkit'), $site_title)
             );
         }
-
-        // 添加WordPress设置方法
-        $report['implementation_steps'][] = __('🔧 WordPress设置方法：
-1. 进入WordPress后台 → 设置 → 常规
-2. 修改"站点标题"字段
-3. 点击"保存更改"', 'wordpress-toolkit');
 
         return $report;
     }
@@ -368,44 +382,32 @@ class Website_Optimization_Module {
             'description_length' => $description_length,
             'analysis' => array(),
             'recommendations' => array(),
-            'suggested_descriptions' => array(),
-            'implementation_steps' => array()
+            'suggested_descriptions' => array()
         );
 
         // 描述长度分析 - 具体结果
         if ($description_length < 50) {
-            $report['analysis'][] = __('描述长度分析：当前描述过短（' . $description_length . '字符），无法有效吸引用户点击', 'wordpress-toolkit');
-            $report['recommendations'][] = __('🔴 高优先级：描述过短会严重影响搜索引擎显示效果和用户点击率', 'wordpress-toolkit');
-            $report['implementation_steps'][] = __('📝 具体操作：添加更多描述性内容，包含核心服务、目标用户、独特价值主张', 'wordpress-toolkit');
+            $report['analysis'][] = sprintf(__('描述长度分析：当前描述过短（%d字符），无法有效吸引用户点击', 'wordpress-ai-toolkit'), $description_length);
+            $report['recommendations'][] = __('具体优化：将描述扩展到50-160字符，添加更多有价值的信息和关键词', 'wordpress-ai-toolkit');
         } elseif ($description_length > 160) {
-            $report['analysis'][] = __('描述长度分析：当前描述过长（' . $description_length . '字符），可能被搜索引擎截断', 'wordpress-toolkit');
-            $report['recommendations'][] = __('🟡 中优先级：描述过长会导致显示不完整，影响用户理解', 'wordpress-toolkit');
-            $report['implementation_steps'][] = __('📝 具体操作：精简描述内容，删除冗余信息，突出核心价值主张', 'wordpress-toolkit');
+            $report['analysis'][] = sprintf(__('描述长度分析：当前描述过长（%d字符），可能被搜索引擎截断', 'wordpress-ai-toolkit'), $description_length);
+            $report['recommendations'][] = __('具体优化：精简描述内容，删除冗余信息，保持在160字符以内', 'wordpress-ai-toolkit');
         } else {
-            $report['analysis'][] = __('描述长度分析：描述长度适中，符合搜索引擎要求', 'wordpress-toolkit');
-            $report['recommendations'][] = __('🟢 良好：描述长度符合SEO最佳实践', 'wordpress-toolkit');
+            $report['analysis'][] = __('描述长度分析：描述长度适中，符合搜索引擎要求', 'wordpress-ai-toolkit');
         }
 
         // 描述内容分析 - 具体结果
         if (empty($site_description)) {
-            $report['analysis'][] = __('描述内容分析：未设置网站描述', 'wordpress-toolkit');
-            $report['recommendations'][] = __('🔴 高优先级：未设置网站描述会严重影响搜索引擎排名和用户点击率', 'wordpress-toolkit');
-            $report['implementation_steps'][] = __('📝 具体操作：立即创建一个包含关键词、核心价值和行动号召的网站描述', 'wordpress-toolkit');
+            $report['analysis'][] = __('描述内容分析：未设置网站描述', 'wordpress-ai-toolkit');
+            $report['recommendations'][] = __('具体优化：请立即设置一个包含关键词、核心价值和行动号召的网站描述', 'wordpress-ai-toolkit');
         } else {
-            $report['analysis'][] = __('描述内容分析：当前描述为"' . $site_description . '"', 'wordpress-toolkit');
+            $report['analysis'][] = sprintf(__('描述内容分析：当前描述为"%s"', 'wordpress-ai-toolkit'), $site_description);
 
-            // 描述内容质量分析
+            // 描述内容质量分析 - 不应该检查关键词，应该分析描述本身的质量
             $description_quality = $this->analyze_description_quality($site_description);
 
             if (!$description_quality['is_good']) {
-                $report['recommendations'][] = __('🟡 中优先级：描述内容质量需要优化，缺乏明确的吸引力和行动号召', 'wordpress-toolkit');
-                $report['implementation_steps'][] = __('📝 具体操作：确保描述包含以下元素：
-- 品牌名称和核心服务
-- 目标用户和解决的问题
-- 独特价值主张
-- 行动号召（如"了解更多"、"立即访问"）', 'wordpress-toolkit');
-            } else {
-                $report['recommendations'][] = __('🟢 良好：描述内容质量优秀，包含明确的价值主张和吸引力元素', 'wordpress-toolkit');
+                $report['recommendations'][] = __('具体优化：确保描述具有吸引力、包含核心价值主张和行动号召，格式建议："[品牌名称]提供[核心服务]，帮助用户[解决问题]。了解更多信息请访问我们的网站。"', 'wordpress-ai-toolkit');
             }
         }
 
@@ -416,31 +418,19 @@ class Website_Optimization_Module {
 
         if (!empty($top_keywords)) {
             $report['suggested_descriptions'] = array(
-                __('✨ 建议描述1：' . $site_title . '专注于' . $top_keywords[0] . '和' . $top_keywords[1] . '领域，提供专业的' . $top_keywords[0] . '服务和解决方案。我们致力于帮助用户解决' . $top_keywords[0] . '相关问题，提供高质量的内容和资源。', 'wordpress-toolkit'),
-                __('✨ 建议描述2：欢迎访问' . $site_title . ' - 您的' . $top_keywords[0] . '专家。我们提供最新的' . $top_keywords[0] . '资讯、实用技巧和深度分析，帮助您更好地理解和应用' . $top_keywords[0] . '知识。', 'wordpress-toolkit'),
-                __('✨ 建议描述3：' . $site_title . '是专业的' . $top_keywords[0] . '平台，涵盖' . $top_keywords[1] . '、' . $top_keywords[2] . '等多个领域。我们为读者提供有价值的' . $top_keywords[0] . '内容，帮助您提升技能和知识水平。', 'wordpress-toolkit'),
-                __('✨ 建议描述4：探索' . $site_title . '的' . $top_keywords[0] . '世界 - 从基础入门到高级应用，我们为您提供全面的' . $top_keywords[0] . '指南和教程。加入我们的社区，与其他' . $top_keywords[0] . '爱好者交流学习。', 'wordpress-toolkit'),
-                __('✨ 建议描述5：' . $site_title . ' - 您的' . $top_keywords[0] . '资源中心。我们收集整理了大量关于' . $top_keywords[0] . '和' . $top_keywords[1] . '的优质内容，包括教程、案例分析和最佳实践，助您成为' . $top_keywords[0] . '专家。', 'wordpress-toolkit')
+                sprintf(__('建议描述1：%1$s专注于%2$s和%3$s领域，提供专业的%2$s服务和解决方案。我们致力于帮助用户解决%2$s相关问题，提供高质量的内容和资源。', 'wordpress-ai-toolkit'), $site_title, $top_keywords[0], $top_keywords[1]),
+                sprintf(__('建议描述2：欢迎访问%1$s - 您的%2$s专家。我们提供最新的%2$s资讯、实用技巧和深度分析，帮助您更好地理解和应用%2$s知识。', 'wordpress-ai-toolkit'), $site_title, $top_keywords[0]),
+                sprintf(__('建议描述3：%1$s是专业的%2$s平台，涵盖%3$s、%4$s等多个领域。我们为读者提供有价值的%2$s内容，帮助您提升技能和知识水平。', 'wordpress-ai-toolkit'), $site_title, $top_keywords[0], $top_keywords[1], $top_keywords[2]),
+                sprintf(__('建议描述4：探索%1$s的%2$s世界 - 从基础入门到高级应用，我们为您提供全面的%2$s指南和教程。加入我们的社区，与其他%2$s爱好者交流学习。', 'wordpress-ai-toolkit'), $site_title, $top_keywords[0]),
+                sprintf(__('建议描述5：%1$s - 您的%2$s资源中心。我们收集整理了大量关于%2$s和%3$s的优质内容，包括教程、案例分析和最佳实践，助您成为%2$s专家。', 'wordpress-ai-toolkit'), $site_title, $top_keywords[0], $top_keywords[1])
             );
         } else {
             $report['suggested_descriptions'] = array(
-                __('✨ 建议描述1：' . $site_title . '是一个专业的网站，致力于为用户提供有价值的内容和服务。我们关注用户体验，持续优化网站内容，确保为访客提供最佳的浏览体验。', 'wordpress-toolkit'),
-                __('✨ 建议描述2：欢迎访问' . $site_title . '，这里汇集了丰富的资源和信息。我们的目标是创建高质量的内容，帮助用户解决问题、获取知识和提升技能。', 'wordpress-toolkit'),
-                __('✨ 建议描述3：' . $site_title . '为您提供专业的服务和内容支持。我们注重内容质量和用户体验，致力于成为您信赖的信息来源和问题解决平台。', 'wordpress-toolkit')
+                sprintf(__('建议描述1：%s是一个专业的网站，致力于为用户提供有价值的内容和服务。我们关注用户体验，持续优化网站内容，确保为访客提供最佳的浏览体验。', 'wordpress-ai-toolkit'), $site_title),
+                sprintf(__('建议描述2：欢迎访问%s，这里汇集了丰富的资源和信息。我们的目标是创建高质量的内容，帮助用户解决问题、获取知识和提升技能。', 'wordpress-ai-toolkit'), $site_title),
+                sprintf(__('建议描述3：%s为您提供专业的服务和内容支持。我们注重内容质量和用户体验，致力于成为您信赖的信息来源和问题解决平台。', 'wordpress-ai-toolkit'), $site_title)
             );
         }
-
-        // 添加WordPress设置方法
-        $report['implementation_steps'][] = __('🔧 WordPress设置方法：
-1. 进入WordPress后台 → 设置 → 常规
-2. 修改"副标题"字段（网站描述）
-3. 点击"保存更改"', 'wordpress-toolkit');
-
-        // 添加SEO插件设置方法
-        $report['implementation_steps'][] = __('🔧 SEO插件设置方法（以WPJAM为例）：
-1. 进入WordPress后台 → WPJAM → SEO设置
-2. 在"首页SEO"中设置"首页描述"
-3. 点击"保存设置"', 'wordpress-toolkit');
 
         return $report;
     }
@@ -456,8 +446,7 @@ class Website_Optimization_Module {
             'keyword_count' => 0,
             'analysis' => array(),
             'recommendations' => array(),
-            'suggested_keywords' => array(),
-            'implementation_steps' => array()
+            'suggested_keywords' => array()
         );
 
         // 尝试从不同来源获取网站关键字
@@ -467,42 +456,35 @@ class Website_Optimization_Module {
 
         // 关键词存在性分析 - 具体结果
         if (empty($site_keywords)) {
-            $report['analysis'][] = __('关键词分析：未设置网站关键词', 'wordpress-toolkit');
-            $report['recommendations'][] = __('🔴 高优先级：未设置网站关键词会严重影响搜索引擎对网站主题的理解', 'wordpress-toolkit');
-            $report['implementation_steps'][] = __('📝 具体操作：立即设置3-5个核心关键词，用逗号分隔', 'wordpress-toolkit');
+            $report['analysis'][] = __('关键词分析：未设置网站关键词', 'wordpress-ai-toolkit');
+            $report['recommendations'][] = __('具体优化：请立即设置3-5个核心关键词，用逗号分隔', 'wordpress-ai-toolkit');
         } else {
-            $report['analysis'][] = __('关键词分析：当前关键词为"' . $site_keywords . '"', 'wordpress-toolkit');
+            $report['analysis'][] = sprintf(__('关键词分析：当前关键词为"%s"', 'wordpress-ai-toolkit'), $site_keywords);
 
             // 关键词数量分析
             $keyword_array = array_map('trim', explode(',', $site_keywords));
             $keyword_count = count($keyword_array);
 
             if ($keyword_count < 3) {
-                $report['analysis'][] = __('关键词数量分析：关键词数量过少（' . $keyword_count . '个），建议设置3-5个核心关键词', 'wordpress-toolkit');
-                $report['recommendations'][] = __('🟡 中优先级：关键词数量不足，无法全面覆盖网站主题', 'wordpress-toolkit');
-                $report['implementation_steps'][] = __('📝 具体操作：添加更多相关关键词，确保覆盖主要业务领域', 'wordpress-toolkit');
+                $report['analysis'][] = sprintf(__('关键词数量分析：关键词数量过少（%d个），建议设置3-5个核心关键词', 'wordpress-ai-toolkit'), $keyword_count);
             } elseif ($keyword_count > 10) {
-                $report['analysis'][] = __('关键词数量分析：关键词数量过多（' . $keyword_count . '个），建议精简到3-5个核心关键词', 'wordpress-toolkit');
-                $report['recommendations'][] = __('🟡 中优先级：关键词过多会分散搜索引擎的注意力', 'wordpress-toolkit');
-                $report['implementation_steps'][] = __('📝 具体操作：选择3-5个最核心、最有商业价值的关键词', 'wordpress-toolkit');
+                $report['analysis'][] = sprintf(__('关键词数量分析：关键词数量过多（%d个），建议精简到3-5个核心关键词', 'wordpress-ai-toolkit'), $keyword_count);
             } else {
-                $report['analysis'][] = __('关键词数量分析：关键词数量适中（' . $keyword_count . '个），符合SEO最佳实践', 'wordpress-toolkit');
-                $report['recommendations'][] = __('🟢 良好：关键词数量符合SEO最佳实践', 'wordpress-toolkit');
+                $report['analysis'][] = sprintf(__('关键词数量分析：关键词数量适中（%d个），符合SEO最佳实践', 'wordpress-ai-toolkit'), $keyword_count);
             }
 
-            // 关键词质量分析
+            // 关键词质量分析 - 分析关键词本身的质量，而不是与标签/分类的相关性
             $keyword_quality = $this->analyze_keyword_quality($keyword_array);
 
             if ($keyword_quality['is_good']) {
-                $report['analysis'][] = __('关键词质量分析：关键词质量良好，具有商业价值和搜索潜力', 'wordpress-toolkit');
+                $report['analysis'][] = __('关键词质量分析：关键词质量良好，具有商业价值和搜索潜力', 'wordpress-ai-toolkit');
             } else {
-                $report['analysis'][] = __('关键词质量分析：关键词质量需要优化，建议选择更具商业价值的关键词', 'wordpress-toolkit');
-                $report['recommendations'][] = __('🟡 中优先级：关键词质量需要优化，缺乏明确的商业价值', 'wordpress-toolkit');
-                $report['implementation_steps'][] = __('📝 具体操作：选择具有明确商业意图的关键词，如"服务"、"购买"、"咨询"等', 'wordpress-toolkit');
+                $report['analysis'][] = __('关键词质量分析：关键词质量需要优化，建议选择更具商业价值的关键词', 'wordpress-ai-toolkit');
             }
 
-            $report['implementation_steps'][] = __('📝 内容优化：确保关键词在标题、描述和内容中自然分布，避免关键词堆砌', 'wordpress-toolkit');
-            $report['implementation_steps'][] = __('📝 长尾策略：创建长尾关键词，如"[核心关键词] 使用方法"、"[核心关键词] 教程"', 'wordpress-toolkit');
+            $report['recommendations'][] = __('具体优化：确保关键词在标题、描述和内容中自然分布', 'wordpress-ai-toolkit');
+            $report['recommendations'][] = __('具体优化：创建长尾关键词，如"[核心关键词] 使用方法"', 'wordpress-ai-toolkit');
+            $report['recommendations'][] = __('具体优化：确保关键词自然融入内容，避免堆砌', 'wordpress-ai-toolkit');
         }
 
         // 生成具体的关键词建议
@@ -511,43 +493,24 @@ class Website_Optimization_Module {
 
         if (!empty($top_keywords)) {
             $report['suggested_keywords'] = array(
-                __('✨ 核心关键词：' . implode(', ', $top_keywords), 'wordpress-toolkit'),
-                __('✨ 长尾关键词：' . $top_keywords[0] . ' 使用方法', 'wordpress-toolkit'),
-                __('✨ 长尾关键词：' . $top_keywords[0] . ' 教程', 'wordpress-toolkit'),
-                __('✨ 长尾关键词：' . $top_keywords[0] . ' 技巧', 'wordpress-toolkit'),
-                __('✨ 长尾关键词：' . $top_keywords[0] . ' ' . $top_keywords[1], 'wordpress-toolkit'),
-                __('✨ 长尾关键词：' . $top_keywords[0] . ' 入门指南', 'wordpress-toolkit'),
-                __('✨ 长尾关键词：' . $top_keywords[0] . ' 常见问题', 'wordpress-toolkit'),
-                __('✨ 长尾关键词：' . $top_keywords[0] . ' 最佳实践', 'wordpress-toolkit')
+                sprintf(__('核心关键词：%s', 'wordpress-ai-toolkit'), implode(', ', $top_keywords)),
+                sprintf(__('长尾关键词：%s 使用方法', 'wordpress-ai-toolkit'), $top_keywords[0]),
+                sprintf(__('长尾关键词：%s 教程', 'wordpress-ai-toolkit'), $top_keywords[0]),
+                sprintf(__('长尾关键词：%s 技巧', 'wordpress-ai-toolkit'), $top_keywords[0]),
+                sprintf(__('长尾关键词：%s %s', 'wordpress-ai-toolkit'), $top_keywords[0], $top_keywords[1]),
+                sprintf(__('长尾关键词：%s 入门指南', 'wordpress-ai-toolkit'), $top_keywords[0]),
+                sprintf(__('长尾关键词：%s 常见问题', 'wordpress-ai-toolkit'), $top_keywords[0]),
+                sprintf(__('长尾关键词：%s 最佳实践', 'wordpress-ai-toolkit'), $top_keywords[0])
             );
         } else {
             $report['suggested_keywords'] = array(
-                __('✨ 核心关键词：网站优化, SEO, 内容策略', 'wordpress-toolkit'),
-                __('✨ 长尾关键词：网站优化 方法', 'wordpress-toolkit'),
-                __('✨ 长尾关键词：SEO 优化技巧', 'wordpress-toolkit'),
-                __('✨ 长尾关键词：内容策略 指南', 'wordpress-toolkit'),
-                __('✨ 长尾关键词：网站SEO 最佳实践', 'wordpress-toolkit')
+                __('核心关键词：网站优化, SEO, 内容策略', 'wordpress-ai-toolkit'),
+                __('长尾关键词：网站优化 方法', 'wordpress-ai-toolkit'),
+                __('长尾关键词：SEO 优化技巧', 'wordpress-ai-toolkit'),
+                __('长尾关键词：内容策略 指南', 'wordpress-ai-toolkit'),
+                __('长尾关键词：网站SEO 最佳实践', 'wordpress-ai-toolkit')
             );
         }
-
-        // 添加WordPress设置方法
-        $report['implementation_steps'][] = __('🔧 WordPress设置方法：
-1. 进入WordPress后台 → 设置 → 常规
-2. 在"站点标题"和"副标题"中自然包含关键词
-3. 点击"保存更改"', 'wordpress-toolkit');
-
-        // 添加SEO插件设置方法
-        $report['implementation_steps'][] = __('🔧 SEO插件设置方法（以WPJAM为例）：
-1. 进入WordPress后台 → WPJAM → SEO设置
-2. 在"首页SEO"中设置"首页关键词"
-3. 点击"保存设置"', 'wordpress-toolkit');
-
-        // 添加内容优化方法
-        $report['implementation_steps'][] = __('🔧 内容优化方法：
-1. 在文章标题中自然包含关键词
-2. 在文章内容中多次提及关键词（自然分布）
-3. 在文章标签中使用相关关键词
-4. 在分类名称中使用核心关键词', 'wordpress-toolkit');
 
         return $report;
     }
@@ -576,9 +539,9 @@ class Website_Optimization_Module {
 
         if ($has_value_proposition && $has_attractive_elements) {
             $quality['is_good'] = true;
-            $quality['reasons'][] = __('描述包含明确的价值主张和吸引力元素', 'wordpress-toolkit');
+            $quality['reasons'][] = __('描述包含明确的价值主张和吸引力元素', 'wordpress-ai-toolkit');
         } else {
-            $quality['reasons'][] = __('描述缺乏明确的价值主张或吸引力元素', 'wordpress-toolkit');
+            $quality['reasons'][] = __('描述缺乏明确的价值主张或吸引力元素', 'wordpress-ai-toolkit');
         }
 
         return $quality;
@@ -615,9 +578,9 @@ class Website_Optimization_Module {
 
         if ($has_commercial_value && $has_search_potential) {
             $quality['is_good'] = true;
-            $quality['reasons'][] = __('关键词具有明确的商业价值和搜索潜力', 'wordpress-toolkit');
+            $quality['reasons'][] = __('关键词具有明确的商业价值和搜索潜力', 'wordpress-ai-toolkit');
         } else {
-            $quality['reasons'][] = __('关键词缺乏明确的商业价值或搜索潜力', 'wordpress-toolkit');
+            $quality['reasons'][] = __('关键词缺乏明确的商业价值或搜索潜力', 'wordpress-ai-toolkit');
         }
 
         return $quality;
@@ -679,29 +642,12 @@ class Website_Optimization_Module {
     private function generate_overall_recommendations() {
         $recommendations = array();
 
-        $recommendations[] = __('🔴 高优先级优化建议：', 'wordpress-toolkit');
-        $recommendations[] = __('1. 标题优化：确保标题包含核心关键词，长度在30-60字符之间
-   📝 具体操作：在WordPress后台 → 设置 → 常规中修改站点标题
-   🔧 设置方法：使用格式"[核心关键词] - [品牌名称]"', 'wordpress-toolkit');
-        $recommendations[] = __('2. 描述优化：创建包含关键词和行动号召的描述，长度在50-160字符之间
-   📝 具体操作：在WordPress后台 → 设置 → 常规中修改副标题
-   🔧 设置方法：包含品牌、服务、价值主张和行动号召', 'wordpress-toolkit');
-
-        $recommendations[] = __('🟡 中优先级优化建议：', 'wordpress-toolkit');
-        $recommendations[] = __('3. 关键词策略：选择3-5个核心关键词，在标题、描述和内容中自然分布
-   📝 具体操作：分析网站内容，提取高频词汇作为核心关键词
-   🔧 实施方法：通过SEO插件或WordPress设置添加关键词', 'wordpress-toolkit');
-        $recommendations[] = __('4. 内容质量：定期发布高质量、原创的内容，包含相关关键词
-   📝 具体操作：每周发布1-2篇深度文章，覆盖核心关键词
-   🔧 实施方法：使用内容日历规划发布计划', 'wordpress-toolkit');
-
-        $recommendations[] = __('🟢 长期优化建议：', 'wordpress-toolkit');
-        $recommendations[] = __('5. 用户体验：确保网站加载速度快，移动端友好
-   📝 具体操作：优化图片大小，使用缓存插件，测试移动端兼容性
-   🔧 实施方法：使用GTmetrix或PageSpeed Insights测试性能', 'wordpress-toolkit');
-        $recommendations[] = __('6. 内部链接：建立合理的内部链接结构
-   📝 具体操作：在相关文章间添加内部链接
-   🔧 实施方法：使用相关文章插件或手动添加链接', 'wordpress-toolkit');
+        $recommendations[] = __('SEO优化总体建议：', 'wordpress-ai-toolkit');
+        $recommendations[] = __('1. 标题优化：确保标题包含核心关键词，长度在30-60字符之间', 'wordpress-ai-toolkit');
+        $recommendations[] = __('2. 描述优化：描述应包含关键词和行动号召，长度在50-160字符之间', 'wordpress-ai-toolkit');
+        $recommendations[] = __('3. 关键词优化：选择3-5个核心关键词，在内容中自然分布', 'wordpress-ai-toolkit');
+        $recommendations[] = __('4. 内容质量：定期发布高质量、原创的内容', 'wordpress-ai-toolkit');
+        $recommendations[] = __('5. 用户体验：确保网站加载速度快，移动端友好', 'wordpress-ai-toolkit');
 
         return $recommendations;
     }
@@ -720,10 +666,10 @@ class Website_Optimization_Module {
      */
     private function perform_ai_analysis($site_info) {
         // 检查AI功能是否可用
-        if (!function_exists('wordpress_toolkit_is_ai_available') || !wordpress_toolkit_is_ai_available()) {
+        if (!function_exists('wordpress_ai_toolkit_is_ai_available') || !wordpress_ai_toolkit_is_ai_available()) {
             return array(
                 'available' => false,
-                'message' => __('AI功能未配置', 'wordpress-toolkit')
+                'message' => __('AI功能未配置', 'wordpress-ai-toolkit')
             );
         }
 
@@ -748,14 +694,14 @@ class Website_Optimization_Module {
 
             return array(
                 'available' => true,
-                'analysis' => __('AI分析完成，已生成智能优化建议', 'wordpress-toolkit'),
+                'analysis' => __('AI分析完成，已生成智能优化建议', 'wordpress-ai-toolkit'),
                 'suggestions' => $ai_suggestions
             );
         } catch (Exception $e) {
             // AI分析失败时返回基础建议
             return array(
                 'available' => false,
-                'message' => __('AI分析失败，使用基础建议: ', 'wordpress-toolkit') . $e->getMessage(),
+                'message' => sprintf(__('AI分析失败，使用基础建议: %s', 'wordpress-ai-toolkit'), $e->getMessage()),
                 'suggestions' => $this->generate_fallback_suggestions()
             );
         }
@@ -804,28 +750,42 @@ class Website_Optimization_Module {
      * 构建AI分析提示
      */
     private function build_ai_prompt($site_title, $site_description, $keywords, $content_summary) {
-        $prompt = "请为以下WordPress网站提供SEO优化建议：\n\n";
-        $prompt .= "当前网站标题：{$site_title}\n";
-        $prompt .= "当前网站描述：{$site_description}\n\n";
+        // 使用动态提示词设置
+        if (function_exists('wordpress_ai_toolkit_get_prompt')) {
+            $prompt = wordpress_ai_toolkit_get_prompt('website_optimization', array(
+                'site_title' => $site_title,
+                'site_description' => $site_description,
+                'total_posts' => $content_summary['total_posts'],
+                'total_pages' => $content_summary['total_pages'],
+                'categories' => implode(', ', $content_summary['categories']),
+                'tags' => implode(', ', $content_summary['tags']),
+                'recent_titles' => implode(' | ', $content_summary['recent_titles'])
+            ));
+        } else {
+            // 降级到默认提示词
+            $prompt = "请为以下WordPress网站提供SEO优化建议：\n\n";
+            $prompt .= "当前网站标题：{$site_title}\n";
+            $prompt .= "当前网站描述：{$site_description}\n\n";
 
-        $prompt .= "网站内容概况：\n";
-        $prompt .= "- 文章数量：{$content_summary['total_posts']}\n";
-        $prompt .= "- 页面数量：{$content_summary['total_pages']}\n";
-        $prompt .= "- 主要分类：" . implode(', ', $content_summary['categories']) . "\n";
-        $prompt .= "- 主要标签：" . implode(', ', $content_summary['tags']) . "\n";
-        $prompt .= "- 最近文章标题：" . implode(' | ', $content_summary['recent_titles']) . "\n\n";
+            $prompt .= "网站内容概况：\n";
+            $prompt .= "- 文章数量：{$content_summary['total_posts']}\n";
+            $prompt .= "- 页面数量：{$content_summary['total_pages']}\n";
+            $prompt .= "- 主要分类：" . implode(', ', $content_summary['categories']) . "\n";
+            $prompt .= "- 主要标签：" . implode(', ', $content_summary['tags']) . "\n";
+            $prompt .= "- 最近文章标题：" . implode(' | ', $content_summary['recent_titles']) . "\n\n";
 
-        $prompt .= "请基于以上信息，提供以下具体建议：\n";
-        $prompt .= "1. 提供3个优化的网站标题建议（每个30-60字符）\n";
-        $prompt .= "2. 提供3个优化的网站描述建议（每个50-160字符）\n";
-        $prompt .= "3. 提供5个核心关键词和5个长尾关键词建议\n";
-        $prompt .= "4. 简要说明每个建议的SEO优势\n\n";
-        $prompt .= "请用JSON格式返回结果，包含以下字段：\n";
-        $prompt .= "- suggested_titles: 数组，包含3个标题建议\n";
-        $prompt .= "- suggested_descriptions: 数组，包含3个描述建议\n";
-        $prompt .= "- suggested_keywords: 数组，包含5个核心关键词\n";
-        $prompt .= "- suggested_longtail_keywords: 数组，包含5个长尾关键词\n";
-        $prompt .= "- analysis_summary: 字符串，简要分析说明\n";
+            $prompt .= "请基于以上信息，提供以下具体建议：\n";
+            $prompt .= "1. 提供3个优化的网站标题建议（每个30-60字符）\n";
+            $prompt .= "2. 提供3个优化的网站描述建议（每个50-160字符）\n";
+            $prompt .= "3. 提供5个核心关键词和5个长尾关键词建议\n";
+            $prompt .= "4. 简要说明每个建议的SEO优势\n\n";
+            $prompt .= "请用JSON格式返回结果，包含以下字段：\n";
+            $prompt .= "- suggested_titles: 数组，包含3个标题建议\n";
+            $prompt .= "- suggested_descriptions: 数组，包含3个描述建议\n";
+            $prompt .= "- suggested_keywords: 数组，包含5个核心关键词\n";
+            $prompt .= "- suggested_longtail_keywords: 数组，包含5个长尾关键词\n";
+            $prompt .= "- analysis_summary: 字符串，简要分析说明\n";
+        }
 
         return $prompt;
     }
@@ -835,12 +795,12 @@ class Website_Optimization_Module {
      */
     private function call_ai_service($prompt) {
         // 这里调用WordPress Toolkit的AI服务
-        if (function_exists('wordpress_toolkit_ai_request')) {
-            return wordpress_toolkit_ai_request($prompt);
+        if (function_exists('wordpress_ai_toolkit_ai_request')) {
+            return wordpress_ai_toolkit_ai_request($prompt);
         }
 
         // 如果AI服务不可用，抛出异常
-        throw new Exception(__('AI服务不可用', 'wordpress-toolkit'));
+        throw new Exception(__('AI服务不可用', 'wordpress-ai-toolkit'));
     }
 
     /**
@@ -997,24 +957,24 @@ class Website_Optimization_Module {
     public function handle_ajax_get_saved_analysis() {
         // 验证权限和nonce
         if (!current_user_can('manage_options')) {
-            wp_send_json_error(__('权限不足', 'wordpress-toolkit'));
+            wp_send_json_error(__('权限不足', 'wordpress-ai-toolkit'));
         }
 
         if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'website_optimization_analyze')) {
-            wp_send_json_error(__('安全验证失败', 'wordpress-toolkit'));
+            wp_send_json_error(__('安全验证失败', 'wordpress-ai-toolkit'));
         }
 
         try {
             // 获取保存的分析报告
-            $saved_analysis = get_option('wordpress_toolkit_website_seo_analysis', false);
+            $saved_analysis = get_option('wordpress_ai_toolkit_website_seo_analysis', false);
 
             if ($saved_analysis) {
                 wp_send_json_success($saved_analysis);
             } else {
-                wp_send_json_error(__('没有保存的分析报告', 'wordpress-toolkit'));
+                wp_send_json_error(__('没有保存的分析报告', 'wordpress-ai-toolkit'));
             }
         } catch (Exception $e) {
-            wp_send_json_error(__('获取保存的分析报告失败: ', 'wordpress-toolkit') . $e->getMessage());
+            wp_send_json_error(sprintf(__('获取保存的分析报告失败: %s', 'wordpress-ai-toolkit'), $e->getMessage()));
         }
     }
 
@@ -1024,18 +984,18 @@ class Website_Optimization_Module {
     public function handle_ajax_analyze() {
         // 验证权限和nonce
         if (!current_user_can('manage_options')) {
-            wp_send_json_error(__('权限不足', 'wordpress-toolkit'));
+            wp_send_json_error(__('权限不足', 'wordpress-ai-toolkit'));
         }
 
         if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'website_optimization_analyze')) {
-            wp_send_json_error(__('安全验证失败', 'wordpress-toolkit'));
+            wp_send_json_error(__('安全验证失败', 'wordpress-ai-toolkit'));
         }
 
         try {
             $analysis = $this->analyze_website_seo();
             wp_send_json_success($analysis);
         } catch (Exception $e) {
-            wp_send_json_error(__('分析失败: ', 'wordpress-toolkit') . $e->getMessage());
+            wp_send_json_error(sprintf(__('分析失败: %s', 'wordpress-ai-toolkit'), $e->getMessage()));
         }
     }
 
@@ -1046,11 +1006,11 @@ class Website_Optimization_Module {
     public function handle_ajax_save_settings() {
         // 验证权限和nonce
         if (!current_user_can('manage_options')) {
-            wp_send_json_error(__('权限不足', 'wordpress-toolkit'));
+            wp_send_json_error(__('权限不足', 'wordpress-ai-toolkit'));
         }
 
         if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'website_optimization_save_settings')) {
-            wp_send_json_error(__('安全验证失败', 'wordpress-toolkit'));
+            wp_send_json_error(__('安全验证失败', 'wordpress-ai-toolkit'));
         }
 
         try {
@@ -1061,10 +1021,10 @@ class Website_Optimization_Module {
             $this->update_settings($settings);
 
             wp_send_json_success(array(
-                'message' => __('设置已保存', 'wordpress-toolkit')
+                'message' => __('设置已保存', 'wordpress-ai-toolkit')
             ));
         } catch (Exception $e) {
-            wp_send_json_error(__('保存设置失败: ', 'wordpress-toolkit') . $e->getMessage());
+            wp_send_json_error(sprintf(__('保存设置失败: %s', 'wordpress-ai-toolkit'), $e->getMessage()));
         }
     }
 
@@ -1087,14 +1047,14 @@ class Website_Optimization_Module {
      */
     public function admin_enqueue_scripts($hook) {
         // 只在网站优化管理页面加载
-        if (strpos($hook, 'wordpress-toolkit-website-optimization') === false) {
+        if (strpos($hook, 'wordpress-ai-toolkit-website-optimization') === false) {
             return;
         }
 
         // 加载核心样式
         wp_enqueue_style(
             'website-optimization-css',
-            WORDPRESS_TOOLKIT_PLUGIN_URL . 'modules/website-optimization/assets/css/admin.css',
+            AI_CONTENT_TOOLKIT_PLUGIN_URL . 'modules/website-optimization/assets/css/admin.css',
             array(),
             '1.0.0'
         );
@@ -1102,7 +1062,7 @@ class Website_Optimization_Module {
         // 加载核心脚本
         wp_enqueue_script(
             'website-optimization-js',
-            WORDPRESS_TOOLKIT_PLUGIN_URL . 'modules/website-optimization/assets/js/admin.js',
+            AI_CONTENT_TOOLKIT_PLUGIN_URL . 'modules/website-optimization/assets/js/admin.js',
             array('jquery'),
             '1.0.0',
             true
@@ -1114,28 +1074,28 @@ class Website_Optimization_Module {
             'analyzeNonce' => wp_create_nonce('website_optimization_analyze'),
             'settingsNonce' => wp_create_nonce('website_optimization_save_settings'),
             'i18n' => array(
-                'analyzing' => __('分析中...', 'wordpress-toolkit'),
-                'preparing' => __('正在准备...', 'wordpress-toolkit'),
-                'sendingRequest' => __('正在发送请求到服务器...', 'wordpress-toolkit'),
-                'completed' => __('完成', 'wordpress-toolkit'),
-                'analysisComplete' => __('网站SEO分析完成！', 'wordpress-toolkit'),
-                'analysisFailed' => __('SEO分析失败：', 'wordpress-toolkit'),
-                'overallScore' => __('整体得分：', 'wordpress-toolkit'),
-                'analysisTime' => __('分析时间：', 'wordpress-toolkit'),
-                'requestTimeout' => __('请求超时：处理时间过长，请稍后重试。', 'wordpress-toolkit'),
-                'networkError' => __('网络错误：', 'wordpress-toolkit'),
-                'unknownError' => __('未知错误', 'wordpress-toolkit'),
-                'settingsSaved' => __('设置已保存', 'wordpress-toolkit'),
-                'settingsSaveFailed' => __('保存设置失败', 'wordpress-toolkit'),
-                'excellent' => __('优秀', 'wordpress-toolkit'),
-                'good' => __('良好', 'wordpress-toolkit'),
-                'fair' => __('一般', 'wordpress-toolkit'),
-                'needsImprovement' => __('需要改进', 'wordpress-toolkit'),
-                'highPriority' => __('高优先级', 'wordpress-toolkit'),
-                'mediumPriority' => __('中优先级', 'wordpress-toolkit'),
-                'lowPriority' => __('低优先级', 'wordpress-toolkit'),
-                'normal' => __('一般', 'wordpress-toolkit'),
-                'action' => __('操作：', 'wordpress-toolkit')
+                'analyzing' => __('分析中...', 'wordpress-ai-toolkit'),
+                'preparing' => __('正在准备...', 'wordpress-ai-toolkit'),
+                'sendingRequest' => __('正在发送请求到服务器...', 'wordpress-ai-toolkit'),
+                'completed' => __('完成', 'wordpress-ai-toolkit'),
+                'analysisComplete' => __('网站SEO分析完成！', 'wordpress-ai-toolkit'),
+                'analysisFailed' => __('SEO分析失败：', 'wordpress-ai-toolkit'),
+                'overallScore' => __('整体得分：', 'wordpress-ai-toolkit'),
+                'analysisTime' => __('分析时间：', 'wordpress-ai-toolkit'),
+                'requestTimeout' => __('请求超时：处理时间过长，请稍后重试。', 'wordpress-ai-toolkit'),
+                'networkError' => __('网络错误：', 'wordpress-ai-toolkit'),
+                'unknownError' => __('未知错误', 'wordpress-ai-toolkit'),
+                'settingsSaved' => __('设置已保存', 'wordpress-ai-toolkit'),
+                'settingsSaveFailed' => __('保存设置失败', 'wordpress-ai-toolkit'),
+                'excellent' => __('优秀', 'wordpress-ai-toolkit'),
+                'good' => __('良好', 'wordpress-ai-toolkit'),
+                'fair' => __('一般', 'wordpress-ai-toolkit'),
+                'needsImprovement' => __('需要改进', 'wordpress-ai-toolkit'),
+                'highPriority' => __('高优先级', 'wordpress-ai-toolkit'),
+                'mediumPriority' => __('中优先级', 'wordpress-ai-toolkit'),
+                'lowPriority' => __('低优先级', 'wordpress-ai-toolkit'),
+                'normal' => __('一般', 'wordpress-ai-toolkit'),
+                'action' => __('操作：', 'wordpress-ai-toolkit')
             )
         ));
     }

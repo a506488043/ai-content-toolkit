@@ -46,23 +46,23 @@ class Toolkit_Admin_Page_Template {
      */
     public function enqueue_admin_styles($hook) {
         // 只在工具包相关页面加载
-        if (strpos($hook, 'wordpress-toolkit') === false) {
+        if (strpos($hook, 'wordpress-ai-toolkit') === false) {
             return;
         }
 
         // 加载统一样式
         wp_enqueue_style(
             'toolkit-variables',
-            WORDPRESS_TOOLKIT_PLUGIN_URL . 'assets/css/variables.css',
+            AI_CONTENT_TOOLKIT_PLUGIN_URL . 'assets/css/variables.css',
             array(),
-            WORDPRESS_TOOLKIT_VERSION
+            AI_CONTENT_TOOLKIT_VERSION
         );
 
         wp_enqueue_style(
             'toolkit-common',
-            WORDPRESS_TOOLKIT_PLUGIN_URL . 'assets/css/common.css',
+            AI_CONTENT_TOOLKIT_PLUGIN_URL . 'assets/css/common.css',
             array('toolkit-variables'),
-            WORDPRESS_TOOLKIT_VERSION
+            AI_CONTENT_TOOLKIT_VERSION
         );
 
         // 加载WordPress默认样式
@@ -76,16 +76,16 @@ class Toolkit_Admin_Page_Template {
      */
     public function enqueue_admin_scripts($hook) {
         // 只在工具包相关页面加载
-        if (strpos($hook, 'wordpress-toolkit') === false) {
+        if (strpos($hook, 'wordpress-ai-toolkit') === false) {
             return;
         }
 
         // 加载统一JavaScript框架
         wp_enqueue_script(
             'toolkit-core',
-            WORDPRESS_TOOLKIT_PLUGIN_URL . 'assets/js/toolkit-core.js',
+            AI_CONTENT_TOOLKIT_PLUGIN_URL . 'assets/js/toolkit-core.js',
             array('jquery'),
-            WORDPRESS_TOOLKIT_VERSION,
+            AI_CONTENT_TOOLKIT_VERSION,
             true
         );
 
@@ -94,16 +94,16 @@ class Toolkit_Admin_Page_Template {
             'ajaxUrl' => admin_url('admin-ajax.php'),
             'nonce' => wp_create_nonce('toolkit_nonce'),
             'strings' => array(
-                'saveSuccess' => __('保存成功！', 'wordpress-toolkit'),
-                'saveError' => __('保存失败，请重试。', 'wordpress-toolkit'),
-                'networkError' => __('网络错误，请重试。', 'wordpress-toolkit'),
-                'confirmDelete' => __('确定要删除这个项目吗？此操作不可撤销。', 'wordpress-toolkit'),
-                'deleteSuccess' => __('删除成功！', 'wordpress-toolkit'),
-                'deleteError' => __('删除失败，请重试。', 'wordpress-toolkit'),
-                'loading' => __('加载中...', 'wordpress-toolkit'),
-                'processing' => __('处理中...', 'wordpress-toolkit'),
-                'confirm' => __('确定', 'wordpress-toolkit'),
-                'cancel' => __('取消', 'wordpress-toolkit')
+                'saveSuccess' => __('保存成功！', 'wordpress-ai-toolkit'),
+                'saveError' => __('保存失败，请重试。', 'wordpress-ai-toolkit'),
+                'networkError' => __('网络错误，请重试。', 'wordpress-ai-toolkit'),
+                'confirmDelete' => __('确定要删除这个项目吗？此操作不可撤销。', 'wordpress-ai-toolkit'),
+                'deleteSuccess' => __('删除成功！', 'wordpress-ai-toolkit'),
+                'deleteError' => __('删除失败，请重试。', 'wordpress-ai-toolkit'),
+                'loading' => __('加载中...', 'wordpress-ai-toolkit'),
+                'processing' => __('处理中...', 'wordpress-ai-toolkit'),
+                'confirm' => __('确定', 'wordpress-ai-toolkit'),
+                'cancel' => __('取消', 'wordpress-ai-toolkit')
             )
         ));
     }
@@ -130,7 +130,7 @@ class Toolkit_Admin_Page_Template {
      */
     private function check_permissions() {
         if (!current_user_can('manage_options')) {
-            wp_die(__('抱歉，您没有权限访问此页面。', 'wordpress-toolkit'));
+            wp_die(__('抱歉，您没有权限访问此页面。', 'wordpress-ai-toolkit'));
         }
     }
 
@@ -186,13 +186,13 @@ class Toolkit_Admin_Page_Template {
 
         $welcome_message = !empty($this->config['welcome_message'])
             ? $this->config['welcome_message']
-            : __('欢迎使用WordPress Toolkit！', 'wordpress-toolkit');
+            : __('欢迎使用WordPress Toolkit！', 'wordpress-ai-toolkit');
 
         echo '<div class="tc-card tc-mb-2xl" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none;">';
         echo '<div class="tc-flex tc-flex-center">';
         echo '<div>';
         echo '<h2 style="color: white; margin: 0 0 10px 0;">' . esc_html($welcome_message) . '</h2>';
-        echo '<p style="margin: 0; opacity: 0.9;">' . __('功能强大，易于使用的WordPress管理工具集', 'wordpress-toolkit') . '</p>';
+        echo '<p style="margin: 0; opacity: 0.9;">' . __('功能强大，易于使用的WordPress管理工具集', 'wordpress-ai-toolkit') . '</p>';
         echo '</div>';
         echo '</div>';
         echo '</div>';
@@ -258,7 +258,7 @@ class Toolkit_Admin_Page_Template {
      */
     private function render_not_found() {
         echo '<div class="tc-text-center tc-py-2xl">';
-        echo '<p class="tc-text-secondary">' . __('内容未找到', 'wordpress-toolkit') . '</p>';
+        echo '<p class="tc-text-secondary">' . __('内容未找到', 'wordpress-ai-toolkit') . '</p>';
         echo '</div>';
     }
 

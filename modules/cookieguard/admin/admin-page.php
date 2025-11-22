@@ -18,7 +18,7 @@ if (isset($_POST['submit']) && wp_verify_nonce($_POST['cookieguard_pro_nonce'], 
     }
 
     // 获取旧设置以比较地理位置设置是否有变化
-    $old_options = get_option('wordpress_toolkit_cookieguard_options', array());
+    $old_options = get_option('wordpress_ai_toolkit_cookieguard_options', array());
 
     $options = array(
         'notice_text' => wp_kses_post($_POST['notice_text']),
@@ -51,20 +51,20 @@ if (isset($_POST['submit']) && wp_verify_nonce($_POST['cookieguard_pro_nonce'], 
         global $wpdb;
         $wpdb->query($wpdb->prepare(
             "DELETE FROM {$wpdb->options} WHERE option_name LIKE %s",
-            '_transient_wordpress_toolkit_cookieguard_geo_%'
+            '_transient_wordpress_ai_toolkit_cookieguard_geo_%'
         ));
         $wpdb->query($wpdb->prepare(
             "DELETE FROM {$wpdb->options} WHERE option_name LIKE %s",
-            '_transient_timeout_wordpress_toolkit_cookieguard_geo_%'
+            '_transient_timeout_wordpress_ai_toolkit_cookieguard_geo_%'
         ));
     }
 
-    update_option('wordpress_toolkit_cookieguard_options', $options);
+    update_option('wordpress_ai_toolkit_cookieguard_options', $options);
     echo '<div class="notice notice-success is-dismissible"><p>设置已保存！</p></div>';
 }
 
 // 获取当前设置
-$options = get_option('wordpress_toolkit_cookieguard_options');
+$options = get_option('wordpress_ai_toolkit_cookieguard_options');
 
 // 确保所有选项都有默认值
 $default_options = array(

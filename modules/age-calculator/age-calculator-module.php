@@ -22,7 +22,7 @@ class Age_Calculator_Module {
     /**
      * 选项键名
      */
-    private $option_name = 'wordpress_toolkit_age_calculator_options';
+    private $option_name = 'wordpress_ai_toolkit_age_calculator_options';
     
     /**
      * 构造函数
@@ -92,26 +92,26 @@ class Age_Calculator_Module {
     public function enqueue_scripts() {
         // 加载原Age Calculator的前端样式
         wp_enqueue_style(
-            'wordpress-toolkit-age-calculator',
-            WORDPRESS_TOOLKIT_PLUGIN_URL . 'modules/age-calculator/assets/style.css',
+            'wordpress-ai-toolkit-age-calculator',
+            AI_CONTENT_TOOLKIT_PLUGIN_URL . 'modules/age-calculator/assets/age-calculator-style.css',
             array(),
             self::MODULE_VERSION
         );
         
         // 加载原Age Calculator的前端脚本
         wp_enqueue_script(
-            'wordpress-toolkit-age-calculator-script',
-            WORDPRESS_TOOLKIT_PLUGIN_URL . 'modules/age-calculator/assets/script.js',
+            'wordpress-ai-toolkit-age-calculator-script',
+            AI_CONTENT_TOOLKIT_PLUGIN_URL . 'modules/age-calculator/assets/script.js',
             array('jquery'),
             self::MODULE_VERSION,
             true
         );
         
         // 传递AJAX URL
-        wp_localize_script('wordpress-toolkit-age-calculator-script', 'age_calculator_ajax', array(
+        wp_localize_script('wordpress-ai-toolkit-age-calculator-script', 'age_calculator_ajax', array(
             'ajax_url' => admin_url('admin-ajax.php'),
             'nonce' => wp_create_nonce('age_calculator_nonce'),
-            'plugin_url' => WORDPRESS_TOOLKIT_PLUGIN_URL
+            'plugin_url' => AI_CONTENT_TOOLKIT_PLUGIN_URL
         ));
     }
     
@@ -120,8 +120,8 @@ class Age_Calculator_Module {
      */
     public function register_settings() {
         register_setting(
-            'wordpress_toolkit_age_calculator_options',
-            'wordpress_toolkit_age_calculator_options',
+            'wordpress_ai_toolkit_age_calculator_options',
+            'wordpress_ai_toolkit_age_calculator_options',
             array(
                 'sanitize_callback' => array($this, 'sanitize_options')
             )
@@ -148,7 +148,7 @@ class Age_Calculator_Module {
         $sanitized['show_for_logged_out'] = isset($input['show_for_logged_out']) ? true : false;
 
         // 保留模块版本
-        $current_options = get_option('wordpress_toolkit_age_calculator_options', array());
+        $current_options = get_option('wordpress_ai_toolkit_age_calculator_options', array());
         if (isset($current_options['module_version'])) {
             $sanitized['module_version'] = $current_options['module_version'];
         }
@@ -161,7 +161,7 @@ class Age_Calculator_Module {
      */
     public function settings_page() {
         // 包含原Age Calculator的管理页面，强制显示设置选项卡
-        include WORDPRESS_TOOLKIT_PLUGIN_PATH . 'modules/age-calculator/admin/admin-page.php';
+        include AI_CONTENT_TOOLKIT_PLUGIN_PATH . 'modules/age-calculator/admin/admin-page.php';
     }
 
     /**
@@ -169,7 +169,7 @@ class Age_Calculator_Module {
      */
     public function admin_page() {
         // 包含原Age Calculator的管理页面
-        include WORDPRESS_TOOLKIT_PLUGIN_PATH . 'modules/age-calculator/admin/admin-page.php';
+        include AI_CONTENT_TOOLKIT_PLUGIN_PATH . 'modules/age-calculator/admin/admin-page.php';
     }
     
     /**
@@ -177,7 +177,7 @@ class Age_Calculator_Module {
      */
     public function shortcode_display($atts) {
         // 获取默认设置
-        $options = get_option('wordpress_toolkit_age_calculator_options', array());
+        $options = get_option('wordpress_ai_toolkit_age_calculator_options', array());
         $default_format = isset($options['default_format']) ? $options['default_format'] : 'years';
 
         $atts = shortcode_atts(array(
@@ -254,7 +254,7 @@ class Age_Calculator_Module {
         $reference_date = sanitize_text_field($_POST['reference_date']);
 
         // 使用默认格式设置
-        $options = get_option('wordpress_toolkit_age_calculator_options', array());
+        $options = get_option('wordpress_ai_toolkit_age_calculator_options', array());
         $format = isset($options['default_format']) ? $options['default_format'] : 'years';
         
         if (empty($birthdate)) {
@@ -369,7 +369,7 @@ class Age_Calculator_Module {
      */
     private function render_form() {
         // 获取默认设置
-        $options = get_option('wordpress_toolkit_age_calculator_options', array());
+        $options = get_option('wordpress_ai_toolkit_age_calculator_options', array());
         $default_format = isset($options['default_format']) ? $options['default_format'] : 'years';
 
         // 调试：确保默认格式被正确设置
@@ -488,7 +488,7 @@ class Age_Calculator_Module {
      */
     public function load_page_template($template) {
         if (get_page_template_slug() === 'age-calculator-page.php') {
-            $template = WORDPRESS_TOOLKIT_PLUGIN_PATH . 'modules/age-calculator/templates/age-calculator-page.php';
+            $template = AI_CONTENT_TOOLKIT_PLUGIN_PATH . 'modules/age-calculator/templates/age-calculator-page.php';
         }
         return $template;
     }

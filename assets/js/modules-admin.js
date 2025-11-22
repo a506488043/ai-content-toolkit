@@ -63,7 +63,7 @@
                 // 收集表单数据
                 var formData = new FormData($form[0]);
                 formData.append('action', action);
-                formData.append('nonce', toolkit_vars.nonce);
+                formData.append('nonce', ToolkitConfig.nonce);
 
                 // 发送AJAX请求
                 $.ajax({
@@ -166,7 +166,7 @@
                 data: {
                     action: action,
                     ids: ids,
-                    nonce: toolkit_vars.nonce
+                    nonce: ToolkitConfig.nonce
                 },
                 success: function(response) {
                     if (response.success) {
@@ -346,15 +346,25 @@
 
             ToolkitModules.showStatus($excerptCell, 'loading');
 
+            // 调试信息
+            console.log('=== JS_DEBUG: Starting AJAX request ===');
+            console.log('Post ID:', postId);
+            console.log('ToolkitConfig:', ToolkitConfig);
+            console.log('Nonce:', ToolkitConfig.nonce);
+            console.log('Ajax URL:', ajaxurl);
+
             $.ajax({
                 url: ajaxurl,
                 type: 'POST',
                 data: {
-                    action: 'auto_excerpt_generate_single',
+                    action: 'auto_excerpt_generate',
                     post_id: postId,
-                    nonce: toolkit_vars.nonce
+                    nonce: ToolkitConfig.nonce
                 },
                 success: function(response) {
+                    console.log('=== JS_DEBUG: AJAX response received ===');
+                    console.log('Response:', response);
+
                     if (response.success) {
                         var excerpt = response.data.excerpt;
                         var isAI = response.data.is_ai;
@@ -367,6 +377,9 @@
                         ToolkitCore.showNotice('success', '摘要生成成功！');
                     } else {
                         ToolkitModules.showStatus($excerptCell, 'error', '生成失败');
+                        console.log('=== JS_DEBUG: AJAX request failed ===');
+                        console.log('Error message:', response.data.message);
+                        console.log('Debug info:', response.data.debug_info);
                         ToolkitCore.showNotice('error', response.data.message || '生成失败');
                     }
                 },
@@ -378,47 +391,13 @@
         },
 
         /**
-         * 批量生成摘要
+         * 批量生成摘要 - 已禁用，由主插件文件处理
+         * 避免与主插件文件中的 #batch-generate-excerpts 处理程序冲突
          */
         batchGenerateExcerpts: function() {
-            var $btn = $('#batch-generate-excerpts');
-            var originalText = $btn.text();
-
-            $btn.prop('disabled', true).text('批量生成中...');
-
-            $.ajax({
-                url: ajaxurl,
-                type: 'POST',
-                data: {
-                    action: 'auto_excerpt_batch_generate',
-                    nonce: toolkit_vars.nonce
-                },
-                success: function(response) {
-                    if (response.success) {
-                        ToolkitCore.showNotice('success', '批量生成完成！共生成 ' + response.data.count + ' 个摘要。');
-
-                        // 更新统计
-                        if (response.data.stats) {
-                            $('.stat-number[data-stat="total"]').text(response.data.stats.total);
-                            $('.stat-number[data-stat="with_excerpt"]').text(response.data.stats.with_excerpt);
-                            $('.stat-number[data-stat="ai_generated"]').text(response.data.stats.ai_generated);
-                        }
-
-                        // 刷新页面
-                        setTimeout(function() {
-                            location.reload();
-                        }, 2000);
-                    } else {
-                        ToolkitCore.showNotice('error', response.data.message || '批量生成失败');
-                    }
-                },
-                error: function() {
-                    ToolkitCore.showNotice('error', '网络错误，请重试。');
-                },
-                complete: function() {
-                    $btn.prop('disabled', false).text(originalText);
-                }
-            });
+            // 此功能已移至主插件文件，防止重复绑定和冲突
+            console.log('batchGenerateExcerpts: 功能已由主插件文件处理，跳过执行');
+            return;
         }
     };
 
@@ -440,7 +419,7 @@
                 data: {
                     action: type + '_optimize_single',
                     item_id: itemId,
-                    nonce: toolkit_vars.nonce
+                    nonce: ToolkitConfig.nonce
                 },
                 success: function(response) {
                     if (response.success) {
@@ -484,7 +463,7 @@
                 type: 'POST',
                 data: {
                     action: type + '_batch_optimize',
-                    nonce: toolkit_vars.nonce
+                    nonce: ToolkitConfig.nonce
                 },
                 success: function(response) {
                     if (response.success) {
@@ -511,8 +490,15 @@
     // 页面加载完成后初始化
     $(document).ready(function() {
         // 检查是否有必要的全局变量
-        if (typeof toolkit_vars !== 'undefined') {
+        if (typeof ToolkitConfig !== 'undefined' && ToolkitConfig.nonce) {
             ToolkitModules.init();
+        } else {
+            console.error('=== JS_DEBUG: ToolkitConfig is not available, reloading page ===');
+            console.log('ToolkitConfig:', typeof ToolkitConfig !== 'undefined' ? ToolkitConfig : 'UNDEFINED');
+            // 如果配置不可用，重新加载页面
+            setTimeout(function() {
+                location.reload();
+            }, 1000);
         }
     });
 

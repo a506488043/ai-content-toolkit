@@ -124,7 +124,7 @@ jQuery(document).ready(function ($) {
             url: chf_card_ajax.ajax_url,
             method: 'POST',
             data: {
-                action: 'wordpress_toolkit_load_custom_card',
+                action: 'wordpress_ai_toolkit_load_custom_card',
                 nonce: chf_card_ajax.nonce, // 使用服务器提供的nonce
                 url: url,
             },
@@ -281,7 +281,7 @@ jQuery(document).ready(function ($) {
                 url: chf_card_ajax.ajax_url,
                 method: 'POST',
                 data: {
-                    action: 'wordpress_toolkit_record_card_click',
+                    action: 'wordpress_ai_toolkit_record_card_click',
                     nonce: chf_card_ajax.nonce,
                     card_id: cardId
                 },

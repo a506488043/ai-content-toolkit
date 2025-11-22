@@ -29,9 +29,9 @@ class Simple_FriendLink_Admin {
         ?>
         <div class="wrap">
             <p class="description">
-                <?php _e('已发布的友情链接请使用WordPress内置的"链接"管理功能。此页面仅显示用户提交的待审核申请。', 'wordpress-toolkit'); ?>
+                <?php _e('已发布的友情链接请使用WordPress内置的"链接"管理功能。此页面仅显示用户提交的待审核申请。', 'wordpress-ai-toolkit'); ?>
                 <a href="<?php echo admin_url('link-manager.php'); ?>" class="button">
-                    <?php _e('管理已发布链接', 'wordpress-toolkit'); ?>
+                    <?php _e('管理已发布链接', 'wordpress-ai-toolkit'); ?>
                 </a>
             </p>
 
@@ -81,38 +81,38 @@ class Simple_FriendLink_Admin {
         $total_pending = count($pending_links);
         ?>
         <div class="tab-content">
-            <h2><?php _e('待审核申请', 'wordpress-toolkit'); ?>
+            <h2><?php _e('待审核申请', 'wordpress-ai-toolkit'); ?>
                 <span style="font-size: 12px; color: #666; margin-left: 10px;">
-                    (<?php echo sprintf(__('共 %d 条记录', 'wordpress-toolkit'), $total_pending); ?>)
+                    (<?php echo sprintf(__('共 %d 条记录', 'wordpress-ai-toolkit'), $total_pending); ?>)
                 </span>
             </h2>
 
             <!-- 统计信息 -->
             <div class="pending-stats">
                 <div class="stat-box">
-                    <h3><?php _e('待审核申请', 'wordpress-toolkit'); ?></h3>
+                    <h3><?php _e('待审核申请', 'wordpress-ai-toolkit'); ?></h3>
                     <div class="stat-number"><?php echo $total_pending; ?></div>
-                    <p><?php _e('个友情链接申请等待审核', 'wordpress-toolkit'); ?></p>
+                    <p><?php _e('个友情链接申请等待审核', 'wordpress-ai-toolkit'); ?></p>
                 </div>
             </div>
 
             <?php if (!empty($pending_links)): ?>
                 <form method="post" id="bulk-actions-form">
-                    <?php wp_nonce_field('wordpress_toolkit_friendlinks'); ?>
-                    <input type="hidden" name="page" value="wordpress-toolkit-friendlinks">
+                    <?php wp_nonce_field('wordpress_ai_toolkit_friendlinks'); ?>
+                    <input type="hidden" name="page" value="wordpress-ai-toolkit-friendlinks">
                     <input type="hidden" name="action" value="bulk_approve">
 
                     <div class="tablenav top">
                         <div class="alignleft actions bulkactions">
                             <label for="cb-select-all-1" class="select-all-label">
                                 <input type="checkbox" id="cb-select-all-1">
-                                <?php _e('全选', 'wordpress-toolkit'); ?>
+                                <?php _e('全选', 'wordpress-ai-toolkit'); ?>
                             </label>
                             <button type="submit" class="button action">
-                                <?php _e('批准选中', 'wordpress-toolkit'); ?>
+                                <?php _e('批准选中', 'wordpress-ai-toolkit'); ?>
                             </button>
                             <button type="button" class="button" onclick="document.getElementById('bulk-actions-form').action.value='delete_link'; document.getElementById('bulk-actions-form').submit();">
-                                <?php _e('删除选中', 'wordpress-toolkit'); ?>
+                                <?php _e('删除选中', 'wordpress-ai-toolkit'); ?>
                             </button>
                         </div>
                     </div>
@@ -121,11 +121,11 @@ class Simple_FriendLink_Admin {
                         <thead>
                             <tr>
                                 <th class="manage-column column-cb check-column"></th>
-                                <th width="20%"><?php _e('网站名称', 'wordpress-toolkit'); ?></th>
-                                <th width="30%"><?php _e('网站地址', 'wordpress-toolkit'); ?></th>
-                                <th width="20%"><?php _e('描述', 'wordpress-toolkit'); ?></th>
-                                <th width="15%"><?php _e('申请时间', 'wordpress-toolkit'); ?></th>
-                                <th width="15%"><?php _e('操作', 'wordpress-toolkit'); ?></th>
+                                <th width="20%"><?php _e('网站名称', 'wordpress-ai-toolkit'); ?></th>
+                                <th width="30%"><?php _e('网站地址', 'wordpress-ai-toolkit'); ?></th>
+                                <th width="20%"><?php _e('描述', 'wordpress-ai-toolkit'); ?></th>
+                                <th width="15%"><?php _e('申请时间', 'wordpress-ai-toolkit'); ?></th>
+                                <th width="15%"><?php _e('操作', 'wordpress-ai-toolkit'); ?></th>
                             </tr>
                         </thead>
                         <tbody>
@@ -149,21 +149,21 @@ class Simple_FriendLink_Admin {
                                     <td><?php echo date('Y-m-d H:i', strtotime($link->link_updated)); ?></td>
                                     <td>
                                         <form method="post" style="display: inline;">
-                                            <?php wp_nonce_field('wordpress_toolkit_friendlinks'); ?>
-                                            <input type="hidden" name="page" value="wordpress-toolkit-friendlinks">
+                                            <?php wp_nonce_field('wordpress_ai_toolkit_friendlinks'); ?>
+                                            <input type="hidden" name="page" value="wordpress-ai-toolkit-friendlinks">
                                             <input type="hidden" name="action" value="approve_link">
                                             <input type="hidden" name="link_id" value="<?php echo $link->link_id; ?>">
                                             <button type="submit" class="button button-small button-primary">
-                                                <?php _e('批准', 'wordpress-toolkit'); ?>
+                                                <?php _e('批准', 'wordpress-ai-toolkit'); ?>
                                             </button>
                                         </form>
                                         <form method="post" style="display: inline;">
-                                            <?php wp_nonce_field('wordpress_toolkit_friendlinks'); ?>
-                                            <input type="hidden" name="page" value="wordpress-toolkit-friendlinks">
+                                            <?php wp_nonce_field('wordpress_ai_toolkit_friendlinks'); ?>
+                                            <input type="hidden" name="page" value="wordpress-ai-toolkit-friendlinks">
                                             <input type="hidden" name="action" value="delete_link">
                                             <input type="hidden" name="link_id" value="<?php echo $link->link_id; ?>">
-                                            <button type="submit" class="button button-small" onclick="return confirm('<?php _e('确定要删除这个申请吗？', 'wordpress-toolkit'); ?>');">
-                                                <?php _e('删除', 'wordpress-toolkit'); ?>
+                                            <button type="submit" class="button button-small" onclick="return confirm('<?php _e('确定要删除这个申请吗？', 'wordpress-ai-toolkit'); ?>');">
+                                                <?php _e('删除', 'wordpress-ai-toolkit'); ?>
                                             </button>
                                         </form>
                                     </td>
@@ -174,7 +174,7 @@ class Simple_FriendLink_Admin {
                 </form>
             <?php else: ?>
                 <div class="notice notice-warning">
-                    <p><?php _e('暂无待审核的友情链接申请', 'wordpress-toolkit'); ?></p>
+                    <p><?php _e('暂无待审核的友情链接申请', 'wordpress-ai-toolkit'); ?></p>
                 </div>
             <?php endif; ?>
         </div>
@@ -232,10 +232,10 @@ class Simple_FriendLink_Admin {
     public function handle_admin_actions() {
         if (isset($_POST['action']) && !empty($_POST['action']) &&
             in_array($_POST['action'], array('approve_link', 'bulk_approve', 'delete_link')) &&
-            isset($_POST['page']) && $_POST['page'] === 'wordpress-toolkit-friendlinks') {
+            isset($_POST['page']) && $_POST['page'] === 'wordpress-ai-toolkit-friendlinks') {
 
             if (!current_user_can('manage_options')) {
-                wp_die(__('权限不足', 'wordpress-toolkit'));
+                wp_die(__('权限不足', 'wordpress-ai-toolkit'));
             }
 
             $action = sanitize_text_field($_POST['action']);
@@ -272,7 +272,7 @@ class Simple_FriendLink_Admin {
             ));
         }
 
-        wp_safe_redirect(admin_url('admin.php?page=wordpress-toolkit-friendlinks&message=approved'));
+        wp_safe_redirect(admin_url('admin.php?page=wordpress-ai-toolkit-friendlinks&message=approved'));
         exit;
     }
 
@@ -286,7 +286,7 @@ class Simple_FriendLink_Admin {
             wp_delete_link($link_id);
         }
 
-        wp_safe_redirect(admin_url('admin.php?page=wordpress-toolkit-friendlinks&message=deleted'));
+        wp_safe_redirect(admin_url('admin.php?page=wordpress-ai-toolkit-friendlinks&message=deleted'));
         exit;
     }
 
@@ -306,7 +306,7 @@ class Simple_FriendLink_Admin {
             }
         }
 
-        wp_safe_redirect(admin_url('admin.php?page=wordpress-toolkit-friendlinks&message=approved'));
+        wp_safe_redirect(admin_url('admin.php?page=wordpress-ai-toolkit-friendlinks&message=approved'));
         exit;
     }
 
@@ -323,7 +323,7 @@ class Simple_FriendLink_Admin {
             }
         }
 
-        wp_safe_redirect(admin_url('admin.php?page=wordpress-toolkit-friendlinks&message=deleted'));
+        wp_safe_redirect(admin_url('admin.php?page=wordpress-ai-toolkit-friendlinks&message=deleted'));
         exit;
     }
 
@@ -335,13 +335,13 @@ class Simple_FriendLink_Admin {
 
         switch ($message) {
             case 'approved':
-                echo '<div class="notice notice-success is-dismissible"><p>' . __('链接已批准', 'wordpress-toolkit') . '</p></div>';
+                echo '<div class="notice notice-success is-dismissible"><p>' . __('链接已批准', 'wordpress-ai-toolkit') . '</p></div>';
                 break;
             case 'deleted':
-                echo '<div class="notice notice-success is-dismissible"><p>' . __('链接已删除', 'wordpress-toolkit') . '</p></div>';
+                echo '<div class="notice notice-success is-dismissible"><p>' . __('链接已删除', 'wordpress-ai-toolkit') . '</p></div>';
                 break;
             case 'error':
-                echo '<div class="notice notice-error is-dismissible"><p>' . __('操作失败', 'wordpress-toolkit') . '</p></div>';
+                echo '<div class="notice notice-error is-dismissible"><p>' . __('操作失败', 'wordpress-ai-toolkit') . '</p></div>';
                 break;
         }
     }

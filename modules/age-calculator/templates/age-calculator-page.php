@@ -6,8 +6,8 @@
 get_header();
 
 // Enqueue plugin assets
-wp_enqueue_style( 'wordpress-toolkit-age-calculator', plugin_dir_url( __FILE__ ) . '../assets/style.css' );
-wp_enqueue_script( 'wordpress-toolkit-age-calculator-script', plugin_dir_url( __FILE__ ) . '../assets/script.js', array('jquery'), null, true );
+wp_enqueue_style( 'wordpress-ai-toolkit-age-calculator', plugin_dir_url( __FILE__ ) . '../assets/age-calculator-style.css' );
+wp_enqueue_script( 'wordpress-ai-toolkit-age-calculator-script', plugin_dir_url( __FILE__ ) . '../assets/script.js', array('jquery'), null, true );
 
 // Pass data to JavaScript
 $current_user_birthdate = '';
@@ -15,7 +15,7 @@ if ( is_user_logged_in() ) {
     $current_user = wp_get_current_user();
     $current_user_birthdate = get_user_meta( $current_user->ID, 'birthdate', true );
 }
-wp_localize_script( 'wordpress-toolkit-age-calculator-script', 'manusAgeCalculatorData', array(
+wp_localize_script( 'wordpress-ai-toolkit-age-calculator-script', 'manusAgeCalculatorData', array(
     'isLoggedIn' => is_user_logged_in(),
     'userBirthdate' => $current_user_birthdate,
 ));

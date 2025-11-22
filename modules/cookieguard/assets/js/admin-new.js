@@ -111,7 +111,7 @@
 
             this.ajax({
                 data: {
-                    action: 'wordpress_toolkit_clear_geo_cache'
+                    action: 'wordpress_ai_toolkit_clear_geo_cache'
                 }
             }).done(function(response) {
                 if (response.success) {
@@ -135,7 +135,7 @@
             }
 
             // 删除当前用户的Cookie
-            document.cookie = 'wordpress_toolkit_cookieguard_consent=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+            document.cookie = 'wordpress_ai_toolkit_cookieguard_consent=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
 
             this.showNotice('success', 'Cookie同意状态已重置');
         },

@@ -8,32 +8,32 @@ if (!defined('ABSPATH')) {
 }
 
 // 确保必要的常量被定义
-if (!defined('WORDPRESS_TOOLKIT_PLUGIN_PATH')) {
-    define('WORDPRESS_TOOLKIT_PLUGIN_PATH', plugin_dir_path(dirname(dirname(dirname(__FILE__)))));
+if (!defined('AI_CONTENT_TOOLKIT_PLUGIN_PATH')) {
+    define('AI_CONTENT_TOOLKIT_PLUGIN_PATH', plugin_dir_path(dirname(dirname(dirname(__FILE__)))));
 }
 
 // 确保必要的类被加载
 if (!class_exists('TimeCapsule_Item')) {
-    require_once WORDPRESS_TOOLKIT_PLUGIN_PATH . 'modules/time-capsule/includes/class-item.php';
+    require_once AI_CONTENT_TOOLKIT_PLUGIN_PATH . 'modules/time-capsule/includes/class-item.php';
 }
 if (!class_exists('TimeCapsule_Category')) {
-    require_once WORDPRESS_TOOLKIT_PLUGIN_PATH . 'modules/time-capsule/includes/class-category.php';
+    require_once AI_CONTENT_TOOLKIT_PLUGIN_PATH . 'modules/time-capsule/includes/class-category.php';
 }
 if (!class_exists('TimeCapsule_Database')) {
-    require_once WORDPRESS_TOOLKIT_PLUGIN_PATH . 'modules/time-capsule/includes/class-database.php';
+    require_once AI_CONTENT_TOOLKIT_PLUGIN_PATH . 'modules/time-capsule/includes/class-database.php';
 }
 
 // 确保函数文件被加载
-require_once WORDPRESS_TOOLKIT_PLUGIN_PATH . 'modules/time-capsule/includes/functions.php';
+require_once AI_CONTENT_TOOLKIT_PLUGIN_PATH . 'modules/time-capsule/includes/functions.php';
 
 // 确保脚本和样式被加载
 if (!class_exists('Time_Capsule_Module')) {
-    require_once WORDPRESS_TOOLKIT_PLUGIN_PATH . 'modules/time-capsule/time-capsule-module.php';
+    require_once AI_CONTENT_TOOLKIT_PLUGIN_PATH . 'modules/time-capsule/time-capsule-module.php';
 }
 
 // 手动加载脚本和样式
 $time_capsule_module = new Time_Capsule_Module();
-$time_capsule_module->admin_enqueue_scripts('wordpress-toolkit-time-capsule');
+$time_capsule_module->admin_enqueue_scripts('wordpress-ai-toolkit-time-capsule');
 
 // 检查用户权限 - 允许管理员和订阅者访问
 if (!current_user_can('manage_options') && !current_user_can('read')) {

@@ -9,14 +9,14 @@ if (!defined('ABSPATH')) {
 }
 
 // 确保必要的常量被定义
-if (!defined('WORDPRESS_TOOLKIT_PLUGIN_PATH')) {
-    define('WORDPRESS_TOOLKIT_PLUGIN_PATH', plugin_dir_path(dirname(dirname(dirname(__FILE__)))));
+if (!defined('AI_CONTENT_TOOLKIT_PLUGIN_PATH')) {
+    define('AI_CONTENT_TOOLKIT_PLUGIN_PATH', plugin_dir_path(dirname(dirname(dirname(__FILE__)))));
 }
-if (!defined('WORDPRESS_TOOLKIT_PLUGIN_URL')) {
-    define('WORDPRESS_TOOLKIT_PLUGIN_URL', plugin_dir_url(dirname(dirname(dirname(__FILE__)))));
+if (!defined('AI_CONTENT_TOOLKIT_PLUGIN_URL')) {
+    define('AI_CONTENT_TOOLKIT_PLUGIN_URL', plugin_dir_url(dirname(dirname(dirname(__FILE__)))));
 }
 if (!defined('TIME_CAPSULE_PLUGIN_URL')) {
-    define('TIME_CAPSULE_PLUGIN_URL', WORDPRESS_TOOLKIT_PLUGIN_URL . 'modules/time-capsule/');
+    define('TIME_CAPSULE_PLUGIN_URL', AI_CONTENT_TOOLKIT_PLUGIN_URL . 'modules/time-capsule/');
 }
 if (!defined('TIME_CAPSULE_VERSION')) {
     define('TIME_CAPSULE_VERSION', '1.0.3');
@@ -37,17 +37,17 @@ if (!current_user_can('read')) {
 
 // 确保必要的类被加载
 if (!class_exists('TimeCapsule_Item')) {
-    require_once WORDPRESS_TOOLKIT_PLUGIN_PATH . 'modules/time-capsule/includes/class-item.php';
+    require_once AI_CONTENT_TOOLKIT_PLUGIN_PATH . 'modules/time-capsule/includes/class-item.php';
 }
 if (!class_exists('TimeCapsule_Category')) {
-    require_once WORDPRESS_TOOLKIT_PLUGIN_PATH . 'modules/time-capsule/includes/class-category.php';
+    require_once AI_CONTENT_TOOLKIT_PLUGIN_PATH . 'modules/time-capsule/includes/class-category.php';
 }
 if (!class_exists('TimeCapsule_Database')) {
-    require_once WORDPRESS_TOOLKIT_PLUGIN_PATH . 'modules/time-capsule/includes/class-database.php';
+    require_once AI_CONTENT_TOOLKIT_PLUGIN_PATH . 'modules/time-capsule/includes/class-database.php';
 }
 // 加载通用函数
 if (!function_exists('tc_get_default_avatar')) {
-    require_once WORDPRESS_TOOLKIT_PLUGIN_PATH . 'modules/time-capsule/includes/functions.php';
+    require_once AI_CONTENT_TOOLKIT_PLUGIN_PATH . 'modules/time-capsule/includes/functions.php';
 }
 
 // 初始化类
@@ -114,7 +114,7 @@ wp_localize_script('time-capsule-custom-page', 'timeCapsuleCustom', array(
                     <div class="tc-nav-section-header">
                         <h3 class="tc-nav-title">分类筛选</h3>
                         <?php if (current_user_can('manage_options')): ?>
-                        <a href="<?php echo esc_url(admin_url('admin.php?page=wordpress-toolkit-time-capsule&tab=items')); ?>"
+                        <a href="<?php echo esc_url(admin_url('admin.php?page=wordpress-ai-toolkit-time-capsule&tab=items')); ?>"
                            class="tc-manage-btn" title="管理物品">
                             <span class="dashicons dashicons-admin-tools"></span>
                             管理
@@ -129,7 +129,7 @@ wp_localize_script('time-capsule-custom-page', 'timeCapsuleCustom', array(
                                     全部
                                 </a>
                                 <?php if (is_user_logged_in()): ?>
-                                <a href="<?php echo esc_url(admin_url('admin.php?page=wordpress-toolkit-time-capsule&tab=items')); ?>"
+                                <a href="<?php echo esc_url(admin_url('admin.php?page=wordpress-ai-toolkit-time-capsule&tab=items')); ?>"
                                    class="tc-inline-manage-btn" title="后台管理">
                                     <span class="dashicons dashicons-admin-tools"></span>
                                     管理
